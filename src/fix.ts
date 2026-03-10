@@ -6,7 +6,7 @@ import mineflayer from 'mineflayer';
  * ```js 
  *  bot.on("spawn", () => {
  *    bot.physicsEnabled = true
- *  })
+ *  });
  * ```
  */
 
@@ -40,5 +40,5 @@ import mineflayer from 'mineflayer';
 export default function (bot: mineflayer.Bot) {
   bot.on("spawn", () => {
     bot.physicsEnabled = true
-  })
+  });
 }

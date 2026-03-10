@@ -1,6 +1,6 @@
 import readline from 'readline';
 import mineflayer from 'mineflayer';
-import bot from './main.js';
+import NineteenBot from './bot.js';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -16,11 +16,29 @@ rl.on('line', (input: string) => {
   input = input.trim();
   if (input === 'list') {
     displayPlayerList(bot.players);
-  } else if (input === 'quit') {
+  } 
+  
+  // quit
+  else if (input === 'quit') {
     handleExit();
-  } else if (input.startsWith('/stp ')) {
+  } 
+  
+  // reconnect
+  else if (input === 'rc') {
+    bot.quit('下线ing................');
+    NineteenBot.reconnect();
+  }
+
+  // action
+  else if (input === 'act') {
+    handleAction();
+  }
+  
+  else if (input.startsWith('/stp ')) {
     handleStpCmd(input);
-  } else {
+  } 
+  
+  else {
     handleChat(input);
   }
 });
@@ -46,7 +64,7 @@ function displayPlayerList(players: Record<string, mineflayer.Player>) {
     if (!worlds[world]) continue;
     console.log(`${world} ${worlds[world].join(', ')}`);
   }
-  console.log('=======================================\x1b[0m');
+  console.log('\x1b[0m=======================================');
 }
 
 function handleChat(input: string) {
@@ -67,9 +85,16 @@ function handleStpCmd(input: string) {
 }
 
 function handleExit() {
-  bot.quit();
+  bot.quit("下线ing................");
   rl.close();
   process.exit(0);
 }
 
-export default {}
+function handleAction() {
+  
+}
+
+let bot: mineflayer.Bot;
+export default function (botInstance: mineflayer.Bot) {
+  bot = botInstance;
+}
