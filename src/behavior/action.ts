@@ -60,7 +60,7 @@ class BotAction {
         }
         break;
 
-      case 'watchPlayer':
+      case 'look':  // Always look at the nearest player.
         this.watchPlayerEnable = true;
         break;
 
@@ -98,7 +98,7 @@ class BotAction {
   }
 
   private getAllCmd() {
-    return ['fun', 'spin', 'sneak', 'jump', 'watchPlayer', 'swing', 'start', 'stop'];
+    return ['fun', 'spin', 'sneak', 'jump', 'look', 'swing', 'start', 'stop'];
   }
 
   public stop() {

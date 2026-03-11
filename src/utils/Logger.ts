@@ -2,8 +2,6 @@ import fs from 'fs';
 
 export default class LogUtil {
   private name: string;
-  private cache: string[] = [];
-  private maxCacheSize = 100;
   private logDir = './log';
   private maxLogFileSize = 1024 * 1024 * 10; // 10MB
   private currentLogFile = '';
@@ -20,46 +18,63 @@ export default class LogUtil {
     return `[${new Date().toLocaleTimeString()}][${this.name}]`;
   }
 
+  private baseLog(type: string, msg: string) {
+    const logMsg = `${this.prefix()}[${type}] ${msg}`;
+    console.log(logMsg);
+    this.saveLog(logMsg);
+  }
+
   public info(data: string, ...args: any[]) {
-    const msg = `${this.prefix()}[INFO] ${data} ${args.join(' ')}`;
-    console.log(msg);
-    this.saveLog(msg);
+    this.baseLog('INFO', `${data} ${args.join(' ')}`);
   }
 
   public error(data: string, ...args: any[]) {
-    const msg = `${this.prefix()}[ERROR] ${data} ${args.join(' ')}`;
-    console.error(msg, ...args);
-    this.saveLog(msg);
+    this.baseLog('ERROR', `${data} ${args.join(' ')}`);
   }
 
   public debug(data: string, ...args: any[]) {
-    const msg = `${this.prefix()}[DEBUG] ${data} ${args.join(' ')}`;
-    console.debug(msg, ...args);
-    this.saveLog(msg);
+    this.baseLog('DEBUG', `${data} ${args.join(' ')}`);
   }
 
   public warn(data: string, ...args: any[]) {
-    const msg = `${this.prefix()}[WARN] ${data} ${args.join(' ')}`;
-    console.warn(msg, ...args);
-    this.saveLog(msg);
+    this.baseLog('WARN', `${data} ${args.join(' ')}`);
   }
 
-  public saveLog(msg?: string, immediately?: boolean) {
-    msg && this.cache.push(msg);
+  public saveLog(msg?: string) {
+    if (msg) {
+      msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+    }
 
-    if (this.cache.length < this.maxCacheSize && !immediately) {
-      return;
+    const latestLogFile = this.getLatestLogFile();
+    fs.appendFileSync(latestLogFile, msg + '\n');
+  }
+
+  private getLatestLogFile() {
+    if (!fs.existsSync(this.logDir)) {
+      fs.mkdirSync(this.logDir);
     }
-    if (!this.currentLogFile) {
-      this.currentLogFile = new Date().toLocaleString()
-        .replace(':', '-')
-        .replace(' ', '-') + '.txt';
+
+    if (this.currentLogFile && fs.statSync(this.currentLogFile).size < this.maxLogFileSize) {
+      return this.currentLogFile;
     }
-    const logFilePath = `${this.logDir}/${this.currentLogFile}`;
-    msg = this.cache.join('\n');
-    fs.appendFileSync(logFilePath, msg + '\n');
-    if (fs.statSync(logFilePath).size > this.maxLogFileSize) {
-      this.currentLogFile = '';
+
+    const files = fs.readdirSync(this.logDir)
+        .filter((file) => file.endsWith('.log'))
+        .map(file => `${this.logDir}/${file}`);
+
+    files.sort((a, b) => {
+      const timeA = fs.statSync(a).mtime.getTime();
+      const timeB = fs.statSync(b).mtime.getTime();
+      return timeB - timeA;
+    });
+    
+    if (!files[0] || fs.statSync(files[0]).size > this.maxLogFileSize) {
+      const newLogFile = `${this.logDir}/${new Date().toLocaleString().replace(/[:/]/g, '-')}.log`;
+      fs.writeFileSync(newLogFile, '');
+      this.currentLogFile = newLogFile;
+    } else {
+      this.currentLogFile = files[0];
     }
+    return this.currentLogFile;
   }
 }

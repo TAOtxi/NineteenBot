@@ -10,7 +10,7 @@ import Logger from "./utils/Logger.js";
 let bot: mineflayer.Bot;
 let currentUser: { username: string, password: string };
 let reconnectDelay = 1000;
-const logger = Logger.getLogger('bot');
+const logger = Logger.getLogger('Bot');
 
 
 function createBot(user: { username: string, password: string }) {
@@ -55,6 +55,7 @@ function handleEvent(bot: mineflayer.Bot) {
   bot.on("kicked", logger.error);
   bot.on("error", (err: Error) => {
     logger.error('[Error] ' + err);
+
     setTimeout(() => {
       reconnect();
     }, reconnectDelay);
