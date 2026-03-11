@@ -1,6 +1,7 @@
 import readline from 'readline';
 import mineflayer from 'mineflayer';
 import NineteenBot from './bot.js';
+import botAction from './behavior/action.js';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -29,14 +30,19 @@ rl.on('line', (input: string) => {
     NineteenBot.reconnect();
   }
 
+  else if (input === 'cls' || input === 'clear') {
+    console.clear();
+  }
+
   // action
-  else if (input === 'act') {
-    handleAction();
+  else if (input.startsWith('act ')) {
+    const action = input.slice(4).trim();
+    botAction.setAction(action) && console.log(`Set action: ${action}`);
   }
   
   else if (input.startsWith('/stp ')) {
     handleStpCmd(input);
-  } 
+  }
   
   else {
     handleChat(input);
@@ -67,6 +73,7 @@ function displayPlayerList(players: Record<string, mineflayer.Player>) {
   console.log('\x1b[0m=======================================');
 }
 
+
 function handleChat(input: string) {
   if (input.startsWith('. ')) {
     bot.chat(input.slice(2)); // chat message --- >> . Hello ~
@@ -88,10 +95,6 @@ function handleExit() {
   bot.quit("下线ing................");
   rl.close();
   process.exit(0);
-}
-
-function handleAction() {
-  
 }
 
 let bot: mineflayer.Bot;

@@ -1,6 +1,7 @@
 import mineflayer from "mineflayer";
 import { mineflayer as mineflayerViewer } from "prismarine-viewer";
 import { type ChatMessage } from "prismarine-chat";
+import botAction from "./behavior/action.js";
 import fixCode from "./fix.js";
 import TimeUtil from "./utils/TimeUtil.js";
 import setInput from "./input.js";
@@ -9,10 +10,6 @@ let bot: mineflayer.Bot;
 let currentUser: { username: string, password: string };
 let reconnectDelay = 1000;
 
-/************** Action ***************/
-let spinTimer = 0;
-let watchLatestPlayer = false;
-let sneakSometime = false;
 
 function createBot(user: { username: string, password: string }) {
   if (bot) {
@@ -30,6 +27,7 @@ function createBot(user: { username: string, password: string }) {
   fixCode(bot);
   setInput(bot);
   handleEvent(bot);
+  botAction.setBot(bot);
 }
 
 function handleEvent(bot: mineflayer.Bot) {
@@ -41,13 +39,15 @@ function handleEvent(bot: mineflayer.Bot) {
   });
   bot.on("physicsTick", () => {
     TimeUtil.tick(bot);
+    botAction.tick();
   });
   // 呼啦啦转圈圈
   bot.once("spawn", () => {
-    setInterval(() => {
-      let yaw = bot.entity.yaw + Math.PI / 10
-      bot.look(yaw, 0, true);
-    }, 20);
+    botAction.enableAction();
+    // setInterval(() => {
+    //   let yaw = bot.entity.yaw + Math.PI / 10
+    //   bot.look(yaw, 0, true);
+    // }, 20);
   });
   // bot.on("spawn", () => {
   //   // @ts-ignore
