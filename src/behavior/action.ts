@@ -21,6 +21,8 @@ class BotAction {
   private nextSwingArmTick = 0;
   private swingArmInterval = 7;
 
+  private specitalActionType = '';
+
   private bot: mineflayer.Bot | null = null;
 
   public setBot(bot: mineflayer.Bot) {
@@ -81,7 +83,7 @@ class BotAction {
         break;
 
       case 'fun':
-        this.funnyAction();
+        this.startFunnyAction();
         break;
 
       default:
@@ -102,6 +104,7 @@ class BotAction {
     this.sneakEnable = false;
     this.jumpEnable = false;
     this.watchPlayerEnable = false;
+    this.specitalActionType = '';
     
     this.bot?.clearControlStates();
   }
@@ -111,35 +114,39 @@ class BotAction {
       return;
     }
     this.ticker++;
-    
-    // 这两个动作不兼容，若同时设置，只有bot附近没有玩家时才开始转圈圈
-    if (this.watchPlayerEnable) {
-      const nearestPlayer = this.bot?.nearestEntity(entity => 
-        entity.type === 'player' && entity.position.distanceTo(this.bot?.entity.position!) < 6);
 
-      if (nearestPlayer) {
-        this.watchPlayer(nearestPlayer.position);
-      } else if (this.spinEnable) {
-        this.spin();
-      }
-    } else if (this.spinEnable) {
-      this.spin();
+    if (this.specitalActionType === 'funnyAction') {
+      this.funnyAction();
+      return;
     }
 
+    this.watchPlayerEnable && this.watchPlayer();
+    this.spinEnable && this.spin();
     this.jumpEnable && this.jumpSometime();
     this.sneakEnable && this.sneakSometime();
     this.swingEnable && this.swingArmSometime();
   }
 
   /************************* Action **************************/
-  private funnyAction() {
+  public startFunnyAction() {
     this.stop();
+    this.specitalActionType = 'funnyAction';
     this.enableAction();
-    this.spinEnable = true;
-    this.jumpEnable = true;
-    this.sneakEnable = true;
-    this.swingEnable = true;
-    this.watchPlayerEnable = true;
+  }
+
+  private funnyAction() {
+    this.jumpSometime();
+    this.sneakSometime();
+    this.swingArmSometime();
+
+    const nearestPlayer = this.bot?.nearestEntity(entity => 
+        entity.type === 'player' && entity.position.distanceTo(this.bot?.entity.position!) < 6);
+      if (nearestPlayer) {
+        const pos = new Vec3(nearestPlayer.position.x, nearestPlayer.position.y + 1.62, nearestPlayer.position.z);
+        this.watchPlayer(pos);
+      } else {
+        this.spin();
+      }
   }
 
   private spin() {
