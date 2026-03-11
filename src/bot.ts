@@ -37,7 +37,7 @@ function handleEvent(bot: mineflayer.Bot) {
     return;
   }
   bot.on("message", (msg: ChatMessage) => {
-    logger.info(msg.toAnsi());
+    logger.info(msg.toAnsi() + "\x1b[0m");
   });
   bot.on("physicsTick", () => {
     TimeUtil.tick(bot);
@@ -54,7 +54,7 @@ function handleEvent(bot: mineflayer.Bot) {
 
   bot.on("kicked", logger.error);
   bot.on("error", (err: Error) => {
-    logger.error('[Error] ' + err);
+    logger.error(err.message);
 
     setTimeout(() => {
       reconnect();

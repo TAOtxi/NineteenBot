@@ -78,18 +78,18 @@ function displayPlayerList(players: Record<string, mineflayer.Player>) {
   }
   for (const world of Object.keys(worlds)) {
     if (!worlds[world]) continue;
-    logger.info(`${world} ${worlds[world].join(', ')}`);
+    logger.info(`${world}\x1b[0m ${worlds[world].join(', ')}`);
   }
   logger.info('\x1b[0m=======================================');
 }
 
 function handleInfoCmd(cmd: string) {
   if (cmd === 'entity') {
-    logger.info(JSON.stringify(bot.entities, null, 2));
+    console.log(bot.entities);
   } else if (cmd === 'count') {
     entityInfo.outputEntityCount(bot);
-  } else if (cmd === 'meta') {
-    logger.info(JSON.stringify(bot.entity.metadata, null, 2));
+  // } else if (cmd === 'meta') {
+  //   logger.info(JSON.stringify(bot.entity.metadata, null, 2));
   }
 }
 
