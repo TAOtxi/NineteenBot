@@ -2,6 +2,7 @@ import readline from 'readline';
 import mineflayer from 'mineflayer';
 import NineteenBot from './bot.js';
 import botAction from './behavior/action.js';
+import entityInfo from './Infomation/entity.js';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -34,6 +35,10 @@ rl.on('line', (input: string) => {
     console.clear();
   }
 
+  else if (input.startsWith('info ')) {
+    handleInfoCmd(input.slice(5).trim());
+  }
+
   // action
   else if (input.startsWith('act ')) {
     const action = input.slice(4).trim();
@@ -41,6 +46,8 @@ rl.on('line', (input: string) => {
   }
   
   else if (input.startsWith('/stp ')) {
+    botAction.stop();
+    bot.physicsEnabled = false;
     handleStpCmd(input);
   }
   
@@ -73,6 +80,15 @@ function displayPlayerList(players: Record<string, mineflayer.Player>) {
   console.log('\x1b[0m=======================================');
 }
 
+function handleInfoCmd(cmd: string) {
+  if (cmd === 'entity') {
+    console.log(bot.entities);
+  } else if (cmd === 'count') {
+    entityInfo.outputEntityCount(bot);
+  } else if (cmd === 'meta') {
+    console.log(JSON.stringify(bot.entity.metadata, null, 2));
+  }
+}
 
 function handleChat(input: string) {
   if (input.startsWith('. ')) {
@@ -86,6 +102,7 @@ function handleStpCmd(input: string) {
   const target = input.slice(5).trim();
   const serverList = ['survival', 'survival2', 'industry', 'lobby'];
   if (serverList.includes(target)) {
+    botAction.stop();
     bot.physicsEnabled = false;
     bot.chat(input);
   }
