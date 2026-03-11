@@ -1,5 +1,7 @@
 import mineflayer from 'mineflayer';
+import Logger from '../utils/Logger.js';
 
+const logger = Logger.getLogger('EntityInfo');
 
 function statEntityCount(bot: mineflayer.Bot) {
   const countMap: Record<string, number> = {};
@@ -14,7 +16,7 @@ function outputEntityCount(bot: mineflayer.Bot) {
   const countMap = statEntityCount(bot);
   const sortCountMap = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
   for (const [name, count] of sortCountMap) {
-    console.log(`${name}: ${count}`);
+    logger.info(`${name}: ${count}`);
   }
 }
 

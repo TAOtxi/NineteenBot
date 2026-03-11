@@ -5,10 +5,12 @@ import botAction from "./behavior/action.js";
 import fixCode from "./fix.js";
 import TimeUtil from "./utils/TimeUtil.js";
 import setInput from "./input.js";
+import Logger from "./utils/Logger.js";
 
 let bot: mineflayer.Bot;
 let currentUser: { username: string, password: string };
 let reconnectDelay = 1000;
+const logger = Logger.getLogger('bot');
 
 
 function createBot(user: { username: string, password: string }) {
@@ -35,42 +37,30 @@ function handleEvent(bot: mineflayer.Bot) {
     return;
   }
   bot.on("message", (msg: ChatMessage) => {
-    console.log(msg.toAnsi());
+    logger.info(msg.toAnsi());
   });
   bot.on("physicsTick", () => {
     TimeUtil.tick(bot);
     botAction.tick();
   });
-  // 呼啦啦转圈圈
-  bot.once("spawn", () => {
-    botAction.enableAction();
-    // setInterval(() => {
-    //   let yaw = bot.entity.yaw + Math.PI / 10
-    //   bot.look(yaw, 0, true);
-    // }, 20);
-  });
   // bot.on("spawn", () => {
   //   // @ts-ignore
-  //   console.log(bot._getDimensionName());
+  //   logger.info(bot._getDimensionName());
   // });
   bot.on("resourcePack", (url: string, hash?: string, uuid?: string) => {
-    // console.log('Resource pack URL:', url, 'UUID:', uuid);
+    // logger.info('Resource pack URL:', url, 'UUID:', uuid);
     bot.acceptResourcePack();
   });
 
-  // 非常卡的玩意
-  // bot.once('spawn', () => {
-  //   mineflayerViewer(bot, { port: 3007, firstPerson: false });
-  // });
-  bot.on("kicked", console.log);
+  bot.on("kicked", logger.error);
   bot.on("error", (err: Error) => {
-    console.log('[Error]', err);
+    logger.error('[Error] ' + err);
     setTimeout(() => {
       reconnect();
     }, reconnectDelay);
   });
   bot.on('end', (reason: string) => {
-    console.log('[End]', reason);
+    logger.info('[End]', reason);
     setTimeout(() => {
       reconnect();
     }, reconnectDelay);
@@ -79,10 +69,10 @@ function handleEvent(bot: mineflayer.Bot) {
 
 function reconnect() {
   if (!currentUser) {
-    console.error('currentUser is undefined');
+    logger.error('currentUser is undefined');
     return;
   }
-  console.log('[Reconnect]', currentUser.username);
+  logger.info('[Reconnect]', currentUser.username);
   createBot(currentUser);
 }
 

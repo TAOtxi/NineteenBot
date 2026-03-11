@@ -1,5 +1,8 @@
 import mineflayer from 'mineflayer';
 import { Vec3 } from 'vec3';
+import Logger from '../utils/Logger.js';
+
+const logger = Logger.getLogger('BotAction');
 
 class BotAction {
   private ticker = 0;
@@ -87,8 +90,8 @@ class BotAction {
         break;
 
       default:
-        console.log(`Invalid action: ${cmd}`);
-        console.log(`Valid actions: ${this.getAllCmd().join(' | ')}`);
+        logger.error(`Invalid action: ${cmd}`);
+        logger.error(`Valid actions: ${this.getAllCmd().join(' | ')}`);
         return false;
       }
       return true;

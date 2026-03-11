@@ -3,6 +3,9 @@ import mineflayer from 'mineflayer';
 import NineteenBot from './bot.js';
 import botAction from './behavior/action.js';
 import entityInfo from './Infomation/entity.js';
+import Logger from './utils/Logger.js';
+
+const logger = Logger.getLogger('Input');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -12,7 +15,7 @@ const rl = readline.createInterface({
 // 监听用户输入
 rl.on('line', (input: string) => {
   if (!bot) {
-    console.log('Bot not set');
+    logger.error('Bot not set');
     return;
   };
   input = input.trim();
@@ -42,7 +45,7 @@ rl.on('line', (input: string) => {
   // action
   else if (input.startsWith('act ')) {
     const action = input.slice(4).trim();
-    botAction.setAction(action) && console.log(`Set action: ${action}`);
+    botAction.setAction(action) && logger.info(`Set action: ${action}`);
   }
   
   else if (input.startsWith('/stp ')) {
@@ -59,8 +62,8 @@ rl.on('line', (input: string) => {
 
 function displayPlayerList(players: Record<string, mineflayer.Player>) {
   const worlds: Record<string, string[]> = {};
-  console.log('=======================================');
-  console.log(`Total Players: ${Object.keys(players).length}`);
+  logger.info('=======================================');
+  logger.info(`Total Players: ${Object.keys(players).length}`);
   // TODO: 匹配逻辑待优化
   const prefix = /\[(.*?)\]/g
   for (const player of Object.values(players)) {
@@ -75,18 +78,18 @@ function displayPlayerList(players: Record<string, mineflayer.Player>) {
   }
   for (const world of Object.keys(worlds)) {
     if (!worlds[world]) continue;
-    console.log(`${world} ${worlds[world].join(', ')}`);
+    logger.info(`${world} ${worlds[world].join(', ')}`);
   }
-  console.log('\x1b[0m=======================================');
+  logger.info('\x1b[0m=======================================');
 }
 
 function handleInfoCmd(cmd: string) {
   if (cmd === 'entity') {
-    console.log(bot.entities);
+    logger.info(JSON.stringify(bot.entities, null, 2));
   } else if (cmd === 'count') {
     entityInfo.outputEntityCount(bot);
   } else if (cmd === 'meta') {
-    console.log(JSON.stringify(bot.entity.metadata, null, 2));
+    logger.info(JSON.stringify(bot.entity.metadata, null, 2));
   }
 }
 
