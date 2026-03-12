@@ -1,5 +1,4 @@
 import mineflayer from "mineflayer";
-import { mineflayer as mineflayerViewer } from "prismarine-viewer";
 import { type ChatMessage } from "prismarine-chat";
 import botAction from "./behavior/action.js";
 import fixCode from "./fix.js";
@@ -34,7 +33,7 @@ function createBot(
     // logErrors: false,
     physicsEnabled: false,
   });
-  fixCode(bot);
+  fixCode.fix(bot);
   setInputBot(bot);
   handleEvent(bot);
   botAction.setBot(bot);
