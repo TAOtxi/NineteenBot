@@ -6,7 +6,7 @@ const logger = Logger.getLogger('BotAction');
 
 class BotAction {
   private ticker = 0;
-  private actionEnable = false;
+  private actionEnable = true;
   private watchPlayerEnable = false;
 
   private spinEnable = false;
@@ -41,65 +41,92 @@ class BotAction {
     this.actionEnable = false;
   }
 
-  public setAction(msg: string) {
+  public getActionStatus() {
+    logger.info('============ Action Status ============');
+    logger.info(`Action enabled:        ${this.actionEnable}`);
+    logger.info(`Spin enabled:          ${this.spinEnable}`);
+    logger.info(`Jump enabled:          ${this.jumpEnable}`);
+    logger.info(`Sneak enabled:         ${this.sneakEnable}`);
+    logger.info(`Swing enabled:         ${this.swingEnable}`);
+    logger.info(`Watch player enabled:  ${this.watchPlayerEnable}`);
+    logger.info(`Special action type:   ${this.specitalActionType}`);
+    logger.info('=======================================');
+  }
+
+  // return true if run successfully.
+  public handleCmd(msg: string) {
+    /********* Cmd  *********/
+    if (msg === 'info') {
+      this.getActionStatus();
+      return true;
+    }
+
+    if (msg === 'start') {
+      this.enableAction();
+      return true;
+    }
+
+    if (msg === 'stop') {
+      this.stop();
+      return true;
+    }
+
+    if (!this.actionEnable) {
+      logger.error('Action is disabled. Please enable it first.');
+      return false;
+    }
+
     const msgArr = msg.split(' ').filter((item) => item !== '');
     const cmd = msgArr[0];
 
-    switch (cmd) {
-      case 'start':
-        this.enableAction();
-        break;
-
-      case 'stop':
-        this.stop();
-        break;
-
-      case 'spin':
-        this.spinEnable = true;
-        if (msgArr[1] !== undefined) {
-          this.spinDeltaYaw = parseFloat(msgArr[1]) / 180 * Math.PI;
-        }
-        break;
-
-      case 'look':  // Always look at the nearest player.
-        this.watchPlayerEnable = true;
-        break;
-
-      case 'sneak':
-        this.sneakEnable = true;
-        if (msgArr[1] !== undefined) {
-          this.sneakInterval = parseInt(msgArr[1]);
-        }
-        break;
-
-      case 'jump':
-        this.jumpEnable = true;
-        if (msgArr[1] !== undefined) {
-          this.jumpInterval = parseInt(msgArr[1]);
-        }
-        break;
-
-      case 'swing':
-        this.swingEnable = true;
-        if (msgArr[1] !== undefined) {
-          this.swingArmInterval = parseInt(msgArr[1]);
-        }
-        break;
-
-      case 'fun':
-        this.startFunnyAction();
-        break;
-
-      default:
-        logger.error(`Invalid action: ${cmd}`);
-        logger.error(`Valid actions: ${this.getAllCmd().join(' | ')}`);
-        return false;
+    /************ Action Cmd ************/
+    if (cmd === 'spin') {
+      this.spinEnable = true;
+      if (msgArr[1] !== undefined) {
+        this.spinDeltaYaw = parseFloat(msgArr[1]) / 180 * Math.PI;
       }
-      return true;
+    }
+
+    else if (cmd === 'look') {  // Always look at the nearest player.
+      this.watchPlayerEnable = true;
+    }
+
+    else if (cmd === 'jump') {
+      this.jumpEnable = true;
+      if (msgArr[1] !== undefined) {
+        this.jumpInterval = parseInt(msgArr[1]);
+      }
+    }
+
+    else if (cmd === 'sneak') {
+      this.sneakEnable = true;
+      if (msgArr[1] !== undefined) {
+        this.sneakInterval = parseInt(msgArr[1]);
+      }
+    }
+
+    else if (cmd === 'swing') {
+      this.swingEnable = true;
+      if (msgArr[1] !== undefined) {
+        this.swingArmInterval = parseInt(msgArr[1]);
+      }
+    }
+
+    else if (cmd === 'fun') {
+      this.specitalActionType = 'funnyAction';
+    }
+
+    else {
+      cmd && logger.error(`Invalid action: ${cmd}`);
+      logger.error(`All valid actions: ${this.getAllCmd().join(' | ')}`);
+      return false;
+    }
+    
+    return true;
   }
 
   private getAllCmd() {
-    return ['fun', 'spin', 'sneak', 'jump', 'look', 'swing', 'start', 'stop'];
+    return ['fun', 'spin', 'sneak', 'jump', 'look', 'swing', 'start', 'stop'].sort();
   }
 
   public stop() {
@@ -131,13 +158,13 @@ class BotAction {
     this.swingEnable && this.swingArmSometime();
   }
 
-  /************************* Action **************************/
   public startFunnyAction() {
     this.stop();
     this.specitalActionType = 'funnyAction';
     this.enableAction();
   }
-
+  
+  /************************* Action **************************/
   private funnyAction() {
     this.jumpSometime();
     this.sneakSometime();
@@ -174,8 +201,9 @@ class BotAction {
     this.bot?.setControlState('sneak', true);
 
     // TODO: 尽量不用 setTimeout
+    // 果然出问题了，bot断联后，这个setTimeout还在继续允许，导致报错
     setTimeout(() => {
-      this.bot?.setControlState('sneak', false);
+      this.bot?.setControlState?.('sneak', false);
     }, this.sneakInterval / 2 * 50);
   }
 
@@ -188,6 +216,7 @@ class BotAction {
     this.bot.setControlState('jump', false);
   }
 
+  // TODO: 待优化
   private watchPlayer(vec?: Vec3) {
     if (vec) {
       this.bot?.lookAt(vec);

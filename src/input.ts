@@ -46,9 +46,9 @@ function startInput() {
     }
 
     // action
-    else if (input.startsWith('act ')) {
-      const action = input.slice(4).trim();
-      botAction.setAction(action) && logger.info(`Set action: ${action}`);
+    else if (input.startsWith('act')) {
+      const action = input.slice(3).trim();
+      botAction.handleCmd(action) && logger.info(`Set command: ${action}`);
     }
     
     else if (input.startsWith('/stp ')) {
