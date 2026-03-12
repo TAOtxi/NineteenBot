@@ -172,12 +172,12 @@ class BotAction {
 
     const nearestPlayer = this.bot?.nearestEntity(entity => 
         entity.type === 'player' && entity.position.distanceTo(this.bot?.entity.position!) < 6);
-      if (nearestPlayer) {
-        const pos = new Vec3(nearestPlayer.position.x, nearestPlayer.position.y + 1.62, nearestPlayer.position.z);
-        this.watchPlayer(pos);
-      } else {
-        this.spin();
-      }
+    if (nearestPlayer) {
+      const pos = new Vec3(nearestPlayer.position.x, nearestPlayer.position.y + 1.62, nearestPlayer.position.z);
+      this.watchPlayer(pos);
+    } else {
+      this.spin();
+    }
   }
 
   private spin() {
