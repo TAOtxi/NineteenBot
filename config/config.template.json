@@ -1,0 +1,19 @@
+{
+  "Users": {
+    "Notch": {
+      "username": "Notch@mojang.com"
+    },
+    "Jeb_": {
+      "username": "Jeb@gmail.com"
+    }
+  },
+  "Servers": {
+    "An server": {
+      "host": "abc.com"
+    },
+    "2b2t": {
+      "host": "2b2t.org",
+      "port": 12345
+    }
+  }
+}

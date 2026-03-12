@@ -6,58 +6,66 @@ import entityInfo from './Infomation/entity.js';
 import Logger from './utils/Logger.js';
 
 const logger = Logger.getLogger('Input');
+let isInit = false;
+let rl: readline.Interface;
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
 
 // 监听用户输入
-rl.on('line', (input: string) => {
-  if (!bot) {
-    logger.error('Bot not set');
-    return;
-  };
-  input = input.trim();
-  if (input === 'list') {
-    displayPlayerList(bot.players);
-  } 
-  
-  // quit
-  else if (input === 'quit') {
+function startInput() {
+  rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  rl.on('line', (input: string) => {
+    if (!bot) {
+      logger.error('Bot not set');
+      return;
+    };
+    input = input.trim();
+    if (input === 'list') {
+      displayPlayerList(bot.players);
+    } 
+    
+    // quit
+    else if (input === 'quit') {
+      handleExit();
+    } 
+    
+    // reconnect
+    else if (input === 'rc') {
+      bot.quit('下线ing................');
+      NineteenBot.reconnect();
+    }
+
+    else if (input === 'cls' || input === 'clear') {
+      console.clear();
+    }
+
+    else if (input.startsWith('info ')) {
+      handleInfoCmd(input.slice(5).trim());
+    }
+
+    // action
+    else if (input.startsWith('act ')) {
+      const action = input.slice(4).trim();
+      botAction.setAction(action) && logger.info(`Set action: ${action}`);
+    }
+    
+    else if (input.startsWith('/stp ')) {
+      botAction.stop();
+      bot.physicsEnabled = false;
+      handleStpCmd(input);
+    }
+    
+    else {
+      handleChat(input);
+    }
+  });
+
+  rl.on('SIGINT', () => {
     handleExit();
-  } 
-  
-  // reconnect
-  else if (input === 'rc') {
-    bot.quit('下线ing................');
-    NineteenBot.reconnect();
-  }
-
-  else if (input === 'cls' || input === 'clear') {
-    console.clear();
-  }
-
-  else if (input.startsWith('info ')) {
-    handleInfoCmd(input.slice(5).trim());
-  }
-
-  // action
-  else if (input.startsWith('act ')) {
-    const action = input.slice(4).trim();
-    botAction.setAction(action) && logger.info(`Set action: ${action}`);
-  }
-  
-  else if (input.startsWith('/stp ')) {
-    botAction.stop();
-    bot.physicsEnabled = false;
-    handleStpCmd(input);
-  }
-  
-  else {
-    handleChat(input);
-  }
-});
+  });
+}
 
 
 function displayPlayerList(players: Record<string, mineflayer.Player>) {
@@ -113,11 +121,17 @@ function handleStpCmd(input: string) {
 
 function handleExit() {
   bot.quit("下线ing................");
-  rl.close();
+  rl?.close();
   process.exit(0);
 }
 
 let bot: mineflayer.Bot;
+
 export default function (botInstance: mineflayer.Bot) {
   bot = botInstance;
+
+  if (!isInit) {
+    isInit = true;
+    startInput();
+  }
 }

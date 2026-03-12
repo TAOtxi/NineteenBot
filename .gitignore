@@ -2,6 +2,6 @@ node_modules
 
 dist
 
-config/account.json
+config/config.json
 
 log

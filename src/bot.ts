@@ -4,30 +4,38 @@ import { type ChatMessage } from "prismarine-chat";
 import botAction from "./behavior/action.js";
 import fixCode from "./fix.js";
 import TimeUtil from "./utils/TimeUtil.js";
-import setInput from "./input.js";
+import setInputBot from "./input.js";
 import Logger from "./utils/Logger.js";
 
 let bot: mineflayer.Bot;
-let currentUser: { username: string, password: string };
+let currentUser: { username: string };
+let currentServer: { host: string, port?: number };
+
 let reconnectDelay = 1000;
 const logger = Logger.getLogger('Bot');
 
 
-function createBot(user: { username: string, password: string }) {
+function createBot(
+    user: { username: string }, 
+    server: { host: string, port?: number }
+  ) {
   if (bot) {
     bot.removeAllListeners();
   }
   currentUser = user;
+  currentServer = server;
   bot = mineflayer.createBot({
-    host: "19mc.cn",
-    // port: 25565,
+    host: server.host,
+    port: server.port || 25565,
     username: user.username,
     auth: "microsoft",
     version: "1.21.11",
+    // hideErrors: true,
+    // logErrors: false,
     physicsEnabled: false,
   });
   fixCode(bot);
-  setInput(bot);
+  setInputBot(bot);
   handleEvent(bot);
   botAction.setBot(bot);
 }
@@ -43,6 +51,9 @@ function handleEvent(bot: mineflayer.Bot) {
     TimeUtil.tick(bot);
     botAction.tick();
   });
+  bot.on("login", () => {
+    logger.info(`Login as ${bot.username}`);
+  })
   // bot.on("spawn", () => {
   //   // @ts-ignore
   //   logger.info(bot._getDimensionName());
@@ -69,12 +80,12 @@ function handleEvent(bot: mineflayer.Bot) {
 }
 
 function reconnect() {
-  if (!currentUser) {
-    logger.error('currentUser is undefined');
+  if (!currentUser || !currentServer) {
+    logger.error('currentUser or currentServer is undefined');
     return;
   }
   logger.info('[Reconnect]', currentUser.username);
-  createBot(currentUser);
+  createBot(currentUser, currentServer);
 }
 
 export default {

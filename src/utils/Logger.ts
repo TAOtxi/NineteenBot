@@ -15,7 +15,7 @@ export default class LogUtil {
   }
 
   private prefix() {
-    return `[${new Date().toLocaleTimeString()}][${this.name}]`;
+    return `[${new Date().toLocaleString()}][${this.name}]`;
   }
 
   private baseLog(type: string, msg: string) {
