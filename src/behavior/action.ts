@@ -134,6 +134,7 @@ class BotAction {
     this.spinEnable = false;
     this.sneakEnable = false;
     this.jumpEnable = false;
+    this.swingEnable = false;
     this.watchPlayerEnable = false;
     this.specitalActionType = '';
     
