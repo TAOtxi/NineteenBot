@@ -127,10 +127,12 @@ function handleExit() {
 
 let bot: mineflayer.Bot;
 
-export default function (botInstance: mineflayer.Bot) {
+export default function (botInstance: mineflayer.Bot, logToFile: boolean) {
   bot = botInstance;
 
   if (!isInit) {
+    logger.setLogToFile(logToFile);
+    entityInfo.setLogToFile(logToFile);
     isInit = true;
     startInput();
   }

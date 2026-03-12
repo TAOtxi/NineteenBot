@@ -23,4 +23,7 @@ function outputEntityCount(bot: mineflayer.Bot) {
 export default {
     statEntityCount,
     outputEntityCount,
+    setLogToFile(logToFile: boolean) {
+      logger.setLogToFile(logToFile);
+    }
 }

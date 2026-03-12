@@ -5,13 +5,19 @@ export default class LogUtil {
   private logDir = './log';
   private maxLogFileSize = 1024 * 1024 * 10; // 10MB
   private currentLogFile = '';
+  private logToFile = true;
 
-  constructor(prefix: string) {
+  constructor(prefix: string, logToFile: boolean = true) {
     this.name = prefix;
+    this.logToFile = logToFile;
   }
 
-  static getLogger(prefix: string) {
-    return new LogUtil(prefix);
+  static getLogger(prefix: string, logToFile: boolean = true) {
+    return new LogUtil(prefix, logToFile);
+  }
+
+  public setLogToFile(logToFile?: boolean) {
+    this.logToFile = logToFile ?? true;
   }
 
   private prefix() {
@@ -21,7 +27,7 @@ export default class LogUtil {
   private baseLog(type: string, msg: string) {
     const logMsg = `${this.prefix()}[${type}] ${msg}`;
     console.log(logMsg);
-    this.saveLog(logMsg);
+    this.logToFile && this.saveLog(logMsg);
   }
 
   public info(data: string, ...args: any[]) {

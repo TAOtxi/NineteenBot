@@ -28,8 +28,9 @@ class BotAction {
 
   private bot: mineflayer.Bot | null = null;
 
-  public setBot(bot: mineflayer.Bot) {
+  public setBot(bot: mineflayer.Bot, logToFile: boolean) {
     this.bot = bot;
+    logger.setLogToFile(logToFile);
   }
 
   public enableAction() {

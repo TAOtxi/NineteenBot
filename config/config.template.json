@@ -1,7 +1,8 @@
 {
   "Users": {
     "Notch": {
-      "username": "Notch@mojang.com"
+      "username": "Notch@mojang.com",
+      "logToFile": true
     },
     "Jeb_": {
       "username": "Jeb@gmail.com"

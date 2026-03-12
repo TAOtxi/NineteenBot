@@ -7,22 +7,24 @@ import setInputBot from "./input.js";
 import Logger from "./utils/Logger.js";
 
 let bot: mineflayer.Bot;
-let currentUser: { username: string };
-let currentServer: { host: string, port?: number };
+let currentUser: UserConfig;
+let currentServer: ServerConfig;
 
 let reconnectDelay = 1000;
 const logger = Logger.getLogger('Bot');
 
 
 function createBot(
-    user: { username: string }, 
-    server: { host: string, port?: number }
+    user: UserConfig, 
+    server: ServerConfig
   ) {
   if (bot) {
     bot.removeAllListeners();
   }
   currentUser = user;
   currentServer = server;
+
+  // TODO: 添加更多的配置选项
   bot = mineflayer.createBot({
     host: server.host,
     port: server.port || 25565,
@@ -30,13 +32,16 @@ function createBot(
     auth: "microsoft",
     version: "1.21.11",
     // hideErrors: true,
-    // logErrors: false,
+    logErrors: false,
     physicsEnabled: false,
   });
+
+  const logToFile = user.logToFile ?? false;
+  logger.setLogToFile(logToFile);
   fixCode.fix(bot);
-  setInputBot(bot);
+  setInputBot(bot, logToFile);
   handleEvent(bot);
-  botAction.setBot(bot);
+  botAction.setBot(bot, logToFile);
 }
 
 function handleEvent(bot: mineflayer.Bot) {
