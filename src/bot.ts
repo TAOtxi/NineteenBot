@@ -5,6 +5,7 @@ import fixCode from "./fix.js";
 import TimeUtil from "./utils/TimeUtil.js";
 import setInputBot from "./input.js";
 import Logger from "./utils/Logger.js";
+import AutoDrop from "./module/AutoDrop/main.js";
 
 let bot: mineflayer.Bot;
 let currentUser: UserConfig;
@@ -42,6 +43,7 @@ function createBot(
   setInputBot(bot, logToFile);
   handleEvent(bot);
   botAction.setBot(bot, logToFile);
+  AutoDrop.init(bot, logToFile);
 }
 
 function handleEvent(bot: mineflayer.Bot) {
@@ -54,6 +56,7 @@ function handleEvent(bot: mineflayer.Bot) {
   bot.on("physicsTick", () => {
     TimeUtil.tick(bot);
     botAction.tick();
+    AutoDrop.tick();
   });
   bot.on("login", () => {
     logger.info(`Login as ${bot.username}`);
