@@ -20,8 +20,15 @@ export default class LogUtil {
     this.logToFile = logToFile ?? true;
   }
 
+  private getTimeStr() {
+    const date = new Date();
+    const time = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+    return time;
+  }
+
   private prefix() {
-    return `[${new Date().toLocaleString()}][${this.name}]`;
+    const time = this.getTimeStr();
+    return `[${time}][${this.name}]`;
   }
 
   private baseLog(type: string, msg: string) {
@@ -75,7 +82,7 @@ export default class LogUtil {
     });
     
     if (!files[0] || fs.statSync(files[0]).size > this.maxLogFileSize) {
-      const newLogFile = `${this.logDir}/${new Date().toLocaleString().replace(/[:/]/g, '-')}.log`;
+      const newLogFile = `${this.logDir}/${this.getTimeStr()}.log`;
       fs.writeFileSync(newLogFile, '');
       this.currentLogFile = newLogFile;
     } else {
