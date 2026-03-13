@@ -22,43 +22,48 @@ function startInput() {
       return;
     };
     input = input.trim();
-    if (input === 'list') {
-      displayPlayerList(bot.players);
-    } 
-    
-    // quit
-    else if (input === 'quit') {
-      handleExit();
-    } 
-    
-    // reconnect
-    else if (input === 'rc') {
-      bot.quit('下线ing................');
-      NineteenBot.reconnect();
-    }
 
-    else if (input === 'cls' || input === 'clear') {
-      console.clear();
-    }
+    try {
+      if (input === 'list') {
+        displayPlayerList(bot.players);
+      } 
+      
+      // quit
+      else if (input === 'quit') {
+        handleExit();
+      } 
+      
+      // reconnect
+      else if (input === 'rc') {
+        bot.quit('下线ing................');
+        NineteenBot.reconnect();
+      }
 
-    else if (input.startsWith('info ')) {
-      handleInfoCmd(input.slice(5).trim());
-    }
+      else if (input === 'cls' || input === 'clear') {
+        console.clear();
+      }
 
-    // action
-    else if (input.startsWith('act')) {
-      const action = input.slice(3).trim();
-      botAction.handleCmd(action) && logger.info(`Set command: ${action}`);
-    }
-    
-    else if (input.startsWith('/stp ')) {
-      botAction.stop();
-      bot.physicsEnabled = false;
-      handleStpCmd(input);
-    }
-    
-    else {
-      handleChat(input);
+      else if (input.startsWith('info ')) {
+        handleInfoCmd(input.slice(5).trim());
+      }
+
+      // action
+      else if (input.startsWith('act')) {
+        const action = input.slice(3).trim();
+        botAction.handleCmd(action) && logger.info(`Set command: ${action}`);
+      }
+      
+      else if (input.startsWith('/stp ')) {
+        botAction.stop();
+        bot.physicsEnabled = false;
+        handleStpCmd(input);
+      }
+      
+      else {
+        handleChat(input);
+      }
+    } catch (error: any) {
+      logger.error(error.message);
     }
   });
 
@@ -98,6 +103,10 @@ function handleInfoCmd(cmd: string) {
     entityInfo.outputEntityCount(bot);
   // } else if (cmd === 'meta') {
   //   logger.info(JSON.stringify(bot.entity.metadata, null, 2));
+  } else if (cmd === 'inv') {
+    for (const item of bot.inventory.items()) {
+      console.log(item);
+    }
   }
 }
 
