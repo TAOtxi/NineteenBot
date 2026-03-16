@@ -1,6 +1,7 @@
 import mineflayer from 'mineflayer';
 import { Vec3 } from 'vec3';
 import Logger from '../utils/Logger.js';
+import type CmdParser from '../utils/ArgsUtil.js';
 
 const logger = Logger.getLogger('BotAction');
 
@@ -28,9 +29,8 @@ class BotAction {
 
   private bot: mineflayer.Bot | null = null;
 
-  public setBot(bot: mineflayer.Bot, logToFile: boolean) {
+  public setBot(bot: mineflayer.Bot) {
     this.bot = bot;
-    logger.setLogToFile(logToFile);
   }
 
   public enableAction() {
@@ -49,25 +49,47 @@ class BotAction {
     logger.info(`Sneak enabled:         ${this.sneakEnable}`);
     logger.info(`Swing enabled:         ${this.swingEnable}`);
     logger.info(`Watch player enabled:  ${this.watchPlayerEnable}`);
-    logger.info(`Special action type:   ${this.specitalActionType}`);
+    logger.info(`Special action type:   ${this.specitalActionType === '' ? '<empty>' : this.specitalActionType}`);
     logger.info('=======================================');
   }
 
   // return true if run successfully.
-  public handleCmd(msg: string) {
+  public handleCmd(parseCmd: CmdParser) {
     /********* Cmd  *********/
-    if (msg === 'info') {
+    if (parseCmd.isCmd('info')) {
       this.getActionStatus();
       return true;
     }
 
-    if (msg === 'start') {
+    if (parseCmd.isCmd('start')) {
       this.enableAction();
       return true;
     }
 
-    if (msg === 'stop') {
-      this.stop();
+    if (parseCmd.isCmd('stop')) {
+      parseCmd.dive();
+      if (parseCmd.getCmds().length === 0) {
+        this.stop();
+        return true;
+      }
+      const stopAction = parseCmd.getCmds()[0];
+      if (stopAction === 'spin') {
+        this.spinEnable = false;
+      } else if (stopAction === 'jump') {
+        this.jumpEnable = false;
+      } else if (stopAction === 'sneak') {
+        this.sneakEnable = false;
+      } else if (stopAction === 'swing') {
+        this.swingEnable = false;
+      } else if (stopAction === 'look') {
+        this.watchPlayerEnable = false;
+      } else if (stopAction === 'spc') {
+        this.specitalActionType = '';
+      } else {
+        logger.error(`Invalid stop action: ${stopAction}`);
+        logger.error(`All valid stop actions: ${this.getAllCmd().join(' | ')} | spc`);
+        return false;
+      }
       return true;
     }
 
@@ -76,48 +98,49 @@ class BotAction {
       return false;
     }
 
-    const msgArr = msg.split(' ').filter((item) => item !== '');
-    const cmd = msgArr[0];
-
     /************ Action Cmd ************/
-    if (cmd === 'spin') {
+    if (parseCmd.isCmd('spin')) {
       this.spinEnable = true;
-      if (msgArr[1] !== undefined) {
-        this.spinDeltaYaw = parseFloat(msgArr[1]) / 180 * Math.PI;
+      const angle = parseCmd.getValue(['-a', '--angle']);
+      if (angle !== undefined) {
+        this.spinDeltaYaw = parseFloat(angle) / 180 * Math.PI;
       }
     }
 
-    else if (cmd === 'look') {  // Always look at the nearest player.
+    else if (parseCmd.isCmd('look')) {  // Always look at the nearest player.
       this.watchPlayerEnable = true;
     }
 
-    else if (cmd === 'jump') {
+    else if (parseCmd.isCmd('jump')) {
       this.jumpEnable = true;
-      if (msgArr[1] !== undefined) {
-        this.jumpInterval = parseInt(msgArr[1]);
+      const interval = parseCmd.getValue(['-i', '--interval']);
+      if (interval !== undefined) {
+        this.jumpInterval = parseInt(interval);
       }
     }
 
-    else if (cmd === 'sneak') {
+    else if (parseCmd.isCmd('sneak')) {
       this.sneakEnable = true;
-      if (msgArr[1] !== undefined) {
-        this.sneakInterval = parseInt(msgArr[1]);
+      const interval = parseCmd.getValue(['-i', '--interval']);
+      if (interval !== undefined) {
+        this.sneakInterval = parseInt(interval);
       }
     }
 
-    else if (cmd === 'swing') {
+    else if (parseCmd.isCmd('swing')) {
       this.swingEnable = true;
-      if (msgArr[1] !== undefined) {
-        this.swingArmInterval = parseInt(msgArr[1]);
+      const interval = parseCmd.getValue(['-i', '--interval']);
+      if (interval !== undefined) {
+        this.swingArmInterval = parseInt(interval);
       }
     }
 
-    else if (cmd === 'fun') {
+    else if (parseCmd.isCmd('fun')) {
       this.specitalActionType = 'funnyAction';
     }
 
     else {
-      cmd && logger.error(`Invalid action: ${cmd}`);
+      parseCmd.getCmds().length === 0 && logger.error(`Invalid action: ${parseCmd.getCmds()[0]}`);
       logger.error(`All valid actions: ${this.getAllCmd().join(' | ')}`);
       return false;
     }

@@ -1,0 +1,25 @@
+{
+  "ignoreSlots": [],
+  "dropDirection": "east",
+  "checkInterval": 40,
+  "dropMode": "whitelist",
+  "items": [
+    {
+      "name": "Golden Apple",
+      "id": "golden_apple"
+    },
+    {
+      "name": "*",
+      "id": "/.*?_sword/",
+      "enchants": [
+        {
+          "name": "sharpness",
+          "lvl": 5
+        }, {
+          "name": "smite",
+          "lvl": 5
+        }
+      ]
+    }
+  ]
+}

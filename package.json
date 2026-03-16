@@ -4,12 +4,14 @@
   "description": "",
   "main": "src/main.ts",
   "scripts": {
+    "dev:log": "set LOG_TO_FILE=true && npm run dev",
     "dev": "npx tsc && node ./dist/main.js"
   },
   "author": "",
   "type": "module",
   "license": "ISC",
   "dependencies": {
+    "cycle": "^1.0.3",
     "mineflayer": "^4.35.0",
     "prismarine-viewer": "^1.33.0",
     "readline": "^1.3.0",

@@ -4,6 +4,11 @@ import NineteenBot from './bot.js';
 import botAction from './behavior/action.js';
 import entityInfo from './Infomation/entity.js';
 import Logger from './utils/Logger.js';
+import CmdParser from './utils/ArgsUtil.js';
+import handleAutoDropCmd from './module/AutoDrop/cmd.js';
+import inventoryInfo from './Infomation/inventory.js';
+import handleBehaviorCmd from './behavior/behavior.js';
+
 
 const logger = Logger.getLogger('Input');
 let isInit = false;
@@ -16,56 +21,7 @@ function startInput() {
     input: process.stdin,
     output: process.stdout
   });
-  rl.on('line', (input: string) => {
-    if (!bot) {
-      logger.error('Bot not set');
-      return;
-    };
-    input = input.trim();
-
-    try {
-      if (input === 'list') {
-        displayPlayerList(bot.players);
-      } 
-      
-      // quit
-      else if (input === 'quit') {
-        handleExit();
-      } 
-      
-      // reconnect
-      else if (input === 'rc') {
-        bot.quit('下线ing................');
-        NineteenBot.reconnect();
-      }
-
-      else if (input === 'cls' || input === 'clear') {
-        console.clear();
-      }
-
-      else if (input.startsWith('info ')) {
-        handleInfoCmd(input.slice(5).trim());
-      }
-
-      // action
-      else if (input.startsWith('act')) {
-        const action = input.slice(3).trim();
-        botAction.handleCmd(action) && logger.info(`Set command: ${action}`);
-      }
-      
-      else if (input.startsWith('/stp ')) {
-        botAction.stop();
-        bot.physicsEnabled = false;
-        handleStpCmd(input);
-      }
-      
-      else {
-        handleChat(input);
-      }
-    } catch (error: any) {
-      logger.error(error.message);
-    }
-  });
+  rl.on('line', handleInput);
 
   rl.on('SIGINT', () => {
     handleExit();
@@ -73,10 +29,69 @@ function startInput() {
 }
 
 
+async function handleInput(input: string) {
+  if (!bot) {
+    logger.error('Bot not set');
+    return;
+  };
+  logger.info('Handle Cmd: ', input);
+  input = input.trim();
+  const parseCmd = new CmdParser(input);
+
+  try {
+    if (parseCmd.isCmd('list')) {
+      displayPlayerList(bot.players);
+    } 
+    
+    // quit
+    else if (parseCmd.isCmd(['quit', 'exit'])) {
+      handleExit();
+    } 
+    
+    // reconnect
+    // else if (parseCmd.isCmd(['rc', 'reconnect'])) {
+      // bot.quit('下线ing................');
+    //   NineteenBot.reconnect();
+    // }
+
+    else if (parseCmd.isCmd(['cls', 'clear'])) {
+      console.clear();
+    }
+
+    else if (parseCmd.isCmd('info')) {
+      handleInfoCmd(parseCmd.dive());
+    }
+
+    // action
+    else if (parseCmd.isCmd(['act', 'action'])) {
+      botAction.handleCmd(parseCmd.dive());
+    }
+    
+    else if (parseCmd.isCmd('.') || parseCmd.getFirstCmd()?.startsWith('/')) {
+      if (parseCmd.isCmd(['/stp', '/lobby'])) {
+        botAction.stop();
+      }
+      handleChat(parseCmd.getRawCmd().trim());
+    }
+
+    /************* MODULE *************/
+    else if (parseCmd.isCmd(['ad', 'autodrop'])) {
+      handleAutoDropCmd(parseCmd.dive());
+    }
+
+    else if (parseCmd.isCmd(['bh', 'behavior'])) {
+      handleBehaviorCmd(bot, parseCmd.dive());
+    }
+
+  } catch (error: any) {
+    logger.error(error.message);
+  }
+}
+
 function displayPlayerList(players: Record<string, mineflayer.Player>) {
   const worlds: Record<string, string[]> = {};
-  logger.info('=======================================');
-  logger.info(`Total Players: ${Object.keys(players).length}`);
+  logger.withoutPrefix().info('=======================================');
+  logger.withoutPrefix().info(`Total Players: ${Object.keys(players).length}`);
   // TODO: 匹配逻辑待优化
   const prefix = /\[(.*?)\]/g
   for (const player of Object.values(players)) {
@@ -91,22 +106,16 @@ function displayPlayerList(players: Record<string, mineflayer.Player>) {
   }
   for (const world of Object.keys(worlds)) {
     if (!worlds[world]) continue;
-    logger.info(`${world}\x1b[0m ${worlds[world].join(', ')}`);
+    logger.withoutPrefix().info(`${world}\x1b[0m ${worlds[world].join(', ')}`);
   }
-  logger.info('\x1b[0m=======================================');
+  logger.withoutPrefix().info('\x1b[0m=======================================');
 }
 
-function handleInfoCmd(cmd: string) {
-  if (cmd === 'entity') {
-    console.log(bot.entities);
-  } else if (cmd === 'count') {
-    entityInfo.outputEntityCount(bot);
-  // } else if (cmd === 'meta') {
-  //   logger.info(JSON.stringify(bot.entity.metadata, null, 2));
-  } else if (cmd === 'inv') {
-    for (const item of bot.inventory.items()) {
-      console.log(item);
-    }
+function handleInfoCmd(parseCmd: CmdParser) {
+  if (parseCmd.isCmd(['e', 'entity'])) {
+    entityInfo(bot, parseCmd.dive());
+  } else if (parseCmd.isCmd(['inv', 'inventory'])) {
+    inventoryInfo(bot, parseCmd.dive());
   }
 }
 
@@ -118,16 +127,6 @@ function handleChat(input: string) {
   }
 }
 
-function handleStpCmd(input: string) {
-  const target = input.slice(5).trim();
-  const serverList = ['survival', 'survival2', 'industry', 'lobby'];
-  if (serverList.includes(target)) {
-    botAction.stop();
-    bot.physicsEnabled = false;
-    bot.chat(input);
-  }
-}
-
 function handleExit() {
   bot.quit("下线ing................");
   rl?.close();
@@ -136,13 +135,15 @@ function handleExit() {
 
 let bot: mineflayer.Bot;
 
-export default function (botInstance: mineflayer.Bot, logToFile: boolean) {
-  bot = botInstance;
+export default {
+  setBot(botInstance: mineflayer.Bot) {
+    bot = botInstance;
 
-  if (!isInit) {
-    logger.setLogToFile(logToFile);
-    entityInfo.setLogToFile(logToFile);
-    isInit = true;
-    startInput();
-  }
+    if (!isInit) {
+      isInit = true;
+      startInput();
+    }
+  },
+
+  handleInput,
 }

@@ -1,9 +1,15 @@
 interface UserConfig {
   username: string;
-  logToFile?: boolean;
 }
 
 interface ServerConfig {
   host: string;
+  version: string;
+  auth: 'microsoft' | 'offline' | 'mojang';
   port?: number;
+}
+
+interface AccountConfig {
+  Users: Record<string, UserConfig>;
+  Servers: Record<string, ServerConfig>;
 }

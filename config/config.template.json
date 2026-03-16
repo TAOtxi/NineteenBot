@@ -1,8 +1,7 @@
 {
   "Users": {
     "Notch": {
-      "username": "Notch@mojang.com",
-      "logToFile": true
+      "username": "Notch@mojang.com"
     },
     "Jeb_": {
       "username": "Jeb@gmail.com"
@@ -10,11 +9,15 @@
   },
   "Servers": {
     "An server": {
-      "host": "abc.com"
+      "host": "abc.com",
+      "version": "1.21.11",
+      "auth": "offline"
     },
     "2b2t": {
       "host": "2b2t.org",
-      "port": 12345
+      "port": 12345,
+      "version": "1.21.11",
+      "auth": "microsoft"
     }
   }
 }
