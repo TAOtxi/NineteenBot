@@ -49,7 +49,6 @@ export default class LogUtil {
     this.baseLog('INFO', `${data} ${args.join(' ')}`);
   }
 
-  // TODO: 有时候连不上服务器抛出错误时，莫名其妙会抛出 TypeError: this.baseLog is not a function...
   public error(data: string, ...args: any[]) {
     this.baseLog('ERROR', `${data} ${args.join(' ')}`);
   }

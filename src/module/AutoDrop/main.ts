@@ -117,10 +117,6 @@ function getNoneEmptySlot() {
       slots.push(i);
     }
   }
-  // TODO: 待验证索引是否从 0 开始
-  // bot.inventory.slots.forEach((item, slot) => {
-  //   item && slots.push(slot);
-  // });
   return slots;
 }
 
