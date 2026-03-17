@@ -26,9 +26,9 @@ function createBot(
   // TODO: 添加更多的配置选项
   bot = mineflayer.createBot({
     host: server.host,
-    port: server.port || 25565,
+    port: server.port ?? 25565,
     username: user.username,
-    auth: server.auth,
+    auth: server.auth ?? 'microsoft',
     version: server.version,
     hideErrors: true,
     logErrors: false,

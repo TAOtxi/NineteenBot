@@ -5,8 +5,8 @@ interface UserConfig {
 interface ServerConfig {
   host: string;
   version: string;
-  auth: 'microsoft' | 'offline' | 'mojang';
-  port?: number;
+  auth?: 'microsoft' | 'offline' | 'mojang'; // default microsoft
+  port?: number;                             // default 25565
 }
 
 interface AccountConfig {
