@@ -21,7 +21,10 @@ export default function (bot: mineflayer.Bot, parseCmd: CmdParser) {
       }
     }
     Object.keys(itemMap).forEach(key => {
-      logger.withoutPrefix().info(`${T.t(`item.minecraft.${key}`)} x${itemMap[key]}`);
+      const name = T.tryTranslate(`item.minecraft.${key}`) ?? 
+                   T.tryTranslate(`block.minecraft.${key}`) ?? 
+                   key;
+      logger.withoutPrefix().info(`${name} x${itemMap[key]}`);
     });
 
     logger.withoutPrefix().info('============================================');

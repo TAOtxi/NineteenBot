@@ -51,6 +51,10 @@ export default class TranslateUtil {
     return translation;
   }
 
+  static tryTranslate(key: string, lang: string = defaultLang) {
+    return langData[lang]?.[key] ?? null;
+  }
+
   static hasLang(lang: string) {
     return langData[lang] !== undefined;
   }

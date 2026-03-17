@@ -93,8 +93,8 @@ export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
         for (const attr of attrs) {
           map[attr] = Reflect.get(entity, attr);
         }
-        const name = entity.username ?? entity.displayName ?? entity.type;
-        map['name'] = T.t(`entity.minecraft.${name}`);
+        map['displayName'] = entity.username ?? entity.displayName ?? entity.type;
+        map['type'] = T.t(`entity.minecraft.${entity.name}`);
         logger.withoutPrefix().info(JSON.stringify(map, null, 2));
       }
       return;
