@@ -38,7 +38,7 @@ loadLangData(defaultLang);
  * "item.minecraft.apple": "苹果",
  * "entity.minecraft.wolf": "狼",
  */
-export class TranslateUtil {
+export default class TranslateUtil {
   static t(key: string, lang: string = defaultLang) {
     !TranslateUtil.hasLang(lang) && loadLangData(lang);
     

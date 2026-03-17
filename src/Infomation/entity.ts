@@ -1,6 +1,7 @@
 import mineflayer from 'mineflayer';
 import Logger from '../utils/Logger.js';
 import CmdParser from '../utils/ArgsUtil.js';
+import T from '../utils/TranslateUtil.js';
 // @ts-ignore
 import cycle from 'cycle';
 
@@ -18,16 +19,21 @@ function statEntityCount(bot: mineflayer.Bot) {
 function outputEntityCount(bot: mineflayer.Bot) {
   const countMap = statEntityCount(bot);
   const sortCountMap = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
+
+  logger.withoutPrefix().info('================== Entity Stat =====================');
   for (const [name, count] of sortCountMap) {
-    logger.info(`${name}: ${count}`);
+    logger.withoutPrefix().info(`\t${name}: ${count}`);
   }
+  logger.withoutPrefix().info('====================================================');
 }
 
 // TODO: 待改进
 function formatOutputEntityList(list: mineflayer.Bot['entity'][]) {
+  logger.withoutPrefix().info('================ Entity List ==================');
   for (const entity of list) {
-    logger.info(JSON.stringify(entity, null, 2));
+    logger.withoutPrefix().info(JSON.stringify(entity, null, 2));
   }
+  logger.withoutPrefix().info('====================================================');
 }
 
 function showHelp() {
@@ -40,17 +46,23 @@ function showHelp() {
   helpStr += '\t-c, --count: 指定的实体数量\n';
   helpStr += '\t-at, --attribute: 指定的实体属性\n';
   logger.withoutPrefix().info(helpStr);
-  logger.withoutPrefix().info('=======================================');
+  logger.withoutPrefix().info('====================================================');
 }
 
 export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
+  if (parseCmd.isCmd('help') || 
+      (parseCmd.getCmds().length === 0 && !parseCmd.hasAnyArg())) {
+        showHelp();
+        return;
+      }
+
   if (parseCmd.isCmd('stat')) {
     outputEntityCount(bot);
   } else {
     logger.withoutPrefix().info('================= Entity Infomation ==================');
 
     const pos = bot.entity.position;
-    const sortType = parseCmd.hasArg(['-d', '--descending']) ? -1 : 1;
+    const sortType = parseCmd.hasArg(['-desc', '--descending']) ? -1 : 1;
     let list = Object.values(bot.entities).sort(    // 默认升序，也就是从近到远
       (a, b) => sortType * (a.position.distanceSquared(pos) - b.position.distanceSquared(pos)));  
 
@@ -69,6 +81,11 @@ export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
       list = list.slice(0, count);
     }
 
+    if (parseCmd.hasArg(['-d', '--distance'])) {
+      const distance = parseFloat(parseCmd.getValue(['-d', '--distance'])!);
+      list = list.filter(entity => entity.position.distanceSquared(pos) <= distance * distance);
+    }
+
     if (parseCmd.hasArg(['-at', '--attribute']) && list.length > 0) {
       const attrs = parseCmd.getValue(['-at', '--attribute'])!.split(',');
       for (const entity of list) {
@@ -76,7 +93,8 @@ export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
         for (const attr of attrs) {
           map[attr] = Reflect.get(entity, attr);
         }
-        map['name'] = entity.username ?? entity.displayName ?? entity.type;
+        const name = entity.username ?? entity.displayName ?? entity.type;
+        map['name'] = T.t(`entity.minecraft.${name}`);
         logger.withoutPrefix().info(JSON.stringify(map, null, 2));
       }
       return;
@@ -85,6 +103,6 @@ export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
     for (const entity of list) {
       logger.withoutPrefix().info(JSON.stringify(cycle.decycle(entity), null, 2));
     }
-    return list;
+    logger.withoutPrefix().info('=======================================');
   }
 }
