@@ -11,7 +11,7 @@ export default function (bot: mineflayer.Bot, parseCmd: CmdParser) {
   logger.withoutPrefix().info('============== Inventory Info ==============');
 
   let items = bot.inventory.items();
-  if (parseCmd.isCmd(['-s', '--show'])) {
+  if (parseCmd.isCmd('show')) {
     const itemMap: Record<string, number> = {};
     for (const item of items) {
       if (itemMap[item.name]) {
@@ -20,7 +20,10 @@ export default function (bot: mineflayer.Bot, parseCmd: CmdParser) {
         itemMap[item.name] = item.count;
       }
     }
-    logger.withoutPrefix().info(JSON.stringify(itemMap, null, 2));
+    Object.keys(itemMap).forEach(key => {
+      logger.withoutPrefix().info(`${T.t(`item.minecraft.${key}`)} x${itemMap[key]}`);
+    });
+
     logger.withoutPrefix().info('============================================');
     return;
   }

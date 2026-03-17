@@ -16,8 +16,8 @@ function loadLangData(lang: string = defaultLang, langDir: string = defaultLangD
   if (!fs.existsSync(langFilePath)) {
     console.error(`Language file ${langFilePath} does not exist`);
     if (lang !== fallbackLang) {
-      console.info(`Falling back to default language ${defaultLang}`);
-      loadLangData(defaultLang, defaultLangDir);
+      console.info(`Falling back to default language ${fallbackLang}`);
+      loadLangData(fallbackLang, defaultLangDir);
     }
     return;
   }
@@ -52,6 +52,6 @@ export default class TranslateUtil {
   }
 
   static hasLang(lang: string) {
-    return langData[lang] === undefined;
+    return langData[lang] !== undefined;
   }
 }
