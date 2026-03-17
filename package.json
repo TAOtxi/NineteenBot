@@ -5,7 +5,7 @@
   "main": "src/main.ts",
   "scripts": {
     "dev:log": "set LOG_TO_FILE=true && npm run dev",
-    "dev": "npx tsc && node ./dist/main.js"
+    "dev": "npx tsc && set LANG=zh_cn && node ./dist/main.js"
   },
   "author": "",
   "type": "module",

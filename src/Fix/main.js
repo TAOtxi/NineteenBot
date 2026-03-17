@@ -104,6 +104,7 @@ export default {
   fix() {
     fixVelocity();
     fixResourcePack();
+    fixFishing();
   },
   fixError1,
 }
