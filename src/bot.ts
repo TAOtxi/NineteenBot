@@ -103,7 +103,7 @@ function reconnect() {
   bot?.removeAllListeners();
   bot?.end('Bye bye...');
   
-  logger.info('[Reconnect]', bot.username);
+  logger.info('[Reconnect]', currentUser.username);
   createBot(currentUser, currentServer);
 }
 

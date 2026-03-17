@@ -92,28 +92,33 @@ export default class CmdParser {
 
     // 处理参数值中可能存在的空格，比如 "Golden Apple"
     const whiteSpace = '/<white_space>/';
-    const match = cmd.match(/["'].*?["']/g);
+    const match = cmd.match(/".*?"|'.*?'/g);
     if (match) {
       for (const item of match) {
-        const value = item.replace(/["']/g, '').replace(' ', whiteSpace);
+        const value = item.replace(' ', whiteSpace);
         cmd = cmd.replace(item, value);
       } 
     }
     
-    // TODO: 无法正确处理形如 -r -90,0 的参数
     const argsList = cmd.split(' ').filter(arg => arg !== '');
     for (let i=0; i<argsList.length; i++) {
       const arg = argsList[i];
       if (!arg) continue;
-      if ((!arg.startsWith('--') && !arg.startsWith('-')) || arg.match(/^-\d+$/)) {
+
+      // 数字不能作为参数名，比如 `info -9 aaa`，-9会被认为是子命令
+      // -9a 也会被认为是子命令
+      if (!arg.startsWith('-') || arg.match(/^-\d+/)) {
           argsMap.cmds.push(arg);
           continue;
       };
 
-      const nextArg = argsList[i+1];
-      if (!nextArg || nextArg.startsWith('--') || nextArg.startsWith('-')) {
+      let nextArg = argsList[i+1];
+      if (!nextArg || (nextArg.startsWith('-') && !nextArg.match(/^-\d+/))) {
           argsMap.args[arg] = '';
           continue;
+      }
+      if (/^(?:".*?"|'.*?')$/.test(nextArg)) {
+        nextArg = nextArg.slice(1, -1);
       }
       argsMap.args[arg] = nextArg.replace(whiteSpace, ' ');
       i++;
