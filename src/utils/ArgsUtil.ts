@@ -73,7 +73,7 @@ export default class CmdParser {
 
   /**
    * @description 解析命令行参数，暂时是这样吧
-   * input  -->  info entity -c 50 --type player --ascend --name TAOtxi
+   * input  -->  info entity -c 50 --type player --ascend --name TAOtxi -d=50
    * output -->  {
    *   cmd: ['info', 'entity'],
    *   args: {
@@ -81,6 +81,7 @@ export default class CmdParser {
    *     '--ascend': '',
    *     '-c': '50',
    *     '--name': 'TAOtxi',
+   *     '-d': '50',
    *   }
    * }
    * 
@@ -111,6 +112,16 @@ export default class CmdParser {
           argsMap.cmds.push(arg);
           continue;
       };
+
+      if (arg.includes('=')) {
+        const arg_val = arg.split('=');
+        if (!arg_val[0] || !arg_val[1]) {
+          console.warn(`Skip invalid arg: ${arg}`);
+          continue;
+        }
+        argsMap.args[arg_val[0]] = arg_val[1];
+        continue;
+      }
 
       let nextArg = argsList[i+1];
       if (!nextArg || (nextArg.startsWith('-') && !nextArg.match(/^-\d+/))) {
