@@ -6,10 +6,27 @@ import T from '../utils/TranslateUtil.js';
 const logger = Logger.getLogger('InventoryInfo');
 
 
+function showHelp() {
+  logger.withoutPrefix().info('============== Inventory Help ==============');
+  logger.withoutPrefix().info('show:                     显示当前库存物品');
+  logger.withoutPrefix().info('id, --identifier <id>:   筛选物品ID');
+  logger.withoutPrefix().info('n,  --name <name>:       筛选物品名称');
+  logger.withoutPrefix().info('e,  --enchant <enchant>: 筛选物品附魔');
+  logger.withoutPrefix().info('s,  --slot <slot>:       筛选物品槽位');
+  logger.withoutPrefix().info('at, --attribute <attr>:  筛选物品属性');
+  logger.withoutPrefix().info('============================================');
+
+}
+
 
 export default function (bot: mineflayer.Bot, parseCmd: CmdParser) {
+  if (parseCmd.isCmd(['help', '?']) || 
+      (!parseCmd.getFirstCmd() && !parseCmd.hasAnyArg())) {
+    showHelp();
+    return;
+  }
+  
   logger.withoutPrefix().info('============== Inventory Info ==============');
-
   let items = bot.inventory.items();
   if (parseCmd.isCmd('show')) {
     const itemMap: Record<string, number> = {};
@@ -62,7 +79,9 @@ export default function (bot: mineflayer.Bot, parseCmd: CmdParser) {
         for (const attr of attrs) {
           map[attr] = Reflect.get(item, attr);
         }
-        map['name'] = T.t(`item.minecraft.${item.name}`);
+        map['name'] = T.tryTranslate(`item.minecraft.${item.name}`) ?? 
+                     T.tryTranslate(`block.minecraft.${item.name}`) ?? 
+                     item.name;
         logger.withoutPrefix().info(JSON.stringify(map, null, 2));
       }
       logger.withoutPrefix().info('============================================');

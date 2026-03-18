@@ -37,21 +37,20 @@ function formatOutputEntityList(list: mineflayer.Bot['entity'][]) {
 }
 
 function showHelp() {
-  logger.withoutPrefix().info('================ Entity Info Help ==================');
-  let helpStr = '';
-  helpStr += '\tstat: 统计实体数量\n';
-  helpStr += '\t-d, --descending: 降序排序 (默认升序)\n';
-  helpStr += '\t-id, --identifier: 指定的实体ID\n';
-  helpStr += '\t-n, --name: 指定的实体名称\n';
-  helpStr += '\t-c, --count: 指定的实体数量\n';
-  helpStr += '\t-at, --attribute: 指定的实体属性\n';
-  logger.withoutPrefix().info(helpStr);
-  logger.withoutPrefix().info('====================================================');
+  logger.withoutPrefix().info('========== Entity Info Help ============');
+  logger.withoutPrefix().info('stat:                统计实体数量');
+  logger.withoutPrefix().info('-desc, --descending: 降序排序，默认升序');
+  logger.withoutPrefix().info('-id, --identifier:   指定的实体ID');
+  logger.withoutPrefix().info('-n,  --name:         指定的实体名称');
+  logger.withoutPrefix().info('-c,  --count:        指定的实体数量');
+  logger.withoutPrefix().info('-d,  --distance:     指定的实体距离');
+  logger.withoutPrefix().info('-at, --attribute:    指定的实体属性');
+  logger.withoutPrefix().info('========================================');
 }
 
 export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
-  if (parseCmd.isCmd('help') || 
-      (parseCmd.getCmds().length === 0 && !parseCmd.hasAnyArg())) {
+  if (parseCmd.isCmd(['help', '?']) || 
+      !(parseCmd.getFirstCmd() && !parseCmd.hasAnyArg())) {
         showHelp();
         return;
       }

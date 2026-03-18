@@ -5,11 +5,27 @@ import CmdParser from '../utils/ArgsUtil.js';
 
 const logger = Logger.getLogger('Behavior');
 
+function showHelp() {
+  logger.withoutPrefix().info('==================== Behavior Help ====================');
+  logger.withoutPrefix().info('look -r, --rotate <yaw,pitch>:  指定 bot 的视角');
+  logger.withoutPrefix().info('look -p, --position <x,y,z>:    指定 bot 视角所看的位置');
+  logger.withoutPrefix().info('fish:                           钓鱼');
+  logger.withoutPrefix().info('get <attribute>:                获取 bot 的属性值');
+  logger.withoutPrefix().info('set -p, --physic <bool>:        设置 bot 的 physic');
+  logger.withoutPrefix().info('=======================================================');
+}
+
+
 function degToRad(deg: number) {
   return deg * Math.PI / 180;
 }
 
 export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
+  if (parseCmd.isCmd(['help', '?']) || !parseCmd.getFirstCmd()) {
+    showHelp();
+    return;
+  }
+
   if (parseCmd.isCmd('look')) {
     if (parseCmd.hasArg(['-r', '--rotate'])) {
       const rotate = parseCmd.getValue(['-r', '--rotate'])!.split(',');

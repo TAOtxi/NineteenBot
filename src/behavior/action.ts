@@ -41,20 +41,38 @@ class BotAction {
     this.actionEnable = false;
   }
 
+  private showHelp() {
+    logger.withoutPrefix().info('================== Action Info Help ==================');
+    logger.withoutPrefix().info('start:                开启');
+    logger.withoutPrefix().info('stop:                 关闭');
+    logger.withoutPrefix().info('spin -a <angle>:      开启转圈圈模式，旋转<angle>°/tick');
+    logger.withoutPrefix().info('jump -i <interval>:   时不时跳跃，间隔<interval>tick');
+    logger.withoutPrefix().info('sneak -i <interval>:  时不时潜行，间隔<interval>tick');
+    logger.withoutPrefix().info('swing -i <interval>:  时不时手臂摆动，间隔<interval>tick');
+    logger.withoutPrefix().info('look:                 视角锁定玩家');
+    logger.withoutPrefix().info('spc:                  开启组合动作');
+    logger.withoutPrefix().info('======================================================');
+  }
+
   public getActionStatus() {
-    logger.info('============ Action Status ============');
-    logger.info(`Action enabled:        ${this.actionEnable}`);
-    logger.info(`Spin enabled:          ${this.spinEnable}`);
-    logger.info(`Jump enabled:          ${this.jumpEnable}`);
-    logger.info(`Sneak enabled:         ${this.sneakEnable}`);
-    logger.info(`Swing enabled:         ${this.swingEnable}`);
-    logger.info(`Watch player enabled:  ${this.watchPlayerEnable}`);
-    logger.info(`Special action type:   ${this.specitalActionType === '' ? '<empty>' : this.specitalActionType}`);
-    logger.info('=======================================');
+    logger.withoutPrefix().info('============== Action Status ==============');
+    logger.withoutPrefix().info(`Action enabled:        ${this.actionEnable}`);
+    logger.withoutPrefix().info(`Spin enabled:          ${this.spinEnable} (${this.spinDeltaYaw * 180 / Math.PI}°)`);
+    logger.withoutPrefix().info(`Jump enabled:          ${this.jumpEnable} (${this.jumpInterval}/tick)`);
+    logger.withoutPrefix().info(`Sneak enabled:         ${this.sneakEnable} (${this.sneakInterval}/tick)`);
+    logger.withoutPrefix().info(`Swing enabled:         ${this.swingEnable} (${this.swingArmInterval}/tick)`);
+    logger.withoutPrefix().info(`Watch player enabled:  ${this.watchPlayerEnable}`);
+    logger.withoutPrefix().info(`Special action type:   ${this.specitalActionType === '' ? '<empty>' : this.specitalActionType}`);
+    logger.withoutPrefix().info('===========================================');
   }
 
   // return true if run successfully.
   public handleCmd(parseCmd: CmdParser) {
+    if (parseCmd.isCmd(['help', '?']) || !parseCmd.getFirstCmd()) {
+      this.showHelp();
+      return true;
+    }
+
     /********* Cmd  *********/
     if (parseCmd.isCmd('info')) {
       this.getActionStatus();
@@ -72,21 +90,20 @@ class BotAction {
         this.stop();
         return true;
       }
-      const stopAction = parseCmd.getCmds()[0];
-      if (stopAction === 'spin') {
+      if (parseCmd.isCmd('spin')) {
         this.spinEnable = false;
-      } else if (stopAction === 'jump') {
+      } else if (parseCmd.isCmd('jump')) {
         this.jumpEnable = false;
-      } else if (stopAction === 'sneak') {
+      } else if (parseCmd.isCmd('sneak')) {
         this.sneakEnable = false;
-      } else if (stopAction === 'swing') {
+      } else if (parseCmd.isCmd('swing')) {
         this.swingEnable = false;
-      } else if (stopAction === 'look') {
+      } else if (parseCmd.isCmd('look')) {
         this.watchPlayerEnable = false;
-      } else if (stopAction === 'spc') {
+      } else if (parseCmd.isCmd('spc')) {
         this.specitalActionType = '';
       } else {
-        logger.error(`Invalid stop action: ${stopAction}`);
+        logger.error(`Invalid stop action: ${parseCmd.getFirstCmd()}`);
         logger.error(`All valid stop actions: ${this.getAllCmd().join(' | ')} | spc`);
         return false;
       }
@@ -136,11 +153,11 @@ class BotAction {
     }
 
     else if (parseCmd.isCmd('fun')) {
-      this.specitalActionType = 'funnyAction';
+      this.startFunnyAction();
     }
 
     else {
-      parseCmd.getCmds().length === 0 && logger.error(`Invalid action: ${parseCmd.getCmds()[0]}`);
+      logger.error(`Invalid action: ${parseCmd.getFirstCmd()}`);
       logger.error(`All valid actions: ${this.getAllCmd().join(' | ')}`);
       return false;
     }
@@ -170,7 +187,7 @@ class BotAction {
     }
     this.ticker++;
 
-    if (this.specitalActionType === 'funnyAction') {
+    if (this.specitalActionType === 'fun') {
       this.funnyAction();
       return;
     }
@@ -184,7 +201,7 @@ class BotAction {
 
   public startFunnyAction() {
     this.stop();
-    this.specitalActionType = 'funnyAction';
+    this.specitalActionType = 'fun';
     this.enableAction();
   }
   
