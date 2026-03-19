@@ -22,7 +22,7 @@ function outputEntityCount(bot: mineflayer.Bot) {
 
   logger.withoutPrefix().info('================== Entity Stat =====================');
   for (const [name, count] of sortCountMap) {
-    logger.withoutPrefix().info(`\t${name}: ${count}`);
+    logger.withoutPrefix().info(`${T.t(`entity.minecraft.${name}`)}: ${count}`);
   }
   logger.withoutPrefix().info('====================================================');
 }
@@ -50,7 +50,7 @@ function showHelp() {
 
 export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
   if (parseCmd.isCmd(['help', '?']) || 
-      !(parseCmd.getFirstCmd() && !parseCmd.hasAnyArg())) {
+      (!parseCmd.getFirstCmd() && !parseCmd.hasAnyArg())) {
         showHelp();
         return;
       }

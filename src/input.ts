@@ -93,7 +93,6 @@ function displayPlayerList(players: Record<string, mineflayer.Player>) {
   logger.withoutPrefix().info('=======================================');
   logger.withoutPrefix().info(`Total Players: ${Object.keys(players).length}`);
   // TODO: 匹配逻辑待优化
-  const prefix = /\[(.*?)\]/g
   for (const player of Object.values(players)) {
     // toAnsi ==>  \x1B[0m\x1B[90m[\x1B[38;2;225;249;232m\x1B[1m传送大厅\x1B[90m]\x1B[97mTAOtxi\x1B[0m
     const styleName = player.displayName.toAnsi();
@@ -104,9 +103,13 @@ function displayPlayerList(players: Record<string, mineflayer.Player>) {
     }
     worlds[worldName].push(player.username);
   }
-  for (const world of Object.keys(worlds)) {
-    if (!worlds[world]) continue;
-    logger.withoutPrefix().info(`${world}\x1b[0m ${worlds[world].join(', ')}`);
+  const worldList = Object.keys(worlds).sort();
+  if (worldList.length === 1 && worldList[0] === 'unknown') {
+    logger.withoutPrefix().info(`${worlds[worldList[0]]?.join(', ')}`);
+  } else {
+    for (const world of worldList) {
+      logger.withoutPrefix().info(`${world}\x1b[0m ${worlds[world]!.join(', ')}`);
+    }
   }
   logger.withoutPrefix().info('\x1b[0m=======================================');
 }

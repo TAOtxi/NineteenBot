@@ -58,9 +58,9 @@ class BotAction {
     logger.withoutPrefix().info('============== Action Status ==============');
     logger.withoutPrefix().info(`Action enabled:        ${this.actionEnable}`);
     logger.withoutPrefix().info(`Spin enabled:          ${this.spinEnable} (${this.spinDeltaYaw * 180 / Math.PI}°)`);
-    logger.withoutPrefix().info(`Jump enabled:          ${this.jumpEnable} (${this.jumpInterval}/tick)`);
-    logger.withoutPrefix().info(`Sneak enabled:         ${this.sneakEnable} (${this.sneakInterval}/tick)`);
-    logger.withoutPrefix().info(`Swing enabled:         ${this.swingEnable} (${this.swingArmInterval}/tick)`);
+    logger.withoutPrefix().info(`Jump enabled:          ${this.jumpEnable} (${this.jumpInterval} tick)`);
+    logger.withoutPrefix().info(`Sneak enabled:         ${this.sneakEnable} (${this.sneakInterval} tick)`);
+    logger.withoutPrefix().info(`Swing enabled:         ${this.swingEnable} (${this.swingArmInterval} tick)`);
     logger.withoutPrefix().info(`Watch player enabled:  ${this.watchPlayerEnable}`);
     logger.withoutPrefix().info(`Special action type:   ${this.specitalActionType === '' ? '<empty>' : this.specitalActionType}`);
     logger.withoutPrefix().info('===========================================');

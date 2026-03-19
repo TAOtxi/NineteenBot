@@ -32,13 +32,13 @@ info <e | entity>                   # 筛选实体
     -desc, --descending             # 按距离降序排序，不指定则默认为升序
     -d, --distance <number>:        # 筛选实体距离
 
-info <inv | inventory>                # 打印 bot 背包
-        show                        # 合并背包同类物品，并打印带有翻译的统计信息
-        -s, --slot <slot>:          # 打印指定槽位的物品信息
-        -id, --identifier <itemId>: # 打印指定物品ID的物品信息
-        -n, --name <name>:          # 打印指定物品名称的物品信息
-        -e, --enchant <enchant>:    # 打印带有指定附魔的物品信息
-        -at, --attribute <attr>:    # 打印带有指定属性的物品信息
+info <inv | inventory>              # 打印 bot 背包
+    show                            # 合并背包同类物品，并打印带有翻译的统计信息
+    -s, --slot <slot>:              # 打印指定槽位的物品信息
+    -id, --identifier <itemId>:     # 打印指定物品ID的物品信息
+    -n, --name <name>:              # 打印指定物品名称的物品信息
+    -e, --enchant <enchant>:        # 打印带有指定附魔的物品信息
+    -at, --attribute <attr>:        # 打印带有指定属性的物品信息
 
 bh | behavior                       # bot的状态相关命令
    look -r, --rotate <yaw,pitch>    # 指定 bot 的视角

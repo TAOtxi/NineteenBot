@@ -9,13 +9,12 @@ const logger = Logger.getLogger('InventoryInfo');
 function showHelp() {
   logger.withoutPrefix().info('============== Inventory Help ==============');
   logger.withoutPrefix().info('show:                     显示当前库存物品');
-  logger.withoutPrefix().info('id, --identifier <id>:   筛选物品ID');
-  logger.withoutPrefix().info('n,  --name <name>:       筛选物品名称');
-  logger.withoutPrefix().info('e,  --enchant <enchant>: 筛选物品附魔');
-  logger.withoutPrefix().info('s,  --slot <slot>:       筛选物品槽位');
-  logger.withoutPrefix().info('at, --attribute <attr>:  筛选物品属性');
+  logger.withoutPrefix().info('-id, --identifier <id>:   筛选物品ID');
+  logger.withoutPrefix().info('-n,  --name <name>:       筛选物品名称');
+  logger.withoutPrefix().info('-e,  --enchant <enchant>: 筛选物品附魔');
+  logger.withoutPrefix().info('-s,  --slot <slot>:       筛选物品槽位');
+  logger.withoutPrefix().info('-at, --attribute <attr>:  筛选物品属性');
   logger.withoutPrefix().info('============================================');
-
 }
 
 
