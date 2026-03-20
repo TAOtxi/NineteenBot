@@ -2,13 +2,12 @@ import fs from "fs";
 
 const defaultLangDir = './resources/lang';
 const fallbackLang = 'en_us';
-const defaultLang = process.env.LANG?.trim() || fallbackLang;
+const defaultLang = process.env.NINETEEN_BOT_LANG?.trim() || fallbackLang;
 let langData: Record<string, Record<string, string>> = {};
 
 
 function loadLangData(lang: string = defaultLang, langDir: string = defaultLangDir) {
   if (langData[lang]) {
-    console.info(`Language ${lang} already loaded`);
     return;
   }
 
@@ -40,11 +39,11 @@ loadLangData(defaultLang);
  */
 export default class TranslateUtil {
   static t(key: string, lang: string = defaultLang) {
-    !TranslateUtil.hasLang(lang) && loadLangData(lang);
+    loadLangData(lang);
     
     const translation = langData[lang]?.[key];
     if (translation === undefined) {
-      !TranslateUtil.hasLang(fallbackLang) && loadLangData(fallbackLang);
+      loadLangData(fallbackLang);
       const fallbackTranslation = langData[fallbackLang]?.[key];
       return fallbackTranslation ?? key;
     }
