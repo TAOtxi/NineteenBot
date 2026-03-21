@@ -21,7 +21,7 @@ function degToRad(deg: number) {
 }
 
 export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
-  if (parseCmd.isCmd(['help', '?']) || !parseCmd.getFirstCmd()) {
+  if (parseCmd.isCmd(['help', '?']) || parseCmd.isEmptyCmd()) {
     showHelp();
     return;
   }

@@ -34,21 +34,24 @@ function reload() {
 }
 
 function showHelp() {
-  Drop.getLogger().info('AutoDrop help:');
-  Drop.getLogger().info('  ad on: enable AutoDrop');
-  Drop.getLogger().info('  ad off: disable AutoDrop');
-  Drop.getLogger().info('  ad check: check items now');
-  Drop.getLogger().info('  ad reload: reload AutoDrop config');
-  Drop.getLogger().info('  ad help: show this help');
-  Drop.getLogger().info('  ad mode <mode>: set drop mode to <mode>');
-  Drop.getLogger().info('     valid mode: whitelist, blacklist');
-  Drop.getLogger().info('  ad ig <slot>: ignore <slot> when dropping items');
-  Drop.getLogger().info('     if <slot> is -1, it will ignore the player\'s existing backpack items');
-  Drop.getLogger().info('  ad ig reset: reset ignore slots');
-  Drop.getLogger().info('  ad config: show current config');
-  Drop.getLogger().info('  ad it <tick>: set tick interval check items');
-  Drop.getLogger().info('  ad dir <direction>: set drop direction to <direction>');
-  Drop.getLogger().info('     valid direction: up, down, west, east, south, north, look');
+  Drop.getLogger().withoutPrefix().info('======================== AutoDrop help ========================');
+  Drop.getLogger().withoutPrefix().info('ad | autodrop');
+  Drop.getLogger().withoutPrefix().info('  on: enable AutoDrop');
+  Drop.getLogger().withoutPrefix().info('  off: disable AutoDrop');
+  Drop.getLogger().withoutPrefix().info('  check: check items now, ignore whether disabled or not');
+  Drop.getLogger().withoutPrefix().info('  reload: reload AutoDrop config');
+  Drop.getLogger().withoutPrefix().info('  help: show this help');
+  Drop.getLogger().withoutPrefix().info('  config: show current config');
+  Drop.getLogger().withoutPrefix().info('  -mode <mode>: set drop mode to <mode>');
+  Drop.getLogger().withoutPrefix().info('                valid mode: whitelist, blacklist');
+  Drop.getLogger().withoutPrefix().info('  -ig, --ignore <slot>: ignore <slot> when dropping items');
+  Drop.getLogger().withoutPrefix().info('                        if <slot> is -1, it will ignore the player\'s');
+  Drop.getLogger().withoutPrefix().info('                        existing backpack items');
+  Drop.getLogger().withoutPrefix().info('                reset: reset ignore slots');
+  Drop.getLogger().withoutPrefix().info('  -it, --interval <tick>: set tick interval check items');
+  Drop.getLogger().withoutPrefix().info('  -d, --direction <direction>: set drop direction to <direction>');
+  Drop.getLogger().withoutPrefix().info('       valid direction: up, down, west, east, south, north, look');
+  Drop.getLogger().withoutPrefix().info('===============================================================');
 }
 
 function handleIgnoreCmd(value: string) {
@@ -79,7 +82,7 @@ function getAllDirection() {
 
 // 返回值代表是否正确处理了命令
 export default function handleCmd(parseCmd: CmdParser) {
-  if (parseCmd.isCmd('help') || parseCmd.getFirstCmd() === undefined) {
+  if (parseCmd.isCmd(['help', '?']) || parseCmd.isEmptyCmd()) {
     showHelp();
   } else if (parseCmd.isCmd('on')) {
     enable();

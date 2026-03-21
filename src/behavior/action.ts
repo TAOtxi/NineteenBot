@@ -68,7 +68,7 @@ class BotAction {
 
   // return true if run successfully.
   public handleCmd(parseCmd: CmdParser) {
-    if (parseCmd.isCmd(['help', '?']) || !parseCmd.getFirstCmd()) {
+    if (parseCmd.isCmd(['help', '?']) || parseCmd.isEmptyCmd()) {
       this.showHelp();
       return true;
     }

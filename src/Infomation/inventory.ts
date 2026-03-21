@@ -19,8 +19,7 @@ function showHelp() {
 
 
 export default function (bot: mineflayer.Bot, parseCmd: CmdParser) {
-  if (parseCmd.isCmd(['help', '?']) || 
-      (!parseCmd.getFirstCmd() && !parseCmd.hasAnyArg())) {
+  if (parseCmd.isCmd(['help', '?']) || parseCmd.isEmptyCmd()) {
     showHelp();
     return;
   }

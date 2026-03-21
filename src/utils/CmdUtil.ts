@@ -71,6 +71,10 @@ export default class CmdParser {
     return this.cmds[0] === cmd;
   }
 
+  isEmptyCmd() {
+    return this.cmds.length === 0 && !this.hasAnyArg();
+  }
+
   /**
    * @description 解析命令行参数，暂时是这样吧
    * input  -->  info entity -c 50 --type player --ascend --name TAOtxi -d=50
