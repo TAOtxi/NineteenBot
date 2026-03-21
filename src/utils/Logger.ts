@@ -1,11 +1,12 @@
 import fs from 'fs';
+import CmdUtil from './CmdUtil.js';
 
 export default class LogUtil {
   private name: string;
   private logDir = './log';
   private maxLogFileSize = 1024 * 1024 * 10; // 10MB
   private currentLogFile = '';
-  private logToFile = process.env.LOG_TO_FILE?.trim() === 'true';
+  private logToFile = CmdUtil.getValueByArgName(process.argv, 'log') === 'true';
   private hasPrefix = true;
 
   constructor(prefix: string) {

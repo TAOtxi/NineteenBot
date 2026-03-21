@@ -1,5 +1,5 @@
 import mineflayer from 'mineflayer';
-import CmdParser from '../utils/ArgsUtil.js';
+import CmdParser from '../utils/CmdUtil.js';
 import Logger from '../utils/Logger.js';
 import T from '../utils/TranslateUtil.js';
 

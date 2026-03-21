@@ -7,7 +7,7 @@ export default class CmdParser {
 
   constructor(cmd: string) {
     this.rawCmd = cmd;
-    const argsMap = CmdParser.parseArgs(cmd);
+    const argsMap = CmdParser.parseCmd(cmd);
     this.cmds = argsMap.cmds;
     this.args = argsMap.args;
   }
@@ -88,7 +88,7 @@ export default class CmdParser {
    * @param cmd
    * @returns 
    */
-  static parseArgs(cmd: string) {
+  static parseCmd(cmd: string) {
     const argsMap: { cmds: string[], args: Record<string, string> } = { cmds: [], args: {} };
 
     // 处理参数值中可能存在的空格，比如 "Golden Apple"
@@ -135,5 +135,16 @@ export default class CmdParser {
       i++;
     }
     return argsMap;
+  }
+
+  static getValueByArgName(args: string[], argName: string, split: string ='=') {
+    for (const arg of args) {
+      if (!arg.includes(split)) continue;
+      const arg_val = arg.split(split).map(val => val.trim());
+      if (arg_val[0] === argName) {
+        return arg_val[1];
+      }
+    }
+    return null;
   }
 }

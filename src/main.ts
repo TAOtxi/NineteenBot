@@ -69,4 +69,5 @@ function selectServer(rl: readline.Interface, accountConfig: AccountConfig) {
   });
 }
 
+console.log(process.argv);
 main();

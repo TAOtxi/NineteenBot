@@ -1,8 +1,9 @@
 import fs from "fs";
+import CmdUtil from "./CmdUtil.js";
 
 const defaultLangDir = './resources/lang';
 const fallbackLang = 'en_us';
-const defaultLang = process.env.NINETEEN_BOT_LANG?.trim() || fallbackLang;
+const defaultLang = CmdUtil.getValueByArgName(process.argv, 'lang') || fallbackLang;
 let langData: Record<string, Record<string, string>> = {};
 
 

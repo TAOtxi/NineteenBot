@@ -1,7 +1,7 @@
 import mineflayer from 'mineflayer';
 import Logger from '../utils/Logger.js';
 import { Vec3 } from 'vec3';
-import CmdParser from '../utils/ArgsUtil.js';
+import CmdParser from '../utils/CmdUtil.js';
 
 const logger = Logger.getLogger('Behavior');
 

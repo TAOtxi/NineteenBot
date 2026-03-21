@@ -4,7 +4,7 @@ import NineteenBot from './bot.js';
 import botAction from './behavior/action.js';
 import entityInfo from './Infomation/entity.js';
 import Logger from './utils/Logger.js';
-import CmdParser from './utils/ArgsUtil.js';
+import CmdParser from './utils/CmdUtil.js';
 import handleAutoDropCmd from './module/AutoDrop/cmd.js';
 import inventoryInfo from './Infomation/inventory.js';
 import handleBehaviorCmd from './behavior/behavior.js';

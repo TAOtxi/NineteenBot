@@ -1,6 +1,6 @@
 import mineflayer from 'mineflayer';
 import Logger from '../utils/Logger.js';
-import CmdParser from '../utils/ArgsUtil.js';
+import CmdParser from '../utils/CmdUtil.js';
 import T from '../utils/TranslateUtil.js';
 // @ts-ignore
 import cycle from 'cycle';
