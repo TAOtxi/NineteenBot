@@ -33,7 +33,8 @@ export default function handleCmd(bot: mineflayer.Bot, parseCmd: CmdParser) {
         logger.error('Invalid rotate format');
         return;
       }
-      bot.look(degToRad(parseFloat(rotate[0])), degToRad(parseFloat(rotate[1])), true);
+      const yawOffset = -Math.PI;
+      bot.look(degToRad(parseFloat(rotate[0])) + yawOffset, degToRad(parseFloat(rotate[1])), true);
     } else if (parseCmd.hasArg(['-p', '--position'])) {
       const position = parseCmd.getValue(['-p', '--position'])!.split(',');
       if (position[0] === undefined || position[1] === undefined || position[2] === undefined) {

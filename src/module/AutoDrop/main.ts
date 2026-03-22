@@ -90,7 +90,8 @@ function handleDrop(slot: number[]) {
   const botPitch = bot.entity.pitch;
 
   const { yaw: dropYaw, pitch: dropPitch } = getDropAngle(config.dropDirection);
-  bot.look(dropYaw, dropPitch, true);
+  const yawOffset = -Math.PI;
+  bot.look(dropYaw + yawOffset, dropPitch, true);
   
   setTimeout(() => {
     slot.forEach(dropItemAll);
