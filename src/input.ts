@@ -39,7 +39,7 @@ async function handleInput(input: string) {
   const parseCmd = new CmdParser(input);
 
   try {
-    if (parseCmd.isCmd('list')) {
+    if (parseCmd.isCmd(['ls', 'list'])) {
       displayPlayerList(bot.players);
     } 
     
@@ -58,12 +58,12 @@ async function handleInput(input: string) {
       console.clear();
     }
 
-    else if (parseCmd.isCmd('info')) {
+    else if (parseCmd.isCmd(['i', 'info'])) {
       handleInfoCmd(parseCmd.dive());
     }
 
     // action
-    else if (parseCmd.isCmd(['act', 'action'])) {
+    else if (parseCmd.isCmd(['ac', 'act', 'action'])) {
       botAction.handleCmd(parseCmd.dive());
     }
     
