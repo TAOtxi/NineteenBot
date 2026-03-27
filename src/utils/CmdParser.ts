@@ -3,13 +3,17 @@ import Algorithm from './Algorithm.js';
 export default class CmdParser {
   private rawCmd: string;
   private cmds: string[];
+  private currentCmdIndex: number;
   private args: Record<string, string>;
+  private parts: string[];
 
   constructor(cmd: string) {
     this.rawCmd = cmd;
-    const argsMap = CmdParser.parseCmd(cmd);
+    this.parts = CmdParser.dividePart(cmd);
+    const argsMap = CmdParser.parseCmd(this.parts);
     this.cmds = argsMap.cmds;
     this.args = argsMap.args;
+    this.currentCmdIndex = 0;
   }
 
   hasArg(arg: string | string[]) {
@@ -21,17 +25,17 @@ export default class CmdParser {
 
   hasCmd(cmd: string | string[]) {
     if (Array.isArray(cmd)) {
-      return Algorithm.haveIntersection(this.cmds, cmd);
+      return Algorithm.haveIntersection(this.getCmds(), cmd);
     }
-    return this.cmds.includes(cmd);
+    return this.getCmds().includes(cmd);
   }
 
   getCmds() {
-    return this.cmds;
+    return this.cmds.slice(this.currentCmdIndex);
   }
   
   getFirstCmd() {
-    return this.cmds[0];
+    return this.cmds[this.currentCmdIndex];
   }
 
   getArgs() {
@@ -54,8 +58,23 @@ export default class CmdParser {
     return this.args[arg];
   }
 
+  getPartLength() {
+    return this.cmds.length - this.currentCmdIndex + Object.keys(this.args).length;
+  }
+
   dive() {
-    this.cmds.shift();
+    if (this.currentCmdIndex >= this.cmds.length) {
+      throw new Error('Out of index');
+    }
+    this.currentCmdIndex++;
+    return this;
+  }
+
+  float() {
+    if (this.currentCmdIndex < 0) {
+      throw new Error('Out of index');
+    }
+    this.currentCmdIndex--;
     return this;
   }
 
@@ -65,14 +84,33 @@ export default class CmdParser {
 
   isCmd(cmd: string | string[]) {
     if (Array.isArray(cmd)) {
-      if (!this.cmds[0]) return false;
-      return cmd.includes(this.cmds[0]);
+      if (!this.cmds[this.currentCmdIndex]) return false;
+      return cmd.includes(this.cmds[this.currentCmdIndex]!);
     }
-    return this.cmds[0] === cmd;
+    return this.cmds[this.currentCmdIndex] === cmd;
   }
 
   isEmptyCmd() {
-    return this.cmds.length === 0 && !this.hasAnyArg();
+    return (this.cmds.length - this.currentCmdIndex) === 0 && !this.hasAnyArg();
+  }
+
+  getPart(index: number) {
+    return this.parts.at(index);
+  }
+
+  static dividePart(cmd: string) {
+    if (!cmd) return [];
+    // 处理参数值中可能存在的空格，比如 "Golden Apple"
+    const whiteSpace = '/<white_space>/';
+    const match = cmd.match(/".*?"|'.*?'/g);
+    if (match) {
+      for (const item of match) {
+        const value = item.replace(' ', whiteSpace);
+        cmd = cmd.replace(item, value);
+      } 
+    }
+    
+    return cmd.split(' ').filter(arg => arg !== '').map(item => item.replace(whiteSpace, ' '));
   }
 
   /**
@@ -92,22 +130,11 @@ export default class CmdParser {
    * @param cmd
    * @returns 
    */
-  static parseCmd(cmd: string) {
+  static parseCmd(cmdParts: string[]) {
     const argsMap: { cmds: string[], args: Record<string, string> } = { cmds: [], args: {} };
 
-    // 处理参数值中可能存在的空格，比如 "Golden Apple"
-    const whiteSpace = '/<white_space>/';
-    const match = cmd.match(/".*?"|'.*?'/g);
-    if (match) {
-      for (const item of match) {
-        const value = item.replace(' ', whiteSpace);
-        cmd = cmd.replace(item, value);
-      } 
-    }
-    
-    const argsList = cmd.split(' ').filter(arg => arg !== '');
-    for (let i=0; i<argsList.length; i++) {
-      const arg = argsList[i];
+    for (let i=0; i<cmdParts.length; i++) {
+      const arg = cmdParts[i];
       if (!arg) continue;
 
       // 数字不能作为参数名，比如 `info -9 aaa`，-9会被认为是子命令
@@ -127,7 +154,7 @@ export default class CmdParser {
         continue;
       }
 
-      let nextArg = argsList[i+1];
+      let nextArg = cmdParts[i+1];
       if (!nextArg || (nextArg.startsWith('-') && !nextArg.match(/^-\d+/))) {
           argsMap.args[arg] = '';
           continue;
@@ -135,7 +162,7 @@ export default class CmdParser {
       if (/^(?:".*?"|'.*?')$/.test(nextArg)) {
         nextArg = nextArg.slice(1, -1);
       }
-      argsMap.args[arg] = nextArg.replace(whiteSpace, ' ');
+      argsMap.args[arg] = nextArg;
       i++;
     }
     return argsMap;

@@ -1,5 +1,5 @@
 import fs from 'fs';
-import CmdUtil from './CmdUtil.js';
+import CmdUtil from './CmdParser.js';
 
 export default class LogUtil {
   private name: string;

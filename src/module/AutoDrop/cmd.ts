@@ -1,4 +1,4 @@
-import type CmdParser from '../../utils/CmdUtil.js';
+import type CmdParser from '../../utils/CmdParser.js';
 import Drop from './main.js';
 
 function enable() {

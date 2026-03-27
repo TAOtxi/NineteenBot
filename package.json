@@ -1,13 +1,14 @@
 {
-  "name": "test",
+  "name": "nineteen_bot",
   "version": "1.0.0",
   "description": "",
   "main": "src/main.ts",
   "scripts": {
     "dev:log": "npm run dev log=true",
-    "dev": "npx tsc && node ./dist/main.js lang=zh_cn"
+    "dev": "npx tsc && node ./dist/main.js lang=zh_cn",
+    "test:cmd_helper": "npx tsc ./src/utils/CmdHelper.ts ./src/utils/CmdUtil.ts ./test/testCmdHelper.ts --outDir dist --moduleResolution nodenext --module nodenext --target esnext && node ./dist/test/testCmdHelper.js"
   },
-  "author": "",
+  "author": "TAOtxi",
   "type": "module",
   "license": "ISC",
   "dependencies": {

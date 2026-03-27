@@ -1,5 +1,5 @@
 import fs from "fs";
-import CmdUtil from "./CmdUtil.js";
+import CmdUtil from "./CmdParser.js";
 
 const defaultLangDir = './resources/lang';
 const fallbackLang = 'en_us';
