@@ -30,6 +30,9 @@ function startInput() {
 
 
 async function handleInput(input: string) {
+  if (input.trim() === '') {
+    return;
+  }
   if (!bot) {
     logger.error('Bot not set');
     return;

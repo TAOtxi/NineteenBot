@@ -5,8 +5,8 @@
   "main": "src/main.ts",
   "scripts": {
     "dev:log": "npm run dev log=true",
-    "dev": "npx tsc && node ./dist/main.js lang=zh_cn",
-    "test:cmd_helper": "npx tsc ./src/utils/CmdHelper.ts ./src/utils/CmdUtil.ts ./test/testCmdHelper.ts --outDir dist --moduleResolution nodenext --module nodenext --target esnext && node ./dist/test/testCmdHelper.js"
+    "dev": "npx tsc && cls && node ./dist/main.js lang=zh_cn",
+    "test:cmd_helper": "npx tsc ./test/testCmdHelper.ts --outDir dist --moduleResolution nodenext --module nodenext --target esnext && node ./dist/test/testCmdHelper.js"
   },
   "author": "TAOtxi",
   "type": "module",

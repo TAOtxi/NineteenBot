@@ -1,12 +1,19 @@
 import fs from 'fs';
 import CmdUtil from './CmdParser.js';
 
+let currentLogFile = '';
+const LOG_DIR = './log';
+const MAX_LOG_SIZE = 1024 * 1024 * 10; // 10MB
+const LOG_TO_FILE = CmdUtil.getValueByArgName(process.argv, 'log') === 'true';
+const logCache: string[] = [];
+const LOG_CACHE_SIZE = 10;
+
+process.on('exit', () => {
+  LogUtil.writeLog(currentLogFile);
+});
+
 export default class LogUtil {
   private name: string;
-  private logDir = './log';
-  private maxLogFileSize = 1024 * 1024 * 10; // 10MB
-  private currentLogFile = '';
-  private logToFile = CmdUtil.getValueByArgName(process.argv, 'log') === 'true';
   private hasPrefix = true;
 
   constructor(prefix: string) {
@@ -26,11 +33,22 @@ export default class LogUtil {
     return this;
   }
 
-  private getTimeStr() {
+  private getTimeStr(dateSep: string = '-', timeSep: string = ':') {
     const date = new Date();
     const time = 
-      `${date.getFullYear()}-${this.pad(date.getMonth() + 1)}-${this.pad(date.getDate())} ${this.pad(date.getHours())}:${this.pad(date.getMinutes())}:${this.pad(date.getSeconds())}`;
+      `${date.getFullYear()}${dateSep}${this.pad(date.getMonth() + 1)}${dateSep}${this.pad(date.getDate())} ${this.pad(date.getHours())}${timeSep}${this.pad(date.getMinutes())}${timeSep}${this.pad(date.getSeconds())}`;
     return time;
+  }
+
+  private parseTimeStr(time: string) {
+    const timeArr = time.replace(' ', '-').split('-');
+    if (!timeArr[0] || !timeArr[1] || !timeArr[2]) {
+      throw new Error('Invalid time format');
+    }
+    const year = parseInt(timeArr[0]);
+    const month = parseInt(timeArr[1]);
+    const day = parseInt(timeArr[2]);
+    return { year, month, day };
   }
 
   private prefix() {
@@ -43,7 +61,7 @@ export default class LogUtil {
     const logData = `${ this.hasPrefix ? prefix : ''}${msg}`;
     this.hasPrefix = true;
     console.log(logData);
-    this.logToFile && this.saveLog(logData);
+    LOG_TO_FILE && this.saveLog(logData);
   }
 
   public info(data: string, ...args: any[]) {
@@ -65,38 +83,68 @@ export default class LogUtil {
   public saveLog(msg?: string) {
     if (msg) {
       msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+    } else {
+      return;
     }
 
     const latestLogFile = this.getLatestLogFile();
-    fs.appendFileSync(latestLogFile, msg + '\n');
+    const date = this.parseTimeStr(latestLogFile.replace('.log', ''));
+    const currentDate = new Date();
+    if (date.day !== currentDate.getDate() ||
+        date.month !== currentDate.getMonth() + 1 ||
+        date.year !== currentDate.getFullYear()) {
+      currentLogFile = `${this.getTimeStr('-', '-')}.log`;
+      LogUtil.writeLog(currentLogFile);
+    }
+    logCache.push(msg);
+
+    if (logCache.length >= LOG_CACHE_SIZE) {
+      LogUtil.writeLog(currentLogFile);
+    }
+  }
+
+  static writeLog(logFile: string) {
+    if (!logCache.length) {
+      return;
+    }
+    const logFilePath = `${LOG_DIR}/${logFile}`;
+    if (!fs.existsSync(logFilePath)) {
+      fs.writeFileSync(logFilePath, '');
+    }
+    const logData = logCache.join('\n') + '\n';
+    logCache.length = 0;
+    fs.appendFileSync(logFilePath, logData);
   }
 
   private getLatestLogFile() {
-    if (!fs.existsSync(this.logDir)) {
-      fs.mkdirSync(this.logDir);
+    if (!fs.existsSync(LOG_DIR)) {
+      fs.mkdirSync(LOG_DIR);
+    }
+    if (currentLogFile) {
+      if (!fs.existsSync(`${LOG_DIR}/${currentLogFile}`)) {
+        fs.writeFileSync(`${LOG_DIR}/${currentLogFile}`, '');
+      }
+
+      if (fs.statSync(`${LOG_DIR}/${currentLogFile}`).size < MAX_LOG_SIZE) {
+        return currentLogFile;
+      }
     }
 
-    if (this.currentLogFile && fs.statSync(this.currentLogFile).size < this.maxLogFileSize) {
-      return this.currentLogFile;
+    const files = fs.readdirSync(LOG_DIR).filter((file) => file.endsWith('.log'));
+    let latestModTime = 0;
+    currentLogFile = '';
+    for (const file of files) {
+      const filePath = `${LOG_DIR}/${file}`;
+      if (fs.statSync(filePath).mtime.getTime() > latestModTime) {
+        currentLogFile = file;
+        latestModTime = fs.statSync(filePath).mtime.getTime();
+      }
     }
 
-    const files = fs.readdirSync(this.logDir)
-        .filter((file) => file.endsWith('.log'))
-        .map(file => `${this.logDir}/${file}`);
-
-    files.sort((a, b) => {
-      const timeA = fs.statSync(a).mtime.getTime();
-      const timeB = fs.statSync(b).mtime.getTime();
-      return timeB - timeA;
-    });
+    if (!currentLogFile) {
+      currentLogFile = `${this.getTimeStr('-', '-')}.log`;
+    }
     
-    if (!files[0] || fs.statSync(files[0]).size > this.maxLogFileSize) {
-      const newLogFile = `${this.logDir}/${this.getTimeStr()}.log`;
-      fs.writeFileSync(newLogFile, '');
-      this.currentLogFile = newLogFile;
-    } else {
-      this.currentLogFile = files[0];
-    }
-    return this.currentLogFile;
+    return currentLogFile;
   }
 }

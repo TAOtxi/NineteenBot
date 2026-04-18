@@ -80,7 +80,6 @@ function handleEvent(bot: mineflayer.Bot) {
     }, reconnectDelay);
   });
   bot.on("error", (err: Error) => {
-    console.trace(err);
     logger.error(err.message);
 
     setTimeout(() => {
