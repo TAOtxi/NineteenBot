@@ -40,8 +40,8 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
   },
-  "alias": {
-    "@/*": "./src/*",
+  "paths": {
+      "@/*": ["./src/*"]
   },
   "include": [
     "src/**/*",

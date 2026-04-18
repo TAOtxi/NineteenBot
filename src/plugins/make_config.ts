@@ -6,14 +6,14 @@ declare module 'mineflayer' {
     configDir: string;
     privateDir: string;
     configMap: Record<string, any>;
-    saveConfig: (namespace: string, data: Object, personal: boolean) => void;
-    loadConfig: (namespace: string) => Object | null;
+    saveConfig: (namespace: string, data: Record<string, any>, isPrivate?: boolean) => void;
+    loadConfig: (namespace: string, defaultData: Record<string, any>) => Record<string, any>;
     getConfig: (namespace: string, key: string) => any | undefined;
-    setConfig: (namespace: string, key: string, value: any, personal: boolean) => void;
+    setConfig: (namespace: string, key: string, value: any, isPrivate?: boolean) => void;
   }
 }
 
-function saveConfig(bot: mineflayer.Bot, namespace: string, data: Object, isPrivate: boolean) {
+function saveConfig(bot: mineflayer.Bot, namespace: string, data: Record<string, any>, isPrivate?: boolean) {
   isPrivate = isPrivate ?? false;
 
   if (!fs.existsSync(bot.configDir)) {
@@ -29,20 +29,18 @@ function saveConfig(bot: mineflayer.Bot, namespace: string, data: Object, isPriv
   fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
 }
 
-function loadConfig(bot: mineflayer.Bot, namespace: string) {
+function loadConfig(bot: mineflayer.Bot, namespace: string, defaultData: Record<string, any>) {
   const baseConfigPath = `${bot.configDir}/${namespace}.json`;
   const privatePath = `${bot.privateDir}/${namespace}.json`;
 
-  let data: Object = {};
+  let data: Record<string, any> = {};
   if (fs.existsSync(baseConfigPath)) {
     data = JSON.parse(fs.readFileSync(baseConfigPath, 'utf8'));
+  } else {
+    fs.writeFileSync(baseConfigPath, JSON.stringify(defaultData, null, 2));
   }
   if (fs.existsSync(privatePath)) {
-    data = {...data, ...JSON.parse(fs.readFileSync(privatePath, 'utf8'))};
-  }
-  
-  if (Object.keys(data).length === 0) {
-    return null;
+    data = {...defaultData, ...data, ...JSON.parse(fs.readFileSync(privatePath, 'utf8'))};
   }
   bot.configMap[namespace] = data;
   return data;
@@ -52,7 +50,7 @@ function getConfig(bot: mineflayer.Bot, namespace: string, key: string) {
   return bot.configMap[namespace]?.[key];
 }
 
-function setConfig(bot: mineflayer.Bot, namespace: string, key: string, value: any, isPrivate: boolean) {
+function setConfig(bot: mineflayer.Bot, namespace: string, key: string, value: any, isPrivate?: boolean) {
   isPrivate = isPrivate ?? false;
   bot.configMap[namespace][key] = value;
 
@@ -92,9 +90,9 @@ export default function inject(bot: mineflayer.Bot) {
   bot.privateDir = `${bot.configDir}/${bot.username}`;
   bot.configMap = {};
 
-  bot.saveConfig = (namespace, data, personal) => saveConfig(bot, namespace, data, personal);
-  bot.loadConfig = (namespace) => loadConfig(bot, namespace);
+  bot.saveConfig = (namespace, data, isPrivate) => saveConfig(bot, namespace, data, isPrivate);
+  bot.loadConfig = (namespace, defaultData) => loadConfig(bot, namespace, defaultData);
   bot.getConfig = (namespace, key) => getConfig(bot, namespace, key);
-  bot.setConfig = (namespace, key, value, personal) => setConfig(bot, namespace, key, value, personal);
+  bot.setConfig = (namespace, key, value, isPrivate) => setConfig(bot, namespace, key, value, isPrivate);
 }
 
