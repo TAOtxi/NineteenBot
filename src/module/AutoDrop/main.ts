@@ -2,12 +2,11 @@ import fs from 'fs';
 import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import Logger from '../../utils/Logger.js';
-import { type Config, type Item } from './config.js';
 import StringUtil from '../../utils/StringUtil.js';
 
 
 let bot: mineflayer.Bot;
-let config: Config;
+let config: AutoDropConfig;
 let tickCounter = 0;
 let enabled = false;
 const logger = Logger.getLogger('AutoDrop');
@@ -121,7 +120,7 @@ function getNoneEmptySlot() {
   return slots;
 }
 
-function getDropAngle(dirction: Config['dropDirection']) {
+function getDropAngle(dirction: AutoDropConfig['dropDirection']) {
   switch (dirction) {
     case 'down':
       return { yaw: 0, pitch: -Math.PI / 2 };

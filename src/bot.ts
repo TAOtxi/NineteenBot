@@ -12,7 +12,7 @@ let currentServer: ServerConfig;
 const admin = ['TAOtxi'];
 
 
-let reconnectDelay = 10000;
+const reconnectDelay = 10000;
 const logger = Logger.getLogger('Bot');
 
 
@@ -32,6 +32,9 @@ function createBot(
     version: server.version,
     hideErrors: true,
     logErrors: false,
+    plugins: {
+      make_config: require('./plugins/make_config.js'),
+    },
     // physicsEnabled: true,
   });
 
@@ -61,12 +64,6 @@ function handleEvent(bot: mineflayer.Bot) {
   bot.on("login", () => {
     logger.info(`Login as ${bot.username}`);
   })
-  // bot.on("spawn", () => {
-  //   bot.physicsEnabled = true;
-
-  //   // @ts-ignore
-  //   // logger.info(bot._getDimensionName());
-  // });
   bot.on("resourcePack", (url: string, hash?: string, uuid?: string) => {
     // logger.info('Resource pack URL:', url, 'UUID:', uuid);
     bot.acceptResourcePack();
