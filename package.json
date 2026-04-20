@@ -6,7 +6,8 @@
   "scripts": {
     "dev:log": "npm run dev log=true",
     "dev": "npx tsc && cls && node ./dist/main.js lang=zh_cn",
-    "test:cmd_helper": "npx tsc ./test/testCmdHelper.ts --outDir dist --moduleResolution nodenext --module nodenext --target esnext && node ./dist/test/testCmdHelper.js"
+    "test:cmd_helper": "npx tsc ./test/testCmdHelper.ts --outDir dist --moduleResolution nodenext --module nodenext --target esnext && node ./dist/test/testCmdHelper.js",
+    "test:command": "npx tsc && node ./dist/test/testCmdManager.js"
   },
   "author": "TAOtxi",
   "type": "module",

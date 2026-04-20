@@ -1,5 +1,5 @@
-import CmdHelper from "../src/utils/CmdHelper.js";
-import CmdParser from "../src/utils/CmdParser.js";
+import CmdHelper from "../utils/CmdHelper.js";
+import CmdParser from "../utils/CmdParser.js";
 import fuzzy from "fuzzy";
 
 function getMatch(cmd: string | undefined, tips: string[]) {

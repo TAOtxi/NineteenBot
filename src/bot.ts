@@ -1,10 +1,8 @@
 import mineflayer from "mineflayer";
 import { type ChatMessage } from "prismarine-chat";
 import botAction from "./behavior/action.js";
-import TimeUtil from "./utils/TimeUtil.js";
 import InputHandler from "./input.js";
 import Logger from "./utils/Logger.js";
-import AutoDrop from "./module/AutoDrop/main.js";
 
 let bot: mineflayer.Bot;
 let currentUser: UserConfig;
@@ -41,7 +39,6 @@ function createBot(
   InputHandler.setBot(bot);
   handleEvent(bot);
   botAction.setBot(bot);
-  AutoDrop.init(bot);
 }
 
 function handleEvent(bot: mineflayer.Bot) {
@@ -57,9 +54,7 @@ function handleEvent(bot: mineflayer.Bot) {
     logger.info(msg.toAnsi() + "\x1b[0m");
   });
   bot.on("physicsTick", () => {
-    TimeUtil.tick(bot);
     botAction.tick();
-    AutoDrop.tick();
   });
   bot.on("login", () => {
     logger.info(`Login as ${bot.username}`);
