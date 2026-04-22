@@ -140,7 +140,11 @@ function getDropAngle(bot: mineflayer.Bot, dirction: string) {
 }
 
 
-export default function inject(bot: mineflayer.Bot) {
+export default async function inject(bot: mineflayer.Bot) {
+  if (!bot.isMakeConfigPluginLoaded) {
+    await new Promise(resolve => bot.once('pluginLoaded_make_config', () => resolve(1)));
+  }
+
   bot.loadConfig(namespace, defaultConfig);
   bot._autodrop = (key: string) => bot.getConfig(namespace, key);
   bot._autodrop_isTurnBack = true;

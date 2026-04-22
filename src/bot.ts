@@ -34,17 +34,14 @@ function createBot(
     version: server.version,
     hideErrors: true,
     logErrors: false,
-    plugins: {
-      make_config,
-      AutoDrop,
-      CommandManager,
-    },
     // physicsEnabled: true,
   });
 
-  InputHandler.setBot(bot);
-  handleEvent(bot);
-  botAction.setBot(bot);
+  bot.loadPlugins([make_config, AutoDrop, CommandManager]);
+
+  // InputHandler.setBot(bot);
+  // handleEvent(bot);
+  // botAction.setBot(bot);
 }
 
 function handleEvent(bot: mineflayer.Bot) {

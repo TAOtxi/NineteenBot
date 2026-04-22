@@ -4,8 +4,8 @@ import helper from "../plugins/helper.js";
 
 
 const bot = createBot();
-bot.loadPlugin(helper);
 bot.loadPlugin(command);
+bot.loadPlugin(helper);
 
 await new Promise(resolve => bot.once('pluginLoaded_helper', () => resolve(1)));
 

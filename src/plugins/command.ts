@@ -188,6 +188,7 @@ export default function inject(bot: mineflayer.Bot) {
   bot.getCommandManager = () => CommandManager;
 
   bot.emit('pluginLoaded_command');
+  bot.isCommandPluginLoaded = true;
 }
 
 export {
@@ -199,6 +200,7 @@ export type { CommandData };
 declare module 'mineflayer' {
   interface Bot {
     _cmdMap: CommandData[];
+    isCommandPluginLoaded: boolean;
     registerCmd(cmdManager: CommandManager): void;
     tryExecute(input: string): void;
     getCommandManager(): typeof CommandManager;

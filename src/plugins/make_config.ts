@@ -1,22 +1,6 @@
 import mineflayer from 'mineflayer';
 import fs from 'fs';
 
-declare module 'mineflayer' {
-  interface Bot {
-    configDir: string;
-    privateDir: string;
-    configMap: Record<string, any>;
-    saveConfig(namespace: string, data: Record<string, any>, isPrivate?: boolean): void;
-    loadConfig(namespace: string, defaultData: Record<string, any>): Record<string, any>;
-    getConfig(namespace: string, key: string): any | undefined;
-    setConfig(namespace: string, key: string, value: any, isPrivate?: boolean): void;
-  }
-
-  interface BotEvents {
-    pluginLoaded_make_config(): void;
-  }
-}
-
 function saveConfig(bot: mineflayer.Bot, namespace: string, data: Record<string, any>, isPrivate?: boolean) {
   isPrivate = isPrivate ?? false;
 
@@ -99,5 +83,22 @@ export default function inject(bot: mineflayer.Bot) {
   bot.getConfig = (namespace, key) => getConfig(bot, namespace, key);
   bot.setConfig = (namespace, key, value, isPrivate) => setConfig(bot, namespace, key, value, isPrivate);
   bot.emit('pluginLoaded_make_config');
+  bot.isMakeConfigPluginLoaded = true;
 }
 
+declare module 'mineflayer' {
+  interface Bot {
+    configDir: string;
+    privateDir: string;
+    configMap: Record<string, any>;
+    isMakeConfigPluginLoaded: boolean;
+    saveConfig(namespace: string, data: Record<string, any>, isPrivate?: boolean): void;
+    loadConfig(namespace: string, defaultData: Record<string, any>): Record<string, any>;
+    getConfig(namespace: string, key: string): any | undefined;
+    setConfig(namespace: string, key: string, value: any, isPrivate?: boolean): void;
+  }
+
+  interface BotEvents {
+    pluginLoaded_make_config(): void;
+  }
+}

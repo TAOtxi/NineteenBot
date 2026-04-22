@@ -357,7 +357,11 @@ async function getInput(bot: mineflayer.Bot) {
 }
 
 
-function _inject(bot: mineflayer.Bot) {
+export default async function inject(bot: mineflayer.Bot) {
+  if (!bot.isCommandPluginLoaded) {
+    await new Promise(resolve => bot.once('pluginLoaded_command', () => resolve(1)));
+  }
+  
   bot._isMonitorInput = false;
   bot.getInput = () => getInput(bot);
 
@@ -376,15 +380,13 @@ function _inject(bot: mineflayer.Bot) {
     bot._isMonitorInput = false;
   };
   bot.emit('pluginLoaded_helper');
-}
-
-export default function inject(bot: mineflayer.Bot) {
-  bot.once('pluginLoaded_command', () => _inject(bot));
+  bot.isHelperPluginLoaded = true;
 }
 
 declare module 'mineflayer' {
   interface Bot {
     _isMonitorInput: boolean;
+    isHelperPluginLoaded: boolean;
     _callBacks: ((bot: mineflayer.Bot) => void)[];
     startMonitorInput(): void;
     stopMonitorInput(): void;
