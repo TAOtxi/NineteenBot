@@ -117,6 +117,8 @@ export default function inject(bot: mineflayer.Bot) {
     bot._cmdMap.push(data);
   };
   bot.getCommandManager = () => CommandManager;
+
+  bot.emit('pluginLoaded_command');
 }
 
 export {
@@ -130,5 +132,6 @@ declare module 'mineflayer' {
     _cmdMap: CommandData[];
     registerCmd(cmdManager: CommandManager): void;
     getCommandManager(): typeof CommandManager;
+    emit(event: 'pluginLoaded_command'): void;
   }
 }
