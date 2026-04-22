@@ -303,6 +303,7 @@ async function getInput(bot: mineflayer.Bot) {
     message: "Command:",
     pageSize: 10,
     source(input: string) {
+      bot._callBacks = [];
       if (input.trim() === '') {
         return getMatch('', bot._cmdMap);
       }
@@ -367,7 +368,7 @@ function _inject(bot: mineflayer.Bot) {
     while (true) {
       if (!bot._isMonitorInput) break;
       const input = await bot.getInput();
-      console.log(input);
+      bot.tryExecute(input);
     }
   };
 
@@ -384,6 +385,7 @@ export default function inject(bot: mineflayer.Bot) {
 declare module 'mineflayer' {
   interface Bot {
     _isMonitorInput: boolean;
+    _callBacks: ((bot: mineflayer.Bot) => void)[];
     startMonitorInput(): void;
     stopMonitorInput(): void;
     getInput(): Promise<string>;

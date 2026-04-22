@@ -4,10 +4,10 @@ import helper from "../plugins/helper.js";
 
 
 const bot = createBot();
-bot.loadPlugin(command);
 bot.loadPlugin(helper);
+bot.loadPlugin(command);
 
-await new Promise(resolve => setTimeout(resolve, 1000));
+await new Promise(resolve => bot.once('pluginLoaded_helper', () => resolve(1)));
 
 const CommandManager = bot.getCommandManager();
 bot.registerCmd(CommandManager.command('quit'))
@@ -15,12 +15,12 @@ bot.registerCmd(CommandManager.command(['cls', 'clear']))
 bot.registerCmd(CommandManager.command('list'))
 bot.registerCmd(CommandManager.command('.'))
 
-const actCmd = CommandManager.command(['act', 'action'])
-  .then(CommandManager.command('info'))
-  .then(CommandManager.command('stop')
+const actCmd = CommandManager.command(['act', 'action']).execute(bot => console.log(1))
+  .then(CommandManager.command('info').execute(bot => console.log(2)))
+  .then(CommandManager.command('stop').execute(bot => console.log(3))
     .then(CommandManager.command(['jump', 'sneak', 'look', 'swing'])))
-  .then(CommandManager.command('spin')
-    .then(CommandManager.argument(['-a', '--angle'])))
+  .then(CommandManager.command('spin').execute(bot => console.log(4))
+    .then(CommandManager.argument(['-a', '--angle']).execute(bot => console.log(5))))
   .then(CommandManager.command('jump')
     .then(CommandManager.argument(['-i', '--interval'])))
   .then(CommandManager.command('sneak')
@@ -58,7 +58,4 @@ const bhCmd = CommandManager.command(['bh', 'be', 'behavior'])
 bot.registerCmd(bhCmd)
 
 
-bot.getInput().then(input => {
-  console.log(input);
-  process.exit(0);
-});
+bot.startMonitorInput();
