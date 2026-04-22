@@ -194,8 +194,19 @@ const cmdHelper = createPrompt(
       }
       
       else if (isTabKey(key) && selectedChoice) {
-        const prevCommand = fullCommand.slice(0, fullCommand.lastIndexOf(' '));
-        const newCommand = `${prevCommand} ${selectedChoice.name}`;
+        if (!selectedChoice.value) {
+          rl.clearLine(0);    // 清除 Tab
+          rl.write(fullCommand);
+          return;
+        }
+
+        let newCommand;
+        if (fullCommand.includes(' ')) {
+          const prevCommand = fullCommand.slice(0, fullCommand.lastIndexOf(' '));
+          newCommand = `${prevCommand} ${selectedChoice.value}`;
+        } else {
+          newCommand = selectedChoice.value;
+        }
 
         rl.clearLine(0);
         rl.write(newCommand);
@@ -361,7 +372,7 @@ export default async function inject(bot: mineflayer.Bot) {
   if (!bot.isCommandPluginLoaded) {
     await new Promise(resolve => bot.once('pluginLoaded_command', () => resolve(1)));
   }
-  
+
   bot._isMonitorInput = false;
   bot.getInput = () => getInput(bot);
 
