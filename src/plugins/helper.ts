@@ -356,7 +356,7 @@ async function getInput(bot: mineflayer.Bot) {
 }
 
 
-export default function inject(bot: mineflayer.Bot) {
+function _inject(bot: mineflayer.Bot) {
   bot._isMonitorInput = false;
   bot.getInput = () => getInput(bot);
 
@@ -374,7 +374,11 @@ export default function inject(bot: mineflayer.Bot) {
   bot.stopMonitorInput = () => {
     bot._isMonitorInput = false;
   };
+  bot.emit('pluginLoaded_helper');
+}
 
+export default function inject(bot: mineflayer.Bot) {
+  bot.once('pluginLoaded_command', () => _inject(bot));
 }
 
 declare module 'mineflayer' {
@@ -383,5 +387,9 @@ declare module 'mineflayer' {
     startMonitorInput(): void;
     stopMonitorInput(): void;
     getInput(): Promise<string>;
+  }
+
+  interface BotEvents {
+    pluginLoaded_helper(): void;
   }
 }

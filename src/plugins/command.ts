@@ -132,6 +132,9 @@ declare module 'mineflayer' {
     _cmdMap: CommandData[];
     registerCmd(cmdManager: CommandManager): void;
     getCommandManager(): typeof CommandManager;
-    emit(event: 'pluginLoaded_command'): void;
+  }
+
+  interface BotEvents {
+    pluginLoaded_command(): void;
   }
 }

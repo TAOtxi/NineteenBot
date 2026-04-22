@@ -11,6 +11,10 @@ declare module 'mineflayer' {
     getConfig(namespace: string, key: string): any | undefined;
     setConfig(namespace: string, key: string, value: any, isPrivate?: boolean): void;
   }
+
+  interface BotEvents {
+    pluginLoaded_make_config(): void;
+  }
 }
 
 function saveConfig(bot: mineflayer.Bot, namespace: string, data: Record<string, any>, isPrivate?: boolean) {
@@ -94,5 +98,6 @@ export default function inject(bot: mineflayer.Bot) {
   bot.loadConfig = (namespace, defaultData) => loadConfig(bot, namespace, defaultData);
   bot.getConfig = (namespace, key) => getConfig(bot, namespace, key);
   bot.setConfig = (namespace, key, value, isPrivate) => setConfig(bot, namespace, key, value, isPrivate);
+  bot.emit('pluginLoaded_make_config');
 }
 
