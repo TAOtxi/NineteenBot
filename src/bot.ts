@@ -4,6 +4,10 @@ import botAction from "./behavior/action.js";
 import InputHandler from "./input.js";
 import Logger from "./utils/Logger.js";
 
+import CommandManager from "./plugins/command.js";
+import AutoDrop from "./plugins/autodrop.js";
+import make_config from "./plugins/make_config.js";
+
 let bot: mineflayer.Bot;
 let currentUser: UserConfig;
 let currentServer: ServerConfig;
@@ -31,7 +35,9 @@ function createBot(
     hideErrors: true,
     logErrors: false,
     plugins: {
-      make_config: require('./plugins/make_config.js'),
+      make_config,
+      AutoDrop,
+      CommandManager,
     },
     // physicsEnabled: true,
   });

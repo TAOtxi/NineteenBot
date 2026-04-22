@@ -9,10 +9,10 @@ export default class CmdParser {
 
   constructor(cmd: string) {
     this.rawCmd = cmd;
-    this.parts = CmdParser.dividePart(cmd);
-    const argsMap = CmdParser.parseCmd(this.parts);
-    this.cmds = argsMap.cmds;
-    this.args = argsMap.args;
+    const parseResult = CmdParser.parseCmd(cmd);
+    this.cmds = parseResult.cmds;
+    this.args = parseResult.args;
+    this.parts = parseResult.parts;
     this.currentCmdIndex = 0;
   }
 
@@ -32,6 +32,13 @@ export default class CmdParser {
 
   getCmds() {
     return this.cmds.slice(this.currentCmdIndex);
+  }
+
+  getCmd(index: number) {
+    if (index < 0) {
+      return this.cmds.at(index);
+    }
+    return this.cmds.at(index + this.currentCmdIndex);
   }
   
   getFirstCmd() {
@@ -58,10 +65,6 @@ export default class CmdParser {
     return this.args[arg];
   }
 
-  getPartLength() {
-    return this.cmds.length - this.currentCmdIndex + Object.keys(this.args).length;
-  }
-
   dive() {
     if (this.currentCmdIndex >= this.cmds.length) {
       throw new Error('Out of index');
@@ -76,6 +79,10 @@ export default class CmdParser {
     }
     this.currentCmdIndex--;
     return this;
+  }
+
+  static isArgName(argName: string) {
+    return argName.startsWith('-') && !argName.match(/^-\d+(?:\.\d+)?$/);
   }
 
   hasAnyArg() {
@@ -95,17 +102,28 @@ export default class CmdParser {
   }
 
   getPart(index: number) {
-    return this.parts.at(index);
+    if (index < 0) {
+      return this.parts.at(index);
+    }
+    return this.parts.at(index + this.currentCmdIndex);
   }
 
-  static dividePart(cmd: string) {
+  getPartLength() {
+    return this.parts.length - this.currentCmdIndex + 1;
+  }
+
+  getPartList() {
+    return this.parts.slice(this.currentCmdIndex);
+  }
+
+  static splitCmd(cmd: string) {
     if (!cmd) return [];
     // 处理参数值中可能存在的空格，比如 "Golden Apple"
     const whiteSpace = '/<white_space>/';
     const match = cmd.match(/".*?"|'.*?'/g);
     if (match) {
       for (const item of match) {
-        const value = item.replace(' ', whiteSpace);
+        const value = item.replace(' ', whiteSpace).slice(1, -1);
         cmd = cmd.replace(item, value);
       } 
     }
@@ -130,17 +148,18 @@ export default class CmdParser {
    * @param cmd
    * @returns 
    */
-  static parseCmd(cmdParts: string[]) {
-    const argsMap: { cmds: string[], args: Record<string, string> } = { cmds: [], args: {} };
+  static parseCmd(cmd: string) {
+    const cmdParts = CmdParser.splitCmd(cmd);
+    const parseResult: { cmds: string[], args: Record<string, string>, parts: string[] } = { cmds: [], args: {}, parts: [] };
 
     for (let i=0; i<cmdParts.length; i++) {
       const arg = cmdParts[i];
       if (!arg) continue;
+      parseResult.parts.push(arg);
 
-      // 数字不能作为参数名，比如 `info -9 aaa`，-9会被认为是子命令
-      // -9a 也会被认为是子命令
-      if (!arg.startsWith('-') || arg.match(/^-\d+/)) {
-          argsMap.cmds.push(arg);
+      // 数字不能作为参数名，比如 `info -9 aaa`，`-9`会被认为是子命令
+      if (!CmdParser.isArgName(arg)) {
+          parseResult.cmds.push(arg);
           continue;
       };
 
@@ -150,22 +169,20 @@ export default class CmdParser {
           console.warn(`Skip invalid arg: ${arg}`);
           continue;
         }
-        argsMap.args[arg_val[0]] = arg_val[1];
+        parseResult.parts[parseResult.parts.length-1] = arg_val[0];
+        parseResult.args[arg_val[0]] = arg_val[1];
         continue;
       }
 
       let nextArg = cmdParts[i+1];
-      if (!nextArg || (nextArg.startsWith('-') && !nextArg.match(/^-\d+/))) {
-          argsMap.args[arg] = '';
+      if (!nextArg || (nextArg.startsWith('-') && !nextArg.match(/^-\d+(?:\.\d+)?$/))) {
+          parseResult.args[arg] = '';
           continue;
       }
-      if (/^(?:".*?"|'.*?')$/.test(nextArg)) {
-        nextArg = nextArg.slice(1, -1);
-      }
-      argsMap.args[arg] = nextArg;
+      parseResult.args[arg] = nextArg;
       i++;
     }
-    return argsMap;
+    return parseResult;
   }
 
   static getValueByArgName(args: string[], argName: string, split: string ='=') {
@@ -177,5 +194,13 @@ export default class CmdParser {
       }
     }
     return null;
+  }
+
+  toString() {
+    return {
+      cmds: this.cmds,
+      args: this.args,
+      parts: this.parts,
+    }
   }
 }

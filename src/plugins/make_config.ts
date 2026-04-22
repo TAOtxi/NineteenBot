@@ -6,10 +6,10 @@ declare module 'mineflayer' {
     configDir: string;
     privateDir: string;
     configMap: Record<string, any>;
-    saveConfig: (namespace: string, data: Record<string, any>, isPrivate?: boolean) => void;
-    loadConfig: (namespace: string, defaultData: Record<string, any>) => Record<string, any>;
-    getConfig: (namespace: string, key: string) => any | undefined;
-    setConfig: (namespace: string, key: string, value: any, isPrivate?: boolean) => void;
+    saveConfig(namespace: string, data: Record<string, any>, isPrivate?: boolean): void;
+    loadConfig(namespace: string, defaultData: Record<string, any>): Record<string, any>;
+    getConfig(namespace: string, key: string): any | undefined;
+    setConfig(namespace: string, key: string, value: any, isPrivate?: boolean): void;
   }
 }
 
