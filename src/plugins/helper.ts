@@ -314,7 +314,6 @@ async function getInput(bot: mineflayer.Bot) {
     message: "Command:",
     pageSize: 10,
     source(input: string) {
-      bot._callBacks = [];
       if (input.trim() === '') {
         return getMatch('', bot._cmdMap);
       }
@@ -398,7 +397,6 @@ declare module 'mineflayer' {
   interface Bot {
     _isMonitorInput: boolean;
     isHelperPluginLoaded: boolean;
-    _callBacks: ((bot: mineflayer.Bot) => void)[];
     startMonitorInput(): void;
     stopMonitorInput(): void;
     getInput(): Promise<string>;
