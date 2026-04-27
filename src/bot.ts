@@ -1,21 +1,20 @@
 import mineflayer from "mineflayer";
 import { type ChatMessage } from "prismarine-chat";
-import botAction from "./behavior/action.js";
 import InputHandler from "./input.js";
-import Logger from "./utils/Logger.js";
 
 import CommandManager from "./plugins/command.js";
 import AutoDrop from "./plugins/autodrop.js";
 import make_config from "./plugins/make_config.js";
+import loggerPlugin from "./plugins/logger.js";
+
+
 
 let bot: mineflayer.Bot;
 let currentUser: UserConfig;
 let currentServer: ServerConfig;
 const admin = ['TAOtxi'];
 
-
 const reconnectDelay = 10000;
-const logger = Logger.getLogger('Bot');
 
 
 function createBot(
@@ -37,7 +36,7 @@ function createBot(
     // physicsEnabled: true,
   });
 
-  bot.loadPlugins([make_config, AutoDrop, CommandManager]);
+  bot.loadPlugins([loggerPlugin, make_config, AutoDrop, CommandManager]);
 
   // InputHandler.setBot(bot);
   // handleEvent(bot);
@@ -54,13 +53,10 @@ function handleEvent(bot: mineflayer.Bot) {
     }
    });
   bot.on("message", (msg: ChatMessage) => {
-    logger.info(msg.toAnsi() + "\x1b[0m");
-  });
-  bot.on("physicsTick", () => {
-    botAction.tick();
+    bot.baseInfo('chat', msg.toAnsi() + "\x1b[0m");
   });
   bot.on("login", () => {
-    logger.info(`Login as ${bot.username}`);
+    bot.baseInfo('login', `Login as ${bot.username}`);
   })
   bot.on("resourcePack", (url: string, hash?: string, uuid?: string) => {
     // logger.info('Resource pack URL:', url, 'UUID:', uuid);
@@ -68,21 +64,21 @@ function handleEvent(bot: mineflayer.Bot) {
   });
 
   bot.on("kicked", (reason: string) => {
-    logger.error(`Kicked: ${JSON.stringify(reason, null, 2)}`);
+    bot.baseInfo('kicked', `Kicked: ${JSON.stringify(reason, null, 2)}`);
 
     setTimeout(() => {
       reconnect();
     }, reconnectDelay);
   });
   bot.on("error", (err: Error) => {
-    logger.error(err.message);
+    bot.baseInfo('error', err.message);
 
     setTimeout(() => {
       reconnect();
     }, reconnectDelay);
   });
   bot.on('end', (reason: string) => {
-    logger.info('[End]', reason);
+    bot.baseInfo('end', reason);
     setTimeout(() => {
       reconnect();
     }, reconnectDelay);
@@ -91,13 +87,13 @@ function handleEvent(bot: mineflayer.Bot) {
 
 function reconnect() {
   if (!currentUser || !currentServer) {
-    logger.error('currentUser or currentServer is undefined');
+    bot.baseInfo('reconnect', 'currentUser or currentServer is undefined');
     return;
   }
   bot?.removeAllListeners();
   bot?.end('Bye bye...');
   
-  logger.info('[Reconnect]', currentUser.username);
+  bot.baseInfo('reconnect', `Reconnect ${currentUser.username}`);
   createBot(currentUser, currentServer);
 }
 

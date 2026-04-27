@@ -26,10 +26,14 @@ interface ActionVar {
   specitalActionType: string;
 }
 
+function showHelp() {
+  
+}
+
 function regesterCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
   bot.registerCmd(CommandManager.command(['act', 'action'])
-    .then(CommandManager.command('start'))
+    .then(CommandManager.command('start').execute(() => bot._action.stop()))
     .then(CommandManager.command('info'))
     .then(CommandManager.command('stop')
       .then(CommandManager.command(['jump', 'sneak', 'look', 'swing'])))
