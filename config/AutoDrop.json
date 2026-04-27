@@ -5,10 +5,12 @@
   "dropMode": "whitelist",
   "items": [
     {
+      "enabled": true,
       "name": "Golden Apple",
       "id": "golden_apple"
     },
     {
+      "enabled": true,
       "name": "*",
       "id": "/.*?_sword/",
       "enchants": [

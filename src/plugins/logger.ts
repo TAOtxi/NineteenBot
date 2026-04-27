@@ -1,7 +1,7 @@
 import fs from 'fs';
 import CmdUtil from '../utils/CmdParser.js';
 import mineflayer from 'mineflayer';
-import { pluginReady } from '../utils/pluginWaiter.js';
+import { pluginReady, wait } from '../utils/pluginWaiter.js';
 
 
 function parseTimeStr(time: string) {
@@ -37,13 +37,13 @@ function saveLog(bot: mineflayer.Bot, msg: string) {
     date.year !== currentDate.getFullYear()) {
     bot.logFile = `${getTimeStr('-', '-')}.log`;
     fs.writeFile(`${bot.logDir}/${bot.logFile}`, msg + '\n', (err) => {
-      err && console.error('Write log error:', err);
+      err && console.error('Write log error:', err, `[${bot.logDir}/${bot.logFile}]`);
     });
     return;
   }
   
   fs.appendFile(`${bot.logDir}/${bot.logFile}`, msg + '\n', (err) => {
-    err && console.error('Write log error:', err);
+    err && console.error('Write log error:', err, `[${bot.logDir}/${bot.logFile}]`);
   });
 }
 
@@ -87,23 +87,27 @@ function base(bot: mineflayer.Bot, prefix: string, msg: string, type: string) {
   }
   let logTitle = '';
   if (prefix) {
-    logTitle = `[${getTimeStr()}][${prefix}][${type}]`;
+    logTitle = `${getTimeStr()}[${prefix}][${type}] `;
   } else {
-    logTitle = `[${getTimeStr()}][${type}]`;
+    logTitle = `${getTimeStr()}[${type}] `;
   }
   const logData = `${bot.withLogTitle ? logTitle : ''}${msg}`;
-  console.log(logData);
+  console.log('\r' + logData);
   bot.canSaveLog && saveLog(bot, logData);
 }
 
 const LOG_TO_FILE = CmdUtil.getValueByArgName(process.argv, 'log') === 'true';
 
-export default function inject(bot: mineflayer.Bot) {
+export default async function inject(bot: mineflayer.Bot) {
+  // TODO: 更优雅地方式
+  await new Promise(resolve => bot.once('login', () => resolve(1)));
+  
   bot.canLog = true;
   bot.canSaveLog = LOG_TO_FILE;
-  bot.logDir = `./log/${bot.username}`;
-  bot.logFile = '';
   bot.maxLogSize = 1024 * 1024 * 10; // 10MB
+  bot.logDir = `./log/${bot.username}`;
+  bot.logFile = getLatestLogFile(bot.logDir, '', bot.maxLogSize);
+  bot.withLogTitle = true;
   bot.baseInfo = (prefix: string, msg: string) => base(bot, prefix, msg, 'INFO');
   bot.baseWarn = (prefix: string, msg: string) => base(bot, prefix, msg, 'WARN');
   bot.baseError = (prefix: string, msg: string) => base(bot, prefix, msg, 'ERROR');

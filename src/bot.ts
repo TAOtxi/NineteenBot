@@ -1,13 +1,13 @@
 import mineflayer from "mineflayer";
 import { type ChatMessage } from "prismarine-chat";
-import InputHandler from "./input.js";
+import { waitPluginLoads } from "./utils/pluginWaiter.js";
 
-import CommandManager from "./plugins/command.js";
-import AutoDrop from "./plugins/autodrop.js";
-import make_config from "./plugins/makeConfig.js";
+import CommandPlugin from "./plugins/command.js";
+import AutoDropPlugin from "./plugins/autodrop.js";
+import makeConfigPlugin from "./plugins/makeConfig.js";
 import loggerPlugin from "./plugins/logger.js";
-
-
+import helperPlugin from "./plugins/helper.js";
+import timePlugin from "./plugins/time.js";
 
 let bot: mineflayer.Bot;
 let currentUser: UserConfig;
@@ -17,7 +17,7 @@ const admin = ['TAOtxi'];
 const reconnectDelay = 10000;
 
 
-function createBot(
+async function createBot(
     user: UserConfig, 
     server: ServerConfig
   ) {
@@ -36,20 +36,16 @@ function createBot(
     // physicsEnabled: true,
   });
 
-  bot.loadPlugins([loggerPlugin, make_config, AutoDrop, CommandManager]);
-
-  // InputHandler.setBot(bot);
-  // handleEvent(bot);
-  // botAction.setBot(bot);
+  bot.loadPlugins([loggerPlugin, makeConfigPlugin, AutoDropPlugin, CommandPlugin, helperPlugin, timePlugin]);
+  await waitPluginLoads(bot, ['logger', 'helper', 'time']);
+  
+  handleEvent(bot);
+  bot.startMonitorInput();
 }
 
 function handleEvent(bot: mineflayer.Bot) {
-  if (!bot) {
-    return;
-  }
   bot.on('whisper', (username: string, message: string) => {
     if (admin.includes(username)) {
-      InputHandler.handleInput(message);
     }
    });
   bot.on("message", (msg: ChatMessage) => {

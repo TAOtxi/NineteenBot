@@ -39,9 +39,14 @@ function pluginReady(bot: mineflayer.Bot, pluginName: string) {
   bot.emit(`pluginLoaded_${pluginName}`);
 }
 
+function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export {
   waitPluginLoads,
   pluginReady,
+  wait,
 }
 
 declare module 'mineflayer' {

@@ -1,13 +1,12 @@
 import createBot from "./createBot.js";
 import command from "../plugins/command.js";
 import helper from "../plugins/helper.js";
-
+import { waitPluginLoads } from "../utils/pluginWaiter.js";
 
 const bot = createBot();
-bot.loadPlugin(command);
-bot.loadPlugin(helper);
+bot.loadPlugins([command, helper]);
 
-await new Promise(resolve => bot.once('pluginLoaded_helper', () => resolve(1)));
+await waitPluginLoads(bot, ['helper']);
 
 const CommandManager = bot.getCommandManager();
 bot.registerCmd(CommandManager.command('quit'))

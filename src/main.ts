@@ -1,9 +1,6 @@
 import fs from "fs";
 import { select } from '@inquirer/prompts';
 import NineteenBot from "./bot.js";
-import Logger from "./utils/Logger.js";
-
-const logger = Logger.getLogger("Launch");
 
 async function main() {
   const config = JSON.parse(fs.readFileSync("./config/config.json").toString());
@@ -31,15 +28,15 @@ async function main() {
     }),
   }
   if (!result.user || !result.server) {
-    logger.error('User or server was undefined');
+    console.error('User or server was undefined');
     return;
   }
-  logger.info(result.user, result.server);
+  console.info(result.user, result.server);
   NineteenBot.createBot(config.Users[result.user], config.Servers[result.server]);
 }
 
 main();
 
-process.on('uncaughtException', (error) => {
-  console.error('未捕获的异常:', error);
-});
+// process.on('uncaughtException', (error) => {
+//   console.error('未捕获的异常:', error);
+// });
