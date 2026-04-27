@@ -1,5 +1,5 @@
 import mineflayer from 'mineflayer';
-
+import { pluginReady } from '../utils/pluginWaiter.js';
 
 export default function inject(bot: mineflayer.Bot) {
   bot.ticker = 0;
@@ -13,6 +13,7 @@ export default function inject(bot: mineflayer.Bot) {
       bot.resetTicker();
     }
   })
+  pluginReady(bot, 'time');
 }
 
 declare module 'mineflayer' {

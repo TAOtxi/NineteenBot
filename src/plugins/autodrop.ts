@@ -1,7 +1,7 @@
 import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
-import Logger from '../utils/Logger.js';
 import StringUtil from '../utils/StringUtil.js';
+import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 
 
 const namespace = 'autodrop';
@@ -141,9 +141,7 @@ function getDropAngle(bot: mineflayer.Bot, dirction: string) {
 
 
 export default async function inject(bot: mineflayer.Bot) {
-  if (!bot.isMakeConfigPluginLoaded) {
-    await new Promise(resolve => bot.once('pluginLoaded_make_config', () => resolve(1)));
-  }
+  await waitPluginLoads(bot, ['makeConfig', 'logger']);
 
   bot.loadConfig(namespace, defaultConfig);
   bot._autodrop = (key: string) => bot.getConfig(namespace, key);

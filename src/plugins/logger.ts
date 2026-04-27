@@ -1,6 +1,7 @@
 import fs from 'fs';
 import CmdUtil from '../utils/CmdParser.js';
 import mineflayer from 'mineflayer';
+import { pluginReady } from '../utils/pluginWaiter.js';
 
 
 function parseTimeStr(time: string) {
@@ -106,8 +107,7 @@ export default function inject(bot: mineflayer.Bot) {
   bot.baseInfo = (prefix: string, msg: string) => base(bot, prefix, msg, 'INFO');
   bot.baseWarn = (prefix: string, msg: string) => base(bot, prefix, msg, 'WARN');
   bot.baseError = (prefix: string, msg: string) => base(bot, prefix, msg, 'ERROR');
-  bot.isLoggerPluginLoaded = true;
-  bot.emit('pluginLoaded_logger');
+  pluginReady(bot, 'logger');
 }
 
 
@@ -119,13 +119,8 @@ declare module 'mineflayer' {
     logDir: string;
     logFile: string;
     maxLogSize: number;
-    isLoggerPluginLoaded: boolean;
     baseInfo(prefix: string, msg: string): void;
     baseWarn(prefix: string, msg: string): void;
     baseError(prefix: string, msg: string): void;
-  }
-
-  interface BotEvents {
-    pluginLoaded_logger(): void;
   }
 }

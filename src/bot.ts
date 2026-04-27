@@ -4,7 +4,7 @@ import InputHandler from "./input.js";
 
 import CommandManager from "./plugins/command.js";
 import AutoDrop from "./plugins/autodrop.js";
-import make_config from "./plugins/make_config.js";
+import make_config from "./plugins/makeConfig.js";
 import loggerPlugin from "./plugins/logger.js";
 
 

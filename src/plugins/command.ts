@@ -27,6 +27,7 @@ public static void registerCommand(CommandDispatcher<FabricClientCommandSource> 
 
 import mineflayer from "mineflayer";
 import CmdParser from "../utils/CmdParser.js";
+import { pluginReady } from "../utils/pluginWaiter.js";
 
 interface CommandData {
   level: number;
@@ -187,8 +188,7 @@ export default function inject(bot: mineflayer.Bot) {
   };
   bot.getCommandManager = () => CommandManager;
 
-  bot.emit('pluginLoaded_command');
-  bot.isCommandPluginLoaded = true;
+  pluginReady(bot, 'command');
 }
 
 export {
@@ -200,13 +200,8 @@ export type { CommandData };
 declare module 'mineflayer' {
   interface Bot {
     _cmdMap: CommandData[];
-    isCommandPluginLoaded: boolean;
     registerCmd(cmdManager: CommandManager): void;
     tryExecute(input: string): void;
     getCommandManager(): typeof CommandManager;
-  }
-
-  interface BotEvents {
-    pluginLoaded_command(): void;
   }
 }

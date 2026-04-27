@@ -299,6 +299,7 @@ import mineflayer from "mineflayer";
 import CmdParser from "../utils/CmdParser.js";
 import fuzzy from "fuzzy";
 import type { CommandData } from "./command.js";
+import { pluginReady, waitPluginLoads } from "../utils/pluginWaiter.js";
 
 const DEBUG = CmdParser.getValueByArgName(process.argv, 'debug') === 'true';
 
@@ -368,9 +369,7 @@ async function getInput(bot: mineflayer.Bot) {
 
 
 export default async function inject(bot: mineflayer.Bot) {
-  if (!bot.isCommandPluginLoaded) {
-    await new Promise(resolve => bot.once('pluginLoaded_command', () => resolve(1)));
-  }
+  await waitPluginLoads(bot, 'command');
 
   bot._isMonitorInput = false;
   bot.getInput = () => getInput(bot);
@@ -389,20 +388,15 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.stopMonitorInput = () => {
     bot._isMonitorInput = false;
   };
-  bot.emit('pluginLoaded_helper');
-  bot.isHelperPluginLoaded = true;
+  
+  pluginReady(bot, 'helper');
 }
 
 declare module 'mineflayer' {
   interface Bot {
     _isMonitorInput: boolean;
-    isHelperPluginLoaded: boolean;
     startMonitorInput(): void;
     stopMonitorInput(): void;
     getInput(): Promise<string>;
-  }
-
-  interface BotEvents {
-    pluginLoaded_helper(): void;
   }
 }

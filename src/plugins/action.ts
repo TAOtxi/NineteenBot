@@ -1,6 +1,6 @@
 import mineflayer from 'mineflayer';
 import { Vec3 } from 'vec3';
-
+import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 
 
 interface ActionVar {
