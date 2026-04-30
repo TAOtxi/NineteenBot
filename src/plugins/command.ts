@@ -29,51 +29,99 @@ import mineflayer from "mineflayer";
 import CmdParser from "../utils/CmdParser.js";
 import { pluginReady } from "../utils/pluginWaiter.js";
 
-interface CommandData {
-  level: number;
-  name: string[];
-  type: 'cmd' | 'arg';
-  subCmds: CommandData[] | null;
-  callback: ((bot: mineflayer.Bot, args?: Record<string, string>) => void) | null;
+export enum CommandType {
+  CMD = 'cmd',
+  ARG = 'arg',
+  VALUE = 'value',
 }
 
-class CommandManager implements CommandData {
-  level: number;
-  name: string[];
-  type: 'cmd' | 'arg';
-  subCmds: CommandData[] | null;
-  callback: ((bot: mineflayer.Bot, args?: Record<string, string>) => void) | null;
 
-  constructor(name: string | string[], type: 'cmd' | 'arg') {
+class CommandManager <T extends CommandType = CommandType.CMD> {
+  level: number;
+  name: T extends CommandType.VALUE ? string : string[];
+  type: CommandType;
+  subCmds: CommandManager[] | null;
+
+  callback: ((
+      bot: mineflayer.Bot, 
+      args?: 
+        T extends CommandType.CMD ? Record<string, string> :
+        T extends (CommandType.ARG | CommandType.VALUE) ? string :
+        never
+      ) => void) | null;
+  
+  // constructor(name: string, type: CommandType.VALUE);
+  // constructor(name: string | string[], type: Exclude<CommandType, CommandType.VALUE>);
+  // constructor(name: string | string[], type: CommandType) {
+  //   this.level = -1;
+  //   if (type === CommandType.VALUE) {
+  //     this.name = name as T extends CommandType.VALUE ? string : string[];
+  //   } else {
+  //     this.name = (typeof name === 'string' ? [name] : name) as T extends CommandType.VALUE ? string : string[];
+  //   }
+  //   this.type = type;
+  //   this.subCmds = null;
+  //   this.callback = null;
+  // }
+
+  constructor(name: T extends CommandType.VALUE ? string : (string | string[]), type: T) {
     this.level = -1;
-    this.name = typeof name === 'string' ? [name] : name;
+    if (type === CommandType.VALUE) {
+      this.name = name as T extends CommandType.VALUE ? string : string[];
+    } else {
+      this.name = (typeof name === 'string' ? [name] : name) as T extends CommandType.VALUE ? string : string[];
+    }
     this.type = type;
     this.subCmds = null;
     this.callback = null;
   }
 
-  static argument(args: string | string[], limit?: any) {
-    return new CommandManager(args, 'arg');
-  }
-
   static command(name: string | string[], limit?: any) {
-    return new CommandManager(name, 'cmd');
+    return new CommandManager<CommandType.CMD>(name, CommandType.CMD);
   }
 
-  execute(callback: (bot: mineflayer.Bot, args?: { [key: string]: string }) => void) {
+  static argument(args: string | string[], limit?: any) {
+    return new CommandManager<CommandType.ARG>(args, CommandType.ARG);
+  }
+
+  static value(name: string, limit?: any) {
+    return new CommandManager<CommandType.VALUE>(name, CommandType.VALUE);
+  }
+
+  // TODO: value类型可以有多个
+  execute(callback: (
+      bot: mineflayer.Bot, 
+      args?: 
+        T extends CommandType.CMD ? Record<string, string> :
+        T extends (CommandType.ARG | CommandType.VALUE) ? string :
+        never
+      ) => void) {
     this.callback = callback;
     return this;
   }
 
-  then(cmd: CommandManager) {
-    if (this.type === 'arg') {
-      console.warn('Argument command cannot have sub-commands.');
-      return this;
+  then(cmd: CommandManager<CommandType>) {
+    if (this.type === CommandType.ARG || this.type === CommandType.VALUE) {
+      throw new Error('Cannot have sub-commands.');
     }
+
     if (!this.subCmds) {
       this.subCmds = [];
+    } else if (cmd.type === CommandType.VALUE) {
+      throw new Error('Cannot have sub-commands.');
     }
-    this.subCmds.push(cmd.toData());
+
+    if (this.subCmds.some(subCmd => subCmd.type === CommandType.VALUE)) {
+      throw new Error('Cannot have sub-commands.');
+    }
+
+    this.subCmds.push(cmd);
+    const typeSet = new Set(this.subCmds.map(cmd => cmd.type));
+    
+    if (typeSet.has(CommandType.ARG) && typeSet.size > 1) {
+      throw new Error('Argument command with other command type !');
+    }
+
     return this;
   }
 
@@ -81,7 +129,7 @@ class CommandManager implements CommandData {
     return `CommandManager { level: ${this.level}, name: ${this.name}, type: ${this.type}, subCmds: ${this.subCmds} }`;
   }
 
-  toData(): CommandData {
+  toData() {
     return {
       level: this.level,
       name: this.name,
@@ -102,86 +150,88 @@ class CommandManager implements CommandData {
   }
 }
 
+
 function tryExecute(bot: mineflayer.Bot, input: string) {
   const parseCmd = new CmdParser(input);
-  const callbacks: typeof CommandManager.prototype.callback[] = [];
 
   const cmdLen = parseCmd.getCmds().length;
   let currentCmdMap = bot._cmdMap;
-  let lastPartHasCallback = false;
+  let tailCallback: typeof CommandManager.prototype.callback | null = null;
+  let execPartCount = 0;
 
   for (let i = 0; i < cmdLen; i++) {
-    if (currentCmdMap.length === 0) {
-      break;
+    if (parseCmd.getFirstCmd() === null ||
+        currentCmdMap === null ||
+        currentCmdMap.length === 0
+        ) {
+      return false;
     }
 
     let hasCommand = false;
-    for (const cmdMap of currentCmdMap) {
-      if (parseCmd.isCmd(cmdMap.name)) {
-        if (i === cmdLen - 1) {
-          lastPartHasCallback = lastPartHasCallback || cmdMap.callback !== null;
-        }
-        currentCmdMap = cmdMap.subCmds || [];
-        callbacks.push(cmdMap.callback);
-        parseCmd.dive();
-        hasCommand = true;
-        break;
+    for (const item of currentCmdMap) {
+      if (item.type === CommandType.ARG) {
+        return false;
       }
-    }
-    if (!hasCommand) {
+      if (item.type === CommandType.VALUE) {
+        if (i !== cmdLen - 1) {
+          return false;
+        }
+        item.callback?.(bot, parseCmd.getFirstCmd());
+        return true;
+      }
+
+      if (!parseCmd.isCmd(item.name)) continue;
+      console.log(item.name)
+
+      tailCallback = item.callback;
+      execPartCount++;
+      hasCommand = true;
+      currentCmdMap = item.subCmds || [];
+      i !== cmdLen - 1 && parseCmd.dive();
       break;
     }
-  }
-  if (callbacks.length !== cmdLen) {
-    return;
-  }
 
-  const registerArgs = currentCmdMap.map(item => item.name).flat();
-
-  for (let i=0; i<callbacks.length; i++) {
-    if (i === callbacks.length - 1 && parseCmd.hasAnyArg()) {
-      const argMaps: Record<string, string> = {};
-      for (const key of registerArgs) {
-        if (!parseCmd.hasArg(key)) {
-          continue;
-        }
-        argMaps[key] = parseCmd.getValue(key)!;
-      }
-      callbacks[i]?.(bot, argMaps);
-    } else {
-      callbacks[i]?.(bot);
+    if (!hasCommand) {
+      return false;
     }
   }
-
-  if (registerArgs.length === 0) {
-    return;
+  
+  if (execPartCount !== cmdLen) {
+    return false;
   }
 
+  const argMap: Record<string, string> = {};
   for (const argItem of currentCmdMap) {
-    if (!argItem.callback || argItem.type !== 'arg') continue;
-    const argMap: Record<string, string> = {};
+    const value = parseCmd.getValue(argItem.name);
+    if (value === undefined) continue;
+
     for (const key of argItem.name) {
       if (!parseCmd.hasArg(key)) {
         continue;
       }
-      argMap[key] = parseCmd.getValue(key)!;
+      argMap[key] = value;
     }
-    Object.keys(argMap).length > 0 && argItem.callback(bot, argMap);
+    argItem.callback?.(bot, value);
   }
+  tailCallback?.(bot, argMap);
+  return true;
 }
 
-function setLevel(data: CommandData, currentLevel: number) {
-  data.level = currentLevel;
-  data.subCmds?.forEach(cmd => setLevel(cmd, currentLevel + 1));
+function setLevel(manager: CommandManager, currentLevel: number) {
+  manager.level = currentLevel;
+  manager.subCmds?.forEach(cmd => setLevel(cmd, currentLevel + 1));
 }
 
 
 export default function inject(bot: mineflayer.Bot) {
   bot._cmdMap = [];
-  bot.registerCmd = (cmdManager: CommandManager) => {
-    const data = cmdManager.toData();
-    setLevel(data, 1);
-    bot._cmdMap.push(data);
+  bot.registerCmd = (cmdManager: CommandManager<CommandType>) => {
+    if (cmdManager.type !== CommandType.CMD) {
+      throw new Error('Only CMD type can be registered.');
+    }
+
+    setLevel(cmdManager, 1);
+    bot._cmdMap.push(cmdManager);
   };
   bot.tryExecute = (input: string) => {
     tryExecute(bot, input);
@@ -194,13 +244,12 @@ export default function inject(bot: mineflayer.Bot) {
 export {
   CommandManager
 };
-export type { CommandData };
 
 
 declare module 'mineflayer' {
   interface Bot {
-    _cmdMap: CommandData[];
-    registerCmd(cmdManager: CommandManager): void;
+    _cmdMap: CommandManager<CommandType>[];
+    registerCmd(cmdManager: CommandManager<CommandType>): void;
     tryExecute(input: string): void;
     getCommandManager(): typeof CommandManager;
   }

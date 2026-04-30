@@ -298,13 +298,13 @@ export { Separator } from '@inquirer/core';
 import mineflayer from "mineflayer";
 import CmdParser from "../utils/CmdParser.js";
 import fuzzy from "fuzzy";
-import type { CommandData } from "./command.js";
+import { CommandManager, CommandType } from './command.js';
 import { pluginReady, waitPluginLoads } from "../utils/pluginWaiter.js";
 
 const DEBUG = CmdParser.getValueByArgName(process.argv, 'debug') === 'true';
 
 
-function getMatch(cmd: string | undefined, tips: CommandData[]) {
+function getMatch(cmd: string | undefined, tips: CommandManager[]) {
   const cmdList = tips.map(item => item.name).flat();
   const filteredTips = fuzzy.filter(cmd || '', cmdList);
   return filteredTips.map(item => item.string).sort();
@@ -347,6 +347,9 @@ async function getInput(bot: mineflayer.Bot) {
           }
 
           if (sub.level === partLen) {
+            if (sub.type === CommandType.VALUE) {
+              return [sub.name] as string[];
+            };
             return getMatch(cmdPart, currentCmdMap);
           }
 
