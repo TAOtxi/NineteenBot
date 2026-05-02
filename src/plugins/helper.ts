@@ -15,6 +15,7 @@ import {
   makeTheme,
   type Theme,
   type Status,
+  type KeypressEvent,
 } from '@inquirer/core';
 import { styleText } from 'node:util';
 import figures from '@inquirer/figures';
@@ -117,7 +118,16 @@ function normalizeChoices(
   });
 }
 
-const cmdHelper = createPrompt(
+function isPageUpKey(key: KeypressEvent) {
+  return key.name === 'pageup';
+}
+
+function isPageDownKey(key: KeypressEvent) {
+  return key.name === 'pagedown';
+}
+
+
+const cmdHelper = (bot: mineflayer.Bot, config: SearchConfig) => createPrompt(
   (config: SearchConfig, done: (value: string) => void) => {
     const { pageSize = 7, validate = () => true } = config;
     const theme = makeTheme<SearchTheme>(searchTheme, config.theme);
@@ -184,10 +194,34 @@ const cmdHelper = createPrompt(
 
     // Safe to assume the cursor position never points to a Separator.
     const selectedChoice = searchResults[active] as NormalizedChoice | void;
+    const [historyIndex, setHistoryIndex] = useState<number>(bot._commandHistory.length - 1);
 
     useKeypress(async (key, rl) => {
+      if (isPageUpKey(key)) {
+        console.log(`\Index: ${historyIndex}`);
+        console.log(`\rLen: ${bot._commandHistory.length}`);
+        console.log(`\r${bot._commandHistory}`);
+        if (historyIndex <= 0) return;
+        setFullCommand(bot._commandHistory[historyIndex - 1]!);
+        rl.clearLine(0);
+        rl.write(bot._commandHistory[historyIndex - 1]!);
+        setHistoryIndex(historyIndex - 1);
+        return;
+      }
+
+      if (isPageDownKey(key)) {
+        if (historyIndex >= bot._commandHistory.length - 1) return;
+        setFullCommand(bot._commandHistory[historyIndex + 1]!);
+        rl.clearLine(0);
+        rl.write(bot._commandHistory[historyIndex + 1]!);
+        setHistoryIndex(historyIndex + 1);
+        return;
+      }
+
       if (isEnterKey(key)) {
         setStatus('done');
+        bot.addToHistory(fullCommand);
+        bot._commandHistory.push('');
         done(fullCommand);
         // rl.clearLine(0);
         // rl.write(fullCommand);
@@ -211,6 +245,7 @@ const cmdHelper = createPrompt(
         rl.clearLine(0);
         rl.write(newCommand);
         setFullCommand(newCommand);
+        bot._commandHistory[bot._commandHistory.length - 1] = newCommand;
       }
       
       else if (status !== 'loading' && (isUpKey(key) || isDownKey(key))) {
@@ -229,6 +264,7 @@ const cmdHelper = createPrompt(
       } 
       
       else {
+        bot._commandHistory[bot._commandHistory.length - 1] = rl.line;
         setFullCommand(rl.line);
       }
     });
@@ -291,7 +327,7 @@ const cmdHelper = createPrompt(
 
     return [header, body];
   },
-);
+)(config);
 
 export { Separator } from '@inquirer/core';
 
@@ -311,7 +347,7 @@ function getMatch(cmd: string | undefined, tips: CommandManager[]) {
 }
 
 async function getInput(bot: mineflayer.Bot) {
-  return cmdHelper({
+  return cmdHelper(bot, {
     message: "Command:",
     pageSize: 10,
     source(input: string) {
@@ -374,7 +410,9 @@ async function getInput(bot: mineflayer.Bot) {
 export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, 'command');
 
+  bot._commandHistory = [''];
   bot._isMonitorInput = false;
+  bot._commandHistoryMaxSize = 20;
   bot.getInput = () => getInput(bot);
 
   bot.startMonitorInput = async () => {
@@ -383,13 +421,27 @@ export default async function inject(bot: mineflayer.Bot) {
 
     while (true) {
       if (!bot._isMonitorInput) break;
-      const input = await bot.getInput();
+      const input = await bot.getInput(); // TODO: 添加中断机制
       bot.tryExecute(input);
     }
   };
 
   bot.stopMonitorInput = () => {
     bot._isMonitorInput = false;
+  };
+
+  bot.addToHistory = (cmd: string) => {
+    for (let i=bot._commandHistory.length - 1; i>=0; i--) {
+      if (bot._commandHistory[i] === cmd) {
+        bot._commandHistory.splice(i, 1);
+        break;
+      }
+    }
+
+    bot._commandHistory.push(cmd);
+    if (bot._commandHistory.length > bot._commandHistoryMaxSize) {
+      bot._commandHistory.shift();
+    }
   };
   
   pluginReady(bot, 'helper');
@@ -398,6 +450,9 @@ export default async function inject(bot: mineflayer.Bot) {
 declare module 'mineflayer' {
   interface Bot {
     _isMonitorInput: boolean;
+    _commandHistory: string[];
+    _commandHistoryMaxSize: number;
+    addToHistory(cmd: string): void;
     startMonitorInput(): void;
     stopMonitorInput(): void;
     getInput(): Promise<string>;
