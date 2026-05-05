@@ -127,7 +127,7 @@ function isPageDownKey(key: KeypressEvent) {
 }
 
 
-const cmdHelper = (bot: mineflayer.Bot, config: SearchConfig) => createPrompt(
+const cmdHelper = (bot: mineflayer.Bot, config: SearchConfig, signal: AbortSignal) => createPrompt(
   (config: SearchConfig, done: (value: string) => void) => {
     const { pageSize = 7, validate = () => true } = config;
     const theme = makeTheme<SearchTheme>(searchTheme, config.theme);
@@ -198,9 +198,6 @@ const cmdHelper = (bot: mineflayer.Bot, config: SearchConfig) => createPrompt(
 
     useKeypress(async (key, rl) => {
       if (isPageUpKey(key)) {
-        console.log(`\Index: ${historyIndex}`);
-        console.log(`\rLen: ${bot._commandHistory.length}`);
-        console.log(`\r${bot._commandHistory}`);
         if (historyIndex <= 0) return;
         setFullCommand(bot._commandHistory[historyIndex - 1]!);
         rl.clearLine(0);
@@ -221,7 +218,7 @@ const cmdHelper = (bot: mineflayer.Bot, config: SearchConfig) => createPrompt(
       if (isEnterKey(key)) {
         setStatus('done');
         bot.addToHistory(fullCommand);
-        bot._commandHistory.push('');
+        bot._commandHistory.at(-1) !== '' && bot._commandHistory.push('');
         done(fullCommand);
         // rl.clearLine(0);
         // rl.write(fullCommand);
@@ -327,7 +324,7 @@ const cmdHelper = (bot: mineflayer.Bot, config: SearchConfig) => createPrompt(
 
     return [header, body];
   },
-)(config);
+)(config, { signal });
 
 export { Separator } from '@inquirer/core';
 
@@ -346,7 +343,7 @@ function getMatch(cmd: string | undefined, tips: CommandManager[]) {
   return filteredTips.map(item => item.string).sort();
 }
 
-async function getInput(bot: mineflayer.Bot) {
+async function getInput(bot: mineflayer.Bot, signal: AbortSignal) {
   return cmdHelper(bot, {
     message: "Command:",
     pageSize: 10,
@@ -403,7 +400,7 @@ async function getInput(bot: mineflayer.Bot) {
       
       return [];
     }
-  })
+  }, signal);
 }
 
 
@@ -413,21 +410,28 @@ export default async function inject(bot: mineflayer.Bot) {
   bot._commandHistory = [''];
   bot._isMonitorInput = false;
   bot._commandHistoryMaxSize = 20;
-  bot.getInput = () => getInput(bot);
+  bot.getInput = (signal: AbortSignal) => getInput(bot, signal);
 
   bot.startMonitorInput = async () => {
     if (bot._isMonitorInput) return;
     bot._isMonitorInput = true;
+    bot._controller = new AbortController();
+    const signal = bot._controller.signal;
 
-    while (true) {
-      if (!bot._isMonitorInput) break;
-      const input = await bot.getInput(); // TODO: 添加中断机制
-      bot.tryExecute(input);
+    while (bot._isMonitorInput) {
+      try {
+        const input = await bot.getInput(signal);
+        bot.tryExecute(input);
+      } catch (error) {
+        bot.baseInfo('error', error as string);
+        break;
+      }
     }
   };
 
   bot.stopMonitorInput = () => {
     bot._isMonitorInput = false;
+    bot._controller?.abort();
   };
 
   bot.addToHistory = (cmd: string) => {
@@ -452,9 +456,10 @@ declare module 'mineflayer' {
     _isMonitorInput: boolean;
     _commandHistory: string[];
     _commandHistoryMaxSize: number;
+    _controller: AbortController;
     addToHistory(cmd: string): void;
     startMonitorInput(): void;
     stopMonitorInput(): void;
-    getInput(): Promise<string>;
+    getInput(signal: AbortSignal): Promise<string>;
   }
 }
