@@ -83,15 +83,18 @@ function getLatestLogFile(logDir: string, preLogFile: string, maxLogSize: number
 
 function base(bot: mineflayer.Bot, prefix: string, msg: string, type: string) {
   if (!bot.canLog) {
+    bot._withLogTitle = false;
     return;
   }
-  let logTitle = '';
-  if (prefix) {
-    logTitle = `${getTimeStr()}[${prefix}][${type}] `;
+  let logData: string = '';
+  if (bot._withLogTitle) {
+    const title = `${getTimeStr()} ${prefix? `[${prefix}][${type}] ` : `[${type}] `}`;
+    logData = `${title}${msg}`;
   } else {
-    logTitle = `${getTimeStr()}[${type}] `;
+    logData = msg;
   }
-  const logData = `${bot.withLogTitle ? logTitle : ''}${msg}`;
+  bot._withLogTitle = true;
+
   console.log('\r' + logData);
   bot.canSaveLog && saveLog(bot, logData);
 }
@@ -107,10 +110,14 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.maxLogSize = 1024 * 1024 * 10; // 10MB
   bot.logDir = `./log/${bot.username}`;
   bot.logFile = getLatestLogFile(bot.logDir, '', bot.maxLogSize);
-  bot.withLogTitle = true;
+  bot._withLogTitle = true;
   bot.baseInfo = (prefix: string, msg: string) => base(bot, prefix, msg, 'INFO');
   bot.baseWarn = (prefix: string, msg: string) => base(bot, prefix, msg, 'WARN');
   bot.baseError = (prefix: string, msg: string) => base(bot, prefix, msg, 'ERROR');
+  bot.withoutLogTitle = () => {
+    bot._withLogTitle = false;
+    return bot;
+  }
   pluginReady(bot, 'logger');
 }
 
@@ -119,10 +126,11 @@ declare module 'mineflayer' {
   interface Bot {
     canLog: boolean;
     canSaveLog: boolean;
-    withLogTitle: boolean;
+    _withLogTitle: boolean;
     logDir: string;
     logFile: string;
     maxLogSize: number;
+    withoutLogTitle(): Bot;
     baseInfo(prefix: string, msg: string): void;
     baseWarn(prefix: string, msg: string): void;
     baseError(prefix: string, msg: string): void;
