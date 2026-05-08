@@ -2,7 +2,7 @@ import mineflayer from 'mineflayer';
 import { pluginReady } from '../utils/pluginWaiter.js';
 
 
-function throttle(bot: mineflayer.Bot, id: string, task: () => void, interval: number) {
+function throttle(bot: mineflayer.Bot, id: string, interval: number, task: RunableTask) {
   if (bot._throttleVar[id] === undefined ||
       bot._throttleVar[id].lastRunTick + interval <= bot.ticker
   ) {
@@ -10,7 +10,7 @@ function throttle(bot: mineflayer.Bot, id: string, task: () => void, interval: n
       interval,
       lastRunTick: bot.ticker,
     }
-    task();
+    task(bot);
   }
   tryClearThrottle(bot);
 }
@@ -28,57 +28,58 @@ function tryClearThrottle(bot: mineflayer.Bot) {
   }
 }
 
-function createIntervalTask(
+function createIntervalTimeTask(
   bot: mineflayer.Bot, 
   id: string, 
-  task: () => void, 
   interval: number, 
+  task: RunableTask, 
   runImmediately = false
 ) {
-  if (bot.taskList.some(task => task.id === id)) {
+  if (bot.timeTaskList.some(task => task.id === id)) {
     throw new Error(`Task ${id} already exists`);
   }
   if (interval < 0) {
     throw new Error(`Interval ${interval} is not valid`);
   }
-  bot.taskList.push({
+  bot.timeTaskList.push({
     id,
     task,
     interval: interval,
     nextRunTick: bot.ticker + interval,
   })
-  runImmediately && task();
+  runImmediately && task(bot);
 }
 
-function createOnceTask(
+function createOnceTimeTask(
   bot: mineflayer.Bot,
   id: string,
-  task: () => void,
-  runAfterTick: number
+  runAfterTick: number,
+  task: RunableTask
 ) {
-  const onceTask = () => {
-    task();
-    bot.removeTask(id);
+  const onceTask = (bot: mineflayer.Bot) => {
+    task(bot);
+    bot.removeTimeTask(id);
   }
-  createIntervalTask(bot, id, onceTask, runAfterTick, false);
+  createIntervalTimeTask(bot, id, runAfterTick, onceTask, false);
 }
 
-function removeTask(bot: mineflayer.Bot, id: string) {
-  for (let i = 0; i < bot.taskList.length; i++) {
-    if (bot.taskList[i]!.id === id) {
-      return bot.taskList.splice(i, 1)[0]!;
+function removeTimeTask(bot: mineflayer.Bot, id: string) {
+  for (let i = 0; i < bot.timeTaskList.length; i++) {
+    if (bot.timeTaskList[i]!.id === id) {
+      bot.timeTaskList.splice(i, 1);
+      return;
     }
   }
-  return null;
+  throw new Error(`Task ${id} not found`);
 }
 
-function editTask(
+function updateTimeTask(
   bot: mineflayer.Bot,
   id: string,
   interval: number,
-  task?: () => void
+  task?: RunableTask
 ) {
-  const taskData = bot.taskList.find(t => t.id === id);
+  const taskData = bot.timeTaskList.find(t => t.id === id);
   if (taskData === undefined) {
     throw new Error(`Task ${id} not found`);
   }
@@ -86,22 +87,75 @@ function editTask(
   taskData.interval = interval;
 }
 
+function createTickTask(
+  bot: mineflayer.Bot,
+  id: string,
+  interval: number,
+  task: RunableTask
+) {
+  if (bot.tickTaskList[id] !== undefined) {
+    throw new Error(`Task ${id} already exists`);
+  }
+  bot.tickTaskList[id] = {
+    ticker: 0,
+    interval,
+    task,
+  }
+}
+
+function tickTask(bot: mineflayer.Bot, id: string) {
+  const task = bot.tickTaskList[id];
+  if (task === undefined) {
+    throw new Error(`Task ${id} not found`);
+  }
+  task.ticker++;
+  if (task.ticker >= task.interval) {
+    task.task(bot);
+    task.ticker = 0;
+  }
+}
+
+function updateTickTask(
+  bot: mineflayer.Bot, 
+  id: string,
+  interval: number,
+  task?: RunableTask,
+) {
+  const taskData = bot.tickTaskList[id];
+  if (taskData === undefined) {
+    throw new Error(`Task ${id} not found`);
+  }
+  taskData.interval = interval;
+  taskData.task = task || taskData.task;
+}
+
+function removeTickTask(bot: mineflayer.Bot, id: string) {
+  if (bot.tickTaskList[id] === undefined) {
+    throw new Error(`TickTask ${id} not found`);
+  }
+  delete bot.tickTaskList[id];
+}
 
 export default function inject(bot: mineflayer.Bot) {
   bot.ticker = 0;
   bot._throttleVar = {};
-  bot.throttle = (id, task, interval) => throttle(bot, id, task, interval);
-  bot.editTask = (id, interval, task) => editTask(bot, id, interval, task);
-  bot.removeTask = (id) => removeTask(bot, id);
-  bot.createOnceTask = (id, task, runAfterTick) => createOnceTask(bot, id, task, runAfterTick);
-  bot.createIntervalTask = (id, task, interval, runImmediately) => createIntervalTask(bot, id, task, interval, runImmediately);
+  bot.throttle = (id, interval, task) => throttle(bot, id, interval, task);
+  bot.updateTimeTask = (id, interval, task) => updateTimeTask(bot, id, interval, task);
+  bot.removeTimeTask = (id) => removeTimeTask(bot, id);
+  bot.createOnceTimeTask = (id, runAfterTick, task) => createOnceTimeTask(bot, id, runAfterTick, task);
+  bot.createIntervalTimeTask = (id, interval, task, runImmediately) => createIntervalTimeTask(bot, id, interval, task, runImmediately);
+  bot.tickTask = (id) => tickTask(bot, id);
+  bot.createTickTask = (id, interval, task) => createTickTask(bot, id, interval, task);
+  bot.updateTickTask = (id, interval, task) => updateTickTask(bot, id, interval, task);
+  bot.removeTickTask = (id) => removeTickTask(bot, id);
+
 
   bot.on('physicsTick', () => {
     bot.ticker++;
-    for (let i=bot.taskList.length-1; i>=0; i--) {
-      const task = bot.taskList[i]!;
+    for (let i=bot.timeTaskList.length-1; i>=0; i--) {
+      const task = bot.timeTaskList[i]!;
       if (bot.ticker >= task.nextRunTick) {
-        task.task();
+        task.task(bot);
         task.nextRunTick = bot.ticker + task.interval;
       }
     }
@@ -109,9 +163,15 @@ export default function inject(bot: mineflayer.Bot) {
   pluginReady(bot, 'time');
 }
 
-interface Task {
+interface TickTask {
+  ticker: number,
+  interval: number,
+  task: RunableTask,
+}
+
+interface TimeTask {
   id: string,
-  task: () => void,
+  task: RunableTask,
   interval: number,
   nextRunTick: number,
 }
@@ -121,16 +181,22 @@ interface ThrottleTaskInfo {
   lastRunTick: number,
 }
 
+type RunableTask = (bot: mineflayer.Bot) => void;
 
 declare module 'mineflayer' {
   interface Bot {
     ticker: number;
-    taskList: Task[];
+    timeTaskList: TimeTask[];
+    tickTaskList: Record<string, TickTask>;
     _throttleVar: Record<string, ThrottleTaskInfo>;
-    createOnceTask(id: string, task: () => void, runAfterTick: number): void;
-    createIntervalTask(id: string, task: () => void, interval: number, runImmediately?: boolean): void;
-    editTask(id: string, interval: number, task?: () => void): void;
-    removeTask(id: string): Task | null;
-    throttle(id: string, task: () => void, interval: number): void;
+    createOnceTimeTask(id: string, runAfterTick: number, task: RunableTask): void;
+    createIntervalTimeTask(id: string, interval: number, task: RunableTask, runImmediately?: boolean): void;
+    updateTimeTask(id: string, interval: number, task?: RunableTask): void;
+    removeTimeTask(id: string): void;
+    throttle(id: string, interval: number, task: RunableTask): void;
+    createTickTask(id: string, interval: number, task: RunableTask): void;
+    tickTask(id: string): void;
+    updateTickTask(id: string, interval: number, task?: RunableTask): void;
+    removeTickTask(id: string): void;
   }
 }
