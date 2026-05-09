@@ -70,7 +70,6 @@ function removeTimeTask(bot: mineflayer.Bot, id: string) {
       return;
     }
   }
-  throw new Error(`Task ${id} not found`);
 }
 
 function updateTimeTask(
@@ -130,10 +129,9 @@ function updateTickTask(
 }
 
 function removeTickTask(bot: mineflayer.Bot, id: string) {
-  if (bot.tickTaskList[id] === undefined) {
-    throw new Error(`TickTask ${id} not found`);
+  if (bot.tickTaskList[id] !== undefined) {
+    delete bot.tickTaskList[id];
   }
-  delete bot.tickTaskList[id];
 }
 
 export default function inject(bot: mineflayer.Bot) {
