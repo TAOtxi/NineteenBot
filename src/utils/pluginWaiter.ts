@@ -23,7 +23,7 @@ function waitPluginLoad(bot: mineflayer.Bot, pluginName: string, timeOut: number
   })
 }
 
-function waitPluginLoads(bot: mineflayer.Bot, pluginName: string | string[], timeOut: number = 10000) {
+function waitPluginLoads(bot: mineflayer.Bot, pluginName: string | string[], timeOut: number = 60000) {
   if (Array.isArray(pluginName)) {
     return Promise.all(pluginName.map(name => waitPluginLoad(bot, name, timeOut)));
   }
@@ -33,6 +33,9 @@ function waitPluginLoads(bot: mineflayer.Bot, pluginName: string | string[], tim
 function pluginReady(bot: mineflayer.Bot, pluginName: string) {
   if (!bot.pluginLoadMap) {
     bot.pluginLoadMap = {};
+  }
+  if (bot.pluginLoadMap[pluginName]) {
+    throw new Error(`Plugin ${pluginName} already registered`);
   }
   bot.pluginLoadMap[pluginName] = true;
   // @ts-ignore

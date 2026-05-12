@@ -81,8 +81,9 @@ export default class CmdParser {
     return this;
   }
 
+  // ^-\d 匹配成功的都视为子命令
   static isArgName(argName: string) {
-    return argName.startsWith('-') && !argName.match(/^-\d+(?:\.\d+)?$/);
+    return argName.at(0) === '-' && !argName.match(/^-\d/);
   }
 
   hasAnyArg() {
@@ -175,7 +176,7 @@ export default class CmdParser {
       }
 
       let nextArg = cmdParts[i+1];
-      if (!nextArg || (nextArg.startsWith('-') && !nextArg.match(/^-\d+(?:\.\d+)?$/))) {
+      if (!nextArg || CmdParser.isArgName(nextArg)) {
           parseResult.args[arg] = '';
           continue;
       }
@@ -194,6 +195,20 @@ export default class CmdParser {
       }
     }
     return null;
+  }
+
+  static parseArrayString(str: string | undefined, split: string = ',', removeSpace: boolean = true) {
+    if (!str) return [];
+    if (removeSpace) str = str.replace(' ', '').trim();
+    return str.split(split);
+  }
+
+  static parseArrayInt(str: string | undefined, split: string = ',', removeSpace: boolean = true) {
+    return CmdParser.parseArrayString(str, split, removeSpace).map(parseInt);
+  }
+
+  static parseArrayFloat(str: string | undefined, split: string = ',', removeSpace: boolean = true) {
+    return CmdParser.parseArrayString(str, split, removeSpace).map(parseFloat);
   }
 
   toString() {

@@ -17,9 +17,14 @@ function regMatchOrEqual(pattern: string, content: string) {
   return pattern === content;
 }
 
+function stringToList(str: string, sep: string = ',', mapper: (item: string) => any = item => item) {
+  return str.split(sep).map(mapper);
+}
+
 
 export default {
   isReg,
   handleRegMatch,
   regMatchOrEqual,
+  stringToList,
 }

@@ -6,7 +6,8 @@ const fallbackLang = 'en_us';
 const defaultLang = CmdUtil.getValueByArgName(process.argv, 'lang') || fallbackLang;
 let langData: Record<string, Record<string, string>> = {};
 
-
+// TODO: 改成插件
+// TODO: 翻译文件使用minecraft-data库
 function loadLangData(lang: string = defaultLang, langDir: string = defaultLangDir) {
   if (langData[lang]) {
     return;

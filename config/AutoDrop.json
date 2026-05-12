@@ -1,25 +1,54 @@
 {
   "ignoreSlots": [],
-  "dropDirection": "east",
+  "useDropRotation": false,
+  "dropYaw": 0,
+  "dropPitch": 0,
+  "dropDirection": "look",
   "checkInterval": 40,
   "dropMode": "whitelist",
+  "triggerMinNotEmptySlots": 20,
   "items": [
     {
       "enabled": true,
-      "name": "Golden Apple",
-      "id": "golden_apple"
-    },
-    {
-      "enabled": true,
       "name": "*",
-      "id": "/.*?_sword/",
+      "id": "/^(?:diamond|netherite)_(?:sword|axe)$/",
+      "minEntCounts": 2,
       "enchants": [
         {
           "name": "sharpness",
           "lvl": 5
-        }, {
+        },
+        {
           "name": "smite",
           "lvl": 5
+        },
+        {
+          "name": "bane_of_arthropods",
+          "lvl": 5
+        }
+      ]
+    },
+    {
+      "enabled": true,
+      "name": "*",
+      "id": "/^(?:diamond|netherite)_(?:helmet|chestplate|leggings|boots)$/",
+      "minEntCounts": 3,
+      "enchants": [
+        {
+          "name": "protection",
+          "lvl": 4
+        },
+        {
+          "name": "projectile_protection",
+          "lvl": 4
+        },
+        {
+          "name": "blast_protection",
+          "lvl": 4
+        },
+        {
+          "name": "fire_protection",
+          "lvl": 4
         }
       ]
     }

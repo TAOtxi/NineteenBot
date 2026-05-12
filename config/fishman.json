@@ -1,0 +1,15 @@
+{
+  "enableRotation": true,
+  "rotationIntervalTick": 300,
+  "rotationIndex": 2,
+  "rotationData": [
+    {
+      "yaw": 0,
+      "pitch": 30
+    },
+    {
+      "yaw": 90,
+      "pitch": 30
+    }
+  ]
+}

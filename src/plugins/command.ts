@@ -44,10 +44,8 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
 
   callback: ((
       bot: mineflayer.Bot, 
-      args?: 
-        T extends CommandType.CMD ? Record<string, string> :
-        T extends (CommandType.ARG | CommandType.VALUE) ? string :
-        never
+      args: T extends CommandType.CMD ? 
+        Record<string, string> : string
       ) => void) | null;
   
   // constructor(name: string, type: CommandType.VALUE);
@@ -91,10 +89,9 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
   // TODO: value类型可以有多个
   execute(callback: (
       bot: mineflayer.Bot, 
-      args?: 
-        T extends CommandType.CMD ? Record<string, string> :
-        T extends (CommandType.ARG | CommandType.VALUE) ? string :
-        never
+      args: 
+        T extends CommandType.CMD ? 
+          Record<string, string> : string
       ) => void) {
     this.callback = callback;
     return this;
@@ -152,6 +149,9 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
 
 
 function tryExecute(bot: mineflayer.Bot, input: string) {
+  if (input.trim() === '') {
+    return true;
+  }
   const parseCmd = new CmdParser(input);
 
   const cmdLen = parseCmd.getCmds().length;
@@ -176,12 +176,11 @@ function tryExecute(bot: mineflayer.Bot, input: string) {
         if (i !== cmdLen - 1) {
           return false;
         }
-        item.callback?.(bot, parseCmd.getFirstCmd());
+        item.callback?.(bot, parseCmd.getFirstCmd()!);
         return true;
       }
 
       if (!parseCmd.isCmd(item.name)) continue;
-      console.log(item.name)
 
       tailCallback = item.callback;
       execPartCount++;
@@ -234,7 +233,7 @@ export default function inject(bot: mineflayer.Bot) {
     bot._cmdMap.push(cmdManager);
   };
   bot.tryExecute = (input: string) => {
-    tryExecute(bot, input);
+    return tryExecute(bot, input);
   };
   bot.getCommandManager = () => CommandManager;
 
@@ -250,7 +249,7 @@ declare module 'mineflayer' {
   interface Bot {
     _cmdMap: CommandManager<CommandType>[];
     registerCmd(cmdManager: CommandManager<CommandType>): void;
-    tryExecute(input: string): void;
+    tryExecute(input: string): boolean;
     getCommandManager(): typeof CommandManager;
   }
 }
