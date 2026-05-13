@@ -421,13 +421,9 @@ export default async function inject(bot: mineflayer.Bot) {
     while (bot._isMonitorInput) {
       try {
         const input = await bot.getInput(signal);
-        if (input.startsWith('. ')) {
-          bot.chat(input.slice(2));
-        } else {
-          bot.tryExecute(input);
-        }
+        await bot.tryExecute(input);
       } catch (error) {
-        bot.baseInfo('error', error as string);
+        bot.baseError('helper', error as string);
         break;
       }
     }

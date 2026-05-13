@@ -20,21 +20,25 @@ function saveConfig(bot: mineflayer.Bot, namespace: string, data: Record<string,
   });
 }
 
-function loadConfig(bot: mineflayer.Bot, namespace: string, defaultData: Record<string, any>) {
-  const baseConfigPath = `${bot.configDir}/${namespace}.json`;
-  const privatePath = `${bot.privateDir}/${namespace}.json`;
+function loadConfig(bot: mineflayer.Bot, namespace: string, defaultData: Record<string, any>): Promise<Record<string, any>> {
+  return new Promise(resolve => {
+    const baseConfigPath = `${bot.configDir}/${namespace}.json`;
+    const privatePath = `${bot.privateDir}/${namespace}.json`;
 
-  let data: Record<string, any> = {};
-  if (fs.existsSync(baseConfigPath)) {
-    data = JSON.parse(fs.readFileSync(baseConfigPath, 'utf8'));
-  } else {
-    fs.writeFileSync(baseConfigPath, JSON.stringify(defaultData, null, 2));
-  }
-  if (fs.existsSync(privatePath)) {
-    data = {...defaultData, ...data, ...JSON.parse(fs.readFileSync(privatePath, 'utf8'))};
-  }
-  bot.configMap[namespace] = data;
-  return data;
+    let data: Record<string, any> = {};
+    if (fs.existsSync(baseConfigPath)) {
+      data = JSON.parse(fs.readFileSync(baseConfigPath, 'utf8'));
+    } else {
+      fs.writeFileSync(baseConfigPath, JSON.stringify(defaultData, null, 2));
+    }
+    if (fs.existsSync(privatePath)) {
+      data = {...defaultData, ...data, ...JSON.parse(fs.readFileSync(privatePath, 'utf8'))};
+    } else {
+      data = {...defaultData, ...data};
+    }
+    bot.configMap[namespace] = data;
+    resolve(data);
+  });
 }
 
 function getConfig(bot: mineflayer.Bot, namespace: string, key: string) {
@@ -66,8 +70,8 @@ function setConfig(bot: mineflayer.Bot, namespace: string, key: string, value: a
       const privateData = JSON.parse(fs.readFileSync(privatePath, 'utf8'));
       privateData[key] = value;
       fs.writeFile(privatePath, JSON.stringify(privateData, null, 2), () => resolve());
+      return;
     }
-
 
     const baseConfigPath = `${bot.configDir}/${namespace}.json`;
     if (!fs.existsSync(baseConfigPath)) {
@@ -99,7 +103,7 @@ declare module 'mineflayer' {
     privateDir: string;
     configMap: Record<string, any>;
     saveConfig(namespace: string, data: Record<string, any>, isPrivate?: boolean): Promise<void>;
-    loadConfig(namespace: string, defaultData: Record<string, any>): Record<string, any>;
+    loadConfig(namespace: string, defaultData: Record<string, any>): Promise<Record<string, any>>;
     getConfig(namespace: string, key: string): any | undefined;
     setConfig(namespace: string, key: string, value: any, save?: boolean, isPrivate?: boolean): Promise<void>;
   }

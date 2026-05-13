@@ -3,14 +3,12 @@
   "useDropRotation": false,
   "dropYaw": 0,
   "dropPitch": 0,
-  "dropDirection": "look",
+  "dropDirection": "north",
   "checkInterval": 40,
   "dropMode": "whitelist",
-  "triggerMinNotEmptySlots": 20,
+  "triggerMinNotEmptySlots": 30,
   "items": [
     {
-      "enabled": true,
-      "name": "*",
       "id": "/^(?:diamond|netherite)_(?:sword|axe)$/",
       "minEntCounts": 2,
       "enchants": [
@@ -29,8 +27,24 @@
       ]
     },
     {
-      "enabled": true,
-      "name": "*",
+      "id": "/_(?:sword|axe)$/",
+      "minEntCounts": -1,
+      "enchants": [
+        {
+          "name": "sharpness",
+          "lvl": 5
+        },
+        {
+          "name": "smite",
+          "lvl": 5
+        },
+        {
+          "name": "bane_of_arthropods",
+          "lvl": 5
+        }
+      ]
+    },
+    {
       "id": "/^(?:diamond|netherite)_(?:helmet|chestplate|leggings|boots)$/",
       "minEntCounts": 3,
       "enchants": [
@@ -51,6 +65,58 @@
           "lvl": 4
         }
       ]
+    },
+    {
+      "id": "/_(?:helmet|chestplate|leggings|boots)$/",
+      "minEntCounts": -1,
+      "enchants": [
+        {
+          "name": "protection",
+          "lvl": 4
+        },
+        {
+          "name": "projectile_protection",
+          "lvl": 4
+        },
+        {
+          "name": "blast_protection",
+          "lvl": 4
+        },
+        {
+          "name": "fire_protection",
+          "lvl": 4
+        }
+      ]
+    },
+    {
+      "id": "bow",
+      "minEntCounts": -1,
+      "enchants": [
+        {
+          "name": "mending",
+          "lvl": 1
+        },
+        {
+          "name": "infinity",
+          "lvl": 1
+        }
+      ]
+    },
+    {
+      "enabled": true,
+      "id": "/^diamond(?:_block)?$/"
+    },
+    {
+      "enabled": true,
+      "id": "paper"
+    },
+    {
+      "enabled": true,
+      "id": "fishing_rod"
+    },
+    {
+      "enabled": true,
+      "id": "/^netherite.*$/"
     }
   ]
 }

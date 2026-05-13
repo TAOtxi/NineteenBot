@@ -1,14 +1,14 @@
 {
   "enableRotation": true,
-  "rotationIntervalTick": 300,
-  "rotationIndex": 2,
+  "fishingRodProtect": true,
+  "rotationIntervalTick": 400,
   "rotationData": [
     {
       "yaw": 0,
       "pitch": 30
     },
     {
-      "yaw": 90,
+      "yaw": -90,
       "pitch": 30
     }
   ]

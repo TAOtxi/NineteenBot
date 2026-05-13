@@ -18,8 +18,6 @@ const defaultConfig: Config = {
   items: [
     {
       // /give @a minecraft:diamond_sword[minecraft:enchantments={sharpness:5,smite:5,bane_of_arthropods:5}]
-      enabled: true,
-      name: "*",
       id: "/^(?:diamond|netherite)_(?:sword|axe)$/",
       minEntCounts: 2,
       enchants: [
@@ -29,8 +27,15 @@ const defaultConfig: Config = {
       ]
     },
     {
-      enabled: true,
-      name: "*",
+      id: "/_(?:sword|axe)$/",
+      minEntCounts: -1,
+      enchants: [
+        { name: "sharpness", lvl: 5 },
+        { name: "smite", lvl: 5 },
+        { name: "bane_of_arthropods", lvl: 5 }
+      ]
+    },
+    {
       id: "/^(?:diamond|netherite)_(?:helmet|chestplate|leggings|boots)$/",
       minEntCounts: 3,
       enchants: [
@@ -39,6 +44,40 @@ const defaultConfig: Config = {
         { name: "blast_protection", lvl: 4 },         // 爆炸保护
         { name: "fire_protection", lvl: 4 }           // 火焰保护
       ]
+    },
+    {
+      id: "/_(?:helmet|chestplate|leggings|boots)$/",
+      minEntCounts: -1,
+      enchants: [
+        { name: "protection", lvl: 4 },
+        { name: "projectile_protection", lvl: 4 },
+        { name: "blast_protection", lvl: 4 },
+        { name: "fire_protection", lvl: 4 }
+      ]
+    },
+    {
+      id: "bow",
+      minEntCounts: -1,
+      enchants: [
+        { name: "mending", lvl: 1 },
+        { name: "infinity", lvl: 1 }
+      ]
+    },
+    {
+      enabled: true,
+      id: "/^diamond(?:_block)?$/",
+    },
+    {
+      enabled: true,
+      id: "paper",
+    },
+    {
+      enabled: true,
+      id: "fishing_rod",
+    },
+    {
+      enabled: true,
+      id: "/^netherite.*$/",
     }
   ]
 }
@@ -67,17 +106,24 @@ function ignoreCurrentSlot(bot: mineflayer.Bot) {
 
 function isMatch(item: prisItem.Item, checkItems: Config['items']) {
   for (const checker of checkItems) {
-    if (!checker.enabled) {
+    if (!(checker.enabled ?? true)) {
       continue;
     }
     // TODO: 待寻找翻译方式
     // name <Golden Apple>
-    if (checker.name !== '*' && !StringUtil.regMatchOrEqual(checker.name, item.customName ?? item.displayName)) {
+    if (checker.name !== '*' &&
+        checker.name !== undefined &&
+        !StringUtil.regMatchOrEqual(checker.name, item.customName ?? item.displayName)
+    ) {
       continue;
     }
+
     // TODO: 正则匹配是为了弥补不能获取物品的标签的问题，待日后寻找获取标签方法
     // id <golden_apple>
-    if (checker.id !== '*' && !StringUtil.regMatchOrEqual(checker.id, item.name)) {
+    if (checker.id !== '*' &&
+        checker.id !== undefined &&
+        !StringUtil.regMatchOrEqual(checker.id, item.name)
+    ) {
       continue;
     }
 
@@ -127,12 +173,12 @@ function handleDrop(bot: mineflayer.Bot, slot: number[]) {
   const originPitch = bot.entity.pitch;
 
   if (bot._autodrop('useDropRotation')) {
-    bot.look(bot._autodrop('dropYaw'), bot._autodrop('dropPitch'), true);
+    bot.look2(bot._autodrop('dropYaw'), bot._autodrop('dropPitch'), true);
   } else {
     bot.setDirection(bot._autodrop('dropDirection'));
   }
 
-  bot.createOnceTimeTask('autodrop_drop_task', 20, bot => {
+  bot.createOnceTimeTask('autodrop_drop_task', 15, bot => {
     slot.forEach(slot => dropSlot(bot, slot));
     bot.look(originYaw, originPitch, true);
   })
@@ -148,12 +194,15 @@ function dropSlot(bot: mineflayer.Bot, slot: number) {
 }
   
 function tick(bot: mineflayer.Bot) {
-  const l = bot.inventory.inventoryStart;
-  const r = bot.inventory.inventoryEnd;
+  const notEmptySlots = getNotEmptySlot(bot);
+  if (notEmptySlots.length < bot._autodrop('triggerMinNotEmptySlots')) {
+    return;
+  }
+
   const needDropSlots: number[] = [];
   const dropMode = bot._autodrop('dropMode');
   const checkItems = bot._autodrop('items');
-  for (let i = l; i <= r; i++) {
+  for (const i of notEmptySlots) {
     if (bot._autodrop('ignoreSlots').includes(i)) {
       continue;
     }
@@ -172,8 +221,8 @@ function registCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
   bot.registerCmd(CommandManager.command([pluginName, 'ad'])
     .execute(showHelp)
-    .then(CommandManager.command('on').execute(bot => bot._autodrop_enabled = true))
-    .then(CommandManager.command('off').execute(bot => bot._autodrop_enabled = false))
+    .then(CommandManager.command('on').execute(bot => bot.enableAutoDrop()))
+    .then(CommandManager.command('off').execute(bot => bot.disableAutoDrop()))
     .then(CommandManager.command('test').execute(tick))
     .then(CommandManager.command('ignore')
       .then(CommandManager.command('current').execute(ignoreCurrentSlot))
@@ -196,7 +245,8 @@ function registCmd(bot: mineflayer.Bot) {
             bot.baseError(pluginName, 'Slot value is empty.');
             return;
           }
-          bot.setConfig(pluginName, 'ignoreSlots', slots);
+          bot.baseInfo(pluginName, `Ignore set to ${slots}`);
+          return bot.setConfig(pluginName, 'ignoreSlots', slots);
         }))
       )
     )
@@ -208,26 +258,26 @@ function registCmd(bot: mineflayer.Bot) {
           }
           const interval = parseInt(value);
           bot.updateTimeTask(pluginName, interval);
-          bot.setConfig(pluginName, 'checkInterval', interval);
           bot.baseInfo(pluginName, `Interval set to ${interval}`);
+          return bot.setConfig(pluginName, 'checkInterval', interval);
       }))
       .then(CommandManager.argument(['-m', '--mode']).execute((bot, value) => {
         if (!value || !['whitelist', 'blacklist'].includes(value)) {
           bot.baseError(pluginName, 'Mode value is invalid.');
           return;
         }
-        bot.setConfig(pluginName, 'dropMode', value);
         bot.baseInfo(pluginName, `Mode set to ${value}`);
+        return bot.setConfig(pluginName, 'dropMode', value);
       }))
       .then(CommandManager.argument(['-d', '--direction']).execute((bot, value) => {
         if (!value) {
           bot.baseError(pluginName, 'Direction value is empty.');
           return;
         }
-        bot.setConfig(pluginName, 'dropDirection', value);
         bot.baseInfo(pluginName, `Direction set to ${value}`);
+        return bot.setConfig(pluginName, 'dropDirection', value);
       }))
-      .then(CommandManager.argument(['-r', '--rotation']).execute((bot, value) => {
+      .then(CommandManager.argument(['-r', '--rotation']).execute(async (bot, value) => {
         if (!value) {
           bot.baseError(pluginName, 'Rotation value is empty.');
           return;
@@ -237,9 +287,9 @@ function registCmd(bot: mineflayer.Bot) {
           bot.baseError(pluginName, 'Rotation value is invalid.');
           return;
         }
-        bot.setConfig(pluginName, 'dropYaw', rotation[0]);
-        bot.setConfig(pluginName, 'dropPitch', rotation[1]);
         bot.baseInfo(pluginName, `Rotation set to ${value}`);
+        await bot.setConfig(pluginName, 'dropYaw', rotation[0]);
+        return bot.setConfig(pluginName, 'dropPitch', rotation[1]);
       }))
       .then(CommandManager.argument('--dropWay')
         .execute((bot, way) => {
@@ -247,17 +297,19 @@ function registCmd(bot: mineflayer.Bot) {
             bot.baseError(pluginName, `Value ${way} is invalid.`);
             return;
           }
-          bot.setConfig(pluginName, 'useDropRotation', way === 'rotation');
           bot.baseInfo(pluginName, `Drop way set to ${way}`);
+          return bot.setConfig(pluginName, 'useDropRotation', way === 'rotation');
         }))
     )
     .then(CommandManager.command('config')
       .then(CommandManager.command('show').execute(bot => {
         bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(bot.configMap[pluginName], null, 2));
       }))
-      .then(CommandManager.command('reload').execute(bot => {
-        bot.loadConfig(pluginName, defaultConfig);
-        bot.updateTimeTask(pluginName, bot._autodrop('checkInterval'));
+      .then(CommandManager.command('reload').execute(async (bot) => {
+        await bot.loadConfig(pluginName, defaultConfig);
+        if (bot.hasTimeTask(pluginName)) {
+          bot.updateTimeTask(pluginName, bot._autodrop('checkInterval'));
+        }
         bot.baseInfo(pluginName, 'Config reloaded.');
       }))
     )
@@ -267,47 +319,30 @@ function registCmd(bot: mineflayer.Bot) {
 
 export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, ['makeConfig', 'logger', 'command', 'task', 'action']);
-  bot._autodrop_enabled = false;
   
-  bot.loadConfig(pluginName, defaultConfig);
+  await bot.loadConfig(pluginName, defaultConfig);
   bot._autodrop = (key: string) => bot.getConfig(pluginName, key);
   bot._autodrop_isTurnBack = true;
   bot.tryDrop = () => tick(bot);
 
-  bot.enableAutoDrop = (delay?: number) => {
-    if (delay) {
-      setTimeout(() => {
-        if (!bot) return;
-        bot._autodrop_enabled = true;
-      }, delay);
-    } else {
-      bot._autodrop_enabled = true;
-    }
+  bot.enableAutoDrop = () => {
+    bot.removeTimeTask(pluginName);
+    bot.createTimeTask(pluginName, bot._autodrop('checkInterval'), tick);
   }
 
-  bot.disableAutoDrop = () => {
-    bot._autodrop_enabled = false;
-  }
-
-  bot.createTimeTask(pluginName, bot._autodrop('checkInterval'), bot => {
-    if (bot._autodrop_enabled &&
-        getNotEmptySlot(bot) > bot._autodrop('triggerMinNotEmptySlots')
-    ) {
-      tick(bot);
-    }
-  });
+  bot.disableAutoDrop = () => bot.removeTimeTask(pluginName);
 
   registCmd(bot);
+  pluginReady(bot, pluginName);
 }
 
 
 declare module 'mineflayer' {
   interface Bot {
     _autodrop_isTurnBack: boolean;
-    _autodrop_enabled: boolean;
-    _autodrop(key: string): any | undefined;
+    _autodrop(key: string): any;
     tryDrop(): void;
-    enableAutoDrop(delay?: number): void;
+    enableAutoDrop(): void;
     disableAutoDrop(): void;
   }
 }
@@ -323,9 +358,9 @@ interface Config {
   dropMode: 'whitelist' | 'blacklist';
   triggerMinNotEmptySlots: number;
   items: {
-    enabled: boolean;
-    name: string;   // string or regex pattern (e.g. '/^Golden Apple$/')
-    id: string;     // https://zh.minecraft.wiki/w/Java版数据值#物品
+    enabled?: boolean;  // default true
+    name?: string;   // string or regex pattern (e.g. '/^Golden Apple$/')
+    id?: string;     // https://zh.minecraft.wiki/w/Java版数据值#物品
     enchants?: {    // https://zh.minecraft.wiki/w/Java版数据值#魔咒
       name: string;
       lvl: number;

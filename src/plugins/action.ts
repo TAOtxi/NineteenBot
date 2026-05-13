@@ -3,7 +3,7 @@ import prismEntity from 'prismarine-entity';
 import { Vec3 } from 'vec3';
 import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 import StringUtil from '../utils/StringUtil.js';
-import { fromNotchianYaw, fromNotchianPitch, toDegrees, toRadians } from '../utils/MathUtil.js';
+import { toRadians } from '../utils/MathUtil.js';
 
 const pluginName = 'action';
 
@@ -34,6 +34,7 @@ function regesterCmd(bot: mineflayer.Bot) {
     .then(CommandManager.command('spec')
       .then(CommandManager.value('<ActionType>').execute(startSpecitalAction)))
     .then(CommandManager.command('look')
+      .execute((bot, args) => Object.keys(args).length === 0 && watchNearestPlayer(bot))
       .then(CommandManager.argument(['-d', '--direction']).execute(setDirection))
       .then(CommandManager.argument(['-r', '--rotation']).execute(setRotation))
       .then(CommandManager.argument(['-b', '--block']).execute(setLookPosition))
@@ -45,22 +46,22 @@ function setDirection(bot: mineflayer.Bot, direction: string) {
   let yaw = 0;
   let pitch = 0;
   if (direction === 'up') {
-    pitch = -Math.PI / 2;
+    pitch = -90;
   } else if (direction === 'down') {
-    pitch = Math.PI / 2;
+    pitch = 90;
   } else if (direction === 'east') {
-    yaw = -Math.PI / 2;
+    yaw = -90;
   } else if (direction === 'west') {
-    yaw = Math.PI / 2;
+    yaw = 90;
   } else if (direction === 'north') {
-    yaw = -Math.PI;
+    yaw = -180;
   } else if (direction === 'south') {
     // yaw = 0;
   } else {
     bot.baseError(pluginName, `Invalid direction ${direction}`);
     return;
   }
-  bot.baseInfo(pluginName, `Look at ${direction} (${toDegrees(yaw)}, ${toDegrees(pitch)})`);
+  bot.baseInfo(pluginName, `Look at ${direction} (${yaw}, ${pitch})`);
   bot.look2(yaw, pitch, true);
 }
 
@@ -100,7 +101,7 @@ const defaultActionVar = {
   enabled: false,
   trackPlayer: false,
   spin: false,
-  spinAngle: Math.PI / 5,
+  spinAngle: 36,
   jump: false,
   jumpInterval: 3,
   sneak: false,
@@ -157,7 +158,7 @@ function startSpin(bot: mineflayer.Bot, spinAngle?: number) {
   bot._actionVar.enabled = true;
   bot._actionVar.spin = true;
   if (spinAngle !== undefined) {
-    bot._actionVar.spinAngle = toRadians(spinAngle);
+    bot._actionVar.spinAngle = spinAngle;
   }
   bot.baseInfo(pluginName, 'Spin enabled.');
 }
@@ -254,20 +255,25 @@ function watchEntity(bot: mineflayer.Bot, entity: prismEntity.Entity) {
 }
 
 // TODO: 筛选npc玩家
-function findNearestPlayer(bot: mineflayer.Bot) {
+function findNearestPlayer(bot: mineflayer.Bot, minDistance?: number) {
   let target: Player | null = null;
-  let minDistance = Number.MAX_VALUE;
+  let targetDistance = Number.MAX_VALUE;
   for (const username in bot.players) {
     if (username === bot.username) continue;
     if (!bot.players[username]!.entity) continue;
     const player = bot.players[username] as Player;
     const distance = player.entity.position.distanceSquared(bot.entity.position!);
-    if (distance < minDistance) {
-      minDistance = distance;
+    if (distance < targetDistance) {
+      targetDistance = distance;
       target = player;
     }
   }
-  return target?.entity;
+
+  if (minDistance !== undefined && targetDistance > minDistance * minDistance) {
+    return null;
+  }
+
+  return target;
 }
 
 function watchNearestPlayer(bot: mineflayer.Bot, vec?: Vec3) {
@@ -277,14 +283,14 @@ function watchNearestPlayer(bot: mineflayer.Bot, vec?: Vec3) {
   }
 
   const nearestPlayer = findNearestPlayer(bot);
-  nearestPlayer && watchEntity(bot, nearestPlayer);
+  nearestPlayer && watchEntity(bot, nearestPlayer.entity);
 }
 
 function funnyAction(bot: mineflayer.Bot) {
-  const target = findNearestPlayer(bot);
+  const target = findNearestPlayer(bot, bot._actionVar.funLookPlayerMinDistance);
 
   if (target) {
-    watchEntity(bot, target);
+    watchEntity(bot, target.entity);
   } else {
     spinAction(bot, bot._actionVar.spinAngle);
   }
@@ -307,7 +313,6 @@ export default async function inject(bot: mineflayer.Bot) {
       tick(bot);
     }
   });
-  // bot.look2 = (yaw: number, pitch: number, force?: boolean) => bot.look(fromNotchianYaw(yaw), fromNotchianPitch(pitch), force);
 
   regesterCmd(bot);
   pluginReady(bot, pluginName);
@@ -318,6 +323,5 @@ declare module 'mineflayer' {
   interface Bot {
     _actionVar: typeof defaultActionVar;
     setDirection: (direction: string) => void;
-    // look2: (yaw: number, pitch: number, force?: boolean) => void;
   }
 }

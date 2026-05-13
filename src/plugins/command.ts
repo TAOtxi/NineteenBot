@@ -46,7 +46,7 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
       bot: mineflayer.Bot, 
       args: T extends CommandType.CMD ? 
         Record<string, string> : string
-      ) => void) | null;
+      ) => Promise<any> | any) | null;
   
   // constructor(name: string, type: CommandType.VALUE);
   // constructor(name: string | string[], type: Exclude<CommandType, CommandType.VALUE>);
@@ -92,7 +92,7 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
       args: 
         T extends CommandType.CMD ? 
           Record<string, string> : string
-      ) => void) {
+      ) => Promise<any> | any) {
     this.callback = callback;
     return this;
   }
@@ -148,7 +148,7 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
 }
 
 
-function tryExecute(bot: mineflayer.Bot, input: string) {
+async function tryExecute(bot: mineflayer.Bot, input: string) {
   if (input.trim() === '') {
     return true;
   }
@@ -176,7 +176,7 @@ function tryExecute(bot: mineflayer.Bot, input: string) {
         if (i !== cmdLen - 1) {
           return false;
         }
-        item.callback?.(bot, parseCmd.getFirstCmd()!);
+        await item.callback?.(bot, parseCmd.getFirstCmd()!);
         return true;
       }
 
@@ -210,9 +210,9 @@ function tryExecute(bot: mineflayer.Bot, input: string) {
       }
       argMap[key] = value;
     }
-    argItem.callback?.(bot, value);
+    await argItem.callback?.(bot, value);
   }
-  tailCallback?.(bot, argMap);
+  await tailCallback?.(bot, argMap);
   return true;
 }
 
@@ -232,9 +232,7 @@ export default function inject(bot: mineflayer.Bot) {
     setLevel(cmdManager, 1);
     bot._cmdMap.push(cmdManager);
   };
-  bot.tryExecute = (input: string) => {
-    return tryExecute(bot, input);
-  };
+  bot.tryExecute = (input: string) => tryExecute(bot, input);
   bot.getCommandManager = () => CommandManager;
 
   pluginReady(bot, 'command');
@@ -249,7 +247,7 @@ declare module 'mineflayer' {
   interface Bot {
     _cmdMap: CommandManager<CommandType>[];
     registerCmd(cmdManager: CommandManager<CommandType>): void;
-    tryExecute(input: string): boolean;
+    tryExecute(input: string): Promise<boolean>;
     getCommandManager(): typeof CommandManager;
   }
 }
