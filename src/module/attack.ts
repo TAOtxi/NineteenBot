@@ -1,3 +1,0 @@
-import mineflayer from 'mineflayer';
-
-

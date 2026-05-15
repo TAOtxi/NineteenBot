@@ -264,6 +264,7 @@ export default async function inject(bot: mineflayer.Bot)  {
 
 
     function onBobberSpawn(entity: prismEntity.Entity) {
+      // TODO: 加个距离判断防止误判
       if (bot._isFishing && entity.entityType === bobberId && !bot._lastBobber) {
         bot._lastBobber = entity;
       }
@@ -281,10 +282,21 @@ export default async function inject(bot: mineflayer.Bot)  {
       if (!bot._lastBobber || !bot._isFishing) return;
       if (sound !== 'entity.fishing_bobber.retrieve') return;
 
+      function emitfishEvent(bot: mineflayer.Bot) {
+        if (!bot.hasTimeTask('catchFish')) {
+          // 等钓上的东西进入背包后触发事件
+          // TODO: 可以考虑用playerCollect事件代替
+          bot.createOnceTimeTask('catchFish', 10, () => {
+            bot.emit('fish');
+          })
+        }
+      }
+
       if (isBobberRetrieved(bot._lastBobber)) {
         bot.activateItem();
         throwFishingRodAgain(bot);
         bot._lastBobber = null;
+        emitfishEvent(bot);
         return;
       }
       bot.removeTimeTask('checkBobberRetrieved_timeOut');
@@ -301,6 +313,7 @@ export default async function inject(bot: mineflayer.Bot)  {
           bot.activateItem();
           throwFishingRodAgain(bot);
           bot._lastBobber = null;
+          emitfishEvent(bot);
           bot.removeTimeTask('checkBobberRetrieved');
           bot.removeTimeTask('checkBobberRetrieved_timeOut');
         }
@@ -321,6 +334,10 @@ declare module 'mineflayer' {
     heldFishRod(): Promise<void> | void,
     startFishing(): Promise<void>,
     stopFishing(): void,
+  }
+
+  interface BotEvents {
+    fish: void,
   }
 }
 

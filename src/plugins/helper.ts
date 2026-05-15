@@ -16,6 +16,7 @@ import {
   type Theme,
   type Status,
   type KeypressEvent,
+  AbortPromptError,
 } from '@inquirer/core';
 import { styleText } from 'node:util';
 import figures from '@inquirer/figures';
@@ -343,6 +344,11 @@ function getMatch(cmd: string | undefined, tips: CommandManager[]) {
   return filteredTips.map(item => item.string).sort();
 }
 
+function getMatchFromArray(cmd: string | undefined, tips: string[]) {
+  const filteredTips = fuzzy.filter(cmd || '', tips);
+  return filteredTips.map(item => item.string).sort();
+}
+
 async function getInput(bot: mineflayer.Bot, signal: AbortSignal) {
   return cmdHelper(bot, {
     message: "Command:",
@@ -381,6 +387,11 @@ async function getInput(bot: mineflayer.Bot, signal: AbortSignal) {
 
           if (sub.level === partLen) {
             if (sub.type === CommandType.VALUE) {
+              if (typeof sub.suggest === 'function') {
+                return getMatchFromArray(cmdPart, sub.suggest());
+              } else if (sub.suggest.length > 0) {
+                return getMatchFromArray(cmdPart, sub.suggest);
+              }
               return [sub.name] as string[];
             };
             return getMatch(cmdPart, currentCmdMap);
@@ -403,7 +414,7 @@ async function getInput(bot: mineflayer.Bot, signal: AbortSignal) {
   }, signal);
 }
 
-
+// TODO: 优化：等待输入的过程会刷新掉日志输出
 export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, 'command');
 
@@ -421,9 +432,15 @@ export default async function inject(bot: mineflayer.Bot) {
     while (bot._isMonitorInput) {
       try {
         const input = await bot.getInput(signal);
+        if (input.startsWith('/')) {
+          bot.chat(input);
+          continue;
+        }
         await bot.tryExecute(input);
       } catch (error) {
-        bot.baseError('helper', error as string);
+        if (!(error instanceof AbortPromptError)) {
+          bot.baseError('helper', error as string);
+        }
         break;
       }
     }
@@ -448,6 +465,10 @@ export default async function inject(bot: mineflayer.Bot) {
     }
   };
   
+  bot.on('cleanup', () => bot.stopMonitorInput());
+  bot.on('hidden', () => bot.stopMonitorInput());
+  bot.on('display', () => bot.startMonitorInput());
+
   pluginReady(bot, 'helper');
 }
 

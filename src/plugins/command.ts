@@ -40,6 +40,7 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
   level: number;
   name: T extends CommandType.VALUE ? string : string[];
   type: CommandType;
+  suggest: string[] | (() => string[]);
   subCmds: CommandManager[] | null;
 
   callback: ((
@@ -69,6 +70,7 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
     } else {
       this.name = (typeof name === 'string' ? [name] : name) as T extends CommandType.VALUE ? string : string[];
     }
+    this.suggest = [];
     this.type = type;
     this.subCmds = null;
     this.callback = null;
@@ -94,6 +96,14 @@ class CommandManager <T extends CommandType = CommandType.CMD> {
           Record<string, string> : string
       ) => Promise<any> | any) {
     this.callback = callback;
+    return this;
+  }
+
+  suggests(suggest: string[] | (() => string[])) {
+    if (this.type !== CommandType.VALUE) {
+      throw new Error('Only value type can have suggests.');
+    }
+    this.suggest = suggest;
     return this;
   }
 

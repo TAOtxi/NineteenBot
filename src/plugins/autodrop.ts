@@ -328,9 +328,13 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.enableAutoDrop = () => {
     bot.removeTimeTask(pluginName);
     bot.createTimeTask(pluginName, bot._autodrop('checkInterval'), tick);
+    bot.baseInfo(pluginName, 'Autodrop enabled.');
   }
 
-  bot.disableAutoDrop = () => bot.removeTimeTask(pluginName);
+  bot.disableAutoDrop = () => {
+    bot.removeTimeTask(pluginName);
+    bot.baseInfo(pluginName, 'Autodrop disabled.');
+  }
 
   registCmd(bot);
   pluginReady(bot, pluginName);

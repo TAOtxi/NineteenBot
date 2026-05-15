@@ -1,7 +1,7 @@
 import fs from 'fs';
 import CmdUtil from '../utils/CmdParser.js';
 import mineflayer from 'mineflayer';
-import { pluginReady, wait } from '../utils/pluginWaiter.js';
+import { pluginReady } from '../utils/pluginWaiter.js';
 
 
 function parseTimeStr(time: string) {
@@ -82,10 +82,6 @@ function getLatestLogFile(logDir: string, preLogFile: string, maxLogSize: number
 }
 
 function base(bot: mineflayer.Bot, prefix: string, msg: string, type: string) {
-  if (!bot.canLog) {
-    bot._withLogTitle = false;
-    return;
-  }
   let logData: string = '';
   if (bot._withLogTitle) {
     const title = `${getTimeStr()} ${prefix? `[${prefix}][${type}] ` : `[${type}] `}`;
@@ -93,17 +89,17 @@ function base(bot: mineflayer.Bot, prefix: string, msg: string, type: string) {
   } else {
     logData = msg;
   }
-  bot._withLogTitle = true;
-
-  console.log('\r' + logData);
+  
+  bot.canLog && console.log('\r' + logData);
   bot.canSaveLog && saveLog(bot, logData);
+  bot._withLogTitle = true;
 }
 
 const LOG_TO_FILE = CmdUtil.getValueByArgName(process.argv, 'log') === 'true';
 
 export default async function inject(bot: mineflayer.Bot) {
   // TODO: 更优雅地方式
-  await new Promise(resolve => bot.once('login', () => resolve(1)));
+  // await new Promise(resolve => bot.once('login', () => resolve(1)));
   
   bot.canLog = true;
   bot.canSaveLog = LOG_TO_FILE;
@@ -118,6 +114,10 @@ export default async function inject(bot: mineflayer.Bot) {
     bot._withLogTitle = false;
     return bot;
   }
+
+  bot.on('hidden', () => bot.canLog = false);
+  bot.on('display', () => bot.canLog = true);
+
   pluginReady(bot, 'logger');
 }
 
