@@ -76,6 +76,7 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
   }
 
   function tickPhysics (now) {
+    if (!bot.entity?.position || !Number.isFinite(bot.entity.position.x)) return // entity not ready
     if (bot.blockAt(bot.entity.position) == null) return // check if chunk is unloaded
     if (bot.physicsEnabled && shouldUsePhysics) {
       physics.simulatePlayer(new PlayerState(bot, controlState), world).apply(bot)
@@ -98,10 +99,8 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
   }
 
   function sendPacketPosition (position, onGround) {
-    // Don't send position packets during configuration phase (Velocity support)
-    if (bot.inConfigurationPhase) return
-
     // sends data, no logic
+    if (!Number.isFinite(position.x) || !Number.isFinite(position.y) || !Number.isFinite(position.z)) return
     const oldPos = new Vec3(lastSent.x, lastSent.y, lastSent.z)
     lastSent.x = position.x
     lastSent.y = position.y
@@ -113,9 +112,6 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
   }
 
   function sendPacketLook (yaw, pitch, onGround) {
-    // Don't send look packets during configuration phase (Velocity support)
-    if (bot.inConfigurationPhase) return
-
     // sends data, no logic
     const oldPos = new Vec3(lastSent.x, lastSent.y, lastSent.z)
     lastSent.yaw = yaw
@@ -127,10 +123,8 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
   }
 
   function sendPacketPositionAndLook (position, yaw, pitch, onGround) {
-    // Don't send position_look packets during configuration phase (Velocity support)
-    if (bot.inConfigurationPhase) return
-
     // sends data, no logic
+    if (!Number.isFinite(position.x) || !Number.isFinite(position.y) || !Number.isFinite(position.z)) return
     const oldPos = new Vec3(lastSent.x, lastSent.y, lastSent.z)
     lastSent.x = position.x
     lastSent.y = position.y
@@ -162,9 +156,8 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
   function updatePosition (now) {
     // Only send updates for 20 ticks after death
     if (isEntityRemoved()) return
-
-    // Don't send any position packets during configuration phase (Velocity support)
-    if (bot.inConfigurationPhase) return
+    // Don't send position with invalid coordinates (NaN after death)
+    if (!Number.isFinite(bot.entity.position.x)) return
 
     // Increment the yaw in baby steps so that notchian clients (not the server) can keep up.
     const dYaw = deltaYaw(bot.entity.yaw, lastSentYaw)
@@ -361,12 +354,27 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
     await lookingTask.promise
   }
 
+  bot.look2 = (notchYaw, notchPitch, force) => {
+    return bot.look(
+      conv.fromNotchianYaw(notchYaw),
+      conv.fromNotchianPitch(notchPitch),
+      force
+    )
+  }
+
   bot.lookAt = async (point, force) => {
     const delta = point.minus(bot.entity.position.offset(0, bot.entity.eyeHeight, 0))
     const yaw = Math.atan2(-delta.x, -delta.z)
     const groundDistance = Math.sqrt(delta.x * delta.x + delta.z * delta.z)
     const pitch = Math.atan2(delta.y, groundDistance)
     await bot.look(yaw, pitch, force)
+  }
+
+  bot.getNotchYawPitch = () => {
+    return {
+      yaw: conv.toNotchianYaw(bot.entity.yaw),
+      pitch: conv.toNotchianPitch(bot.entity.pitch)
+    }
   }
 
   // 1.21.3+
@@ -427,6 +435,27 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
     if (bot.supportFeature('teleportUsesOwnPacket')) {
       bot._client.write('teleport_confirm', { teleportId: packet.teleportId })
     }
+
+    // After death/respawn, delay the forced position_look response.
+    // Sending it immediately causes "Invalid move player packet" kicks
+    // on older servers, but the server needs it to complete the respawn.
+    if (respawnTimer > 0 && Date.now() - respawnTimer < 2000) {
+      respawnTimer = 0 // only delay once
+      const delayedPos = pos.clone()
+      const delayedYaw = newYaw
+      const delayedPitch = newPitch
+      const delayedOnGround = bot.entity.onGround
+      setTimeout(() => {
+        sendPacketPositionAndLook(delayedPos, delayedYaw, delayedPitch, delayedOnGround)
+        shouldUsePhysics = true
+        bot.jumpTicks = 0
+        lastSentYaw = bot.entity.yaw
+        lastSentPitch = bot.entity.pitch
+        bot.emit('forcedMove')
+      }, 1500)
+      return
+    }
+
     sendPacketPositionAndLook(pos, newYaw, newPitch, bot.entity.onGround)
 
     shouldUsePhysics = true
@@ -459,7 +488,12 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
     })
   }
 
+  let respawnTimer = 0
   bot.on('mount', () => { shouldUsePhysics = false })
+  bot.on('death', () => {
+    shouldUsePhysics = false
+    respawnTimer = Date.now()
+  })
   bot.on('respawn', () => { shouldUsePhysics = false })
   bot.on('login', () => {
     shouldUsePhysics = false

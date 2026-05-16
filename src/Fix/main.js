@@ -11,21 +11,21 @@ import fs from "fs";
 //   });
 // }
 
-function fixVelocity() {
-  const code1 = fs.readFileSync("./src/Fix/VelocityFix/physics.js").toString();
-  const oldCodePath = "./node_modules/mineflayer/lib/plugins/physics.js";
-  handleFile(oldCodePath) && fs.writeFileSync(oldCodePath, code1);
+// function fixVelocity() {
+//   const code1 = fs.readFileSync("./src/Fix/VelocityFix/physics.js").toString();
+//   const oldCodePath = "./node_modules/mineflayer/lib/plugins/physics.js";
+//   handleFile(oldCodePath) && fs.writeFileSync(oldCodePath, code1);
 
-  const code2 = fs.readFileSync("./src/Fix/VelocityFix/velocity.js").toString();
-  const oldCodePath2 = "./node_modules/mineflayer/lib/plugins/velocity.js";
-  fs.writeFileSync(oldCodePath2, code2);
+//   const code2 = fs.readFileSync("./src/Fix/VelocityFix/velocity.js").toString();
+//   const oldCodePath2 = "./node_modules/mineflayer/lib/plugins/velocity.js";
+//   fs.writeFileSync(oldCodePath2, code2);
 
-  const oldCodePath3 = "./node_modules/mineflayer/lib/loader.js";
-  const code3 = fs.readFileSync(oldCodePath3).toString();
-  handleFile(oldCodePath3) && fs.writeFileSync(oldCodePath3, 
-    code3.replace("kick: require('./plugins/kick'),", 
-                  "kick: require('./plugins/kick'),\n  velocity: require('./plugins/velocity'),"));
-}
+//   const oldCodePath3 = "./node_modules/mineflayer/lib/loader.js";
+//   const code3 = fs.readFileSync(oldCodePath3).toString();
+//   handleFile(oldCodePath3) && fs.writeFileSync(oldCodePath3, 
+//     code3.replace("kick: require('./plugins/kick'),", 
+//                   "kick: require('./plugins/kick'),\n  velocity: require('./plugins/velocity'),"));
+// }
 
 
 
@@ -52,24 +52,24 @@ function fixResourcePack() {
  *    code += 'if (count > 0xffffff && !ctx.noArraySizeCheck) { console.warn("[Protodef] Abnormally large array size ignored:", count); return { value: [], size: countSize } }\n'
  * ```
  */
-function fixError1() {
-  const filePath = "./node_modules/protodef/src/datatypes/compiler-structures.js";
-  const code = fs.readFileSync(filePath).toString();
-  const fixedCode = code.replace(
-    /if \(count > 0xffffff && !ctx\.noArraySizeCheck\) throw new Error\("array size is abnormally large, not reading: " \+ count\)\\n/,
-    'if (count > 0xffffff && !ctx.noArraySizeCheck) { console.warn("[Protodef] Abnormally large array size ignored:", count); return { value: [], size: countSize } }\\n'
-  );
-  handleFile(filePath) && fs.writeFileSync(filePath, fixedCode);
-}
+// function fixError1() {
+//   const filePath = "./node_modules/protodef/src/datatypes/compiler-structures.js";
+//   const code = fs.readFileSync(filePath).toString();
+//   const fixedCode = code.replace(
+//     /if \(count > 0xffffff && !ctx\.noArraySizeCheck\) throw new Error\("array size is abnormally large, not reading: " \+ count\)\\n/,
+//     'if (count > 0xffffff && !ctx.noArraySizeCheck) { console.warn("[Protodef] Abnormally large array size ignored:", count); return { value: [], size: countSize } }\\n'
+//   );
+//   handleFile(filePath) && fs.writeFileSync(filePath, fixedCode);
+// }
 
 /**
  * Bug: bot.fish() 钓鱼会自动转向 See: https://github.com/PrismarineJS/mineflayer/issues/3537
  */
-function fixFishing() {
-  const code = fs.readFileSync("./src/Fix/FishingFix/inventory.js").toString();
-  const oldPath = "./node_modules/mineflayer/lib/plugins/inventory.js";
-  handleFile(oldPath) && fs.writeFileSync(oldPath, code);
-}
+// function fixFishing() {
+//   const code = fs.readFileSync("./src/Fix/FishingFix/inventory.js").toString();
+//   const oldPath = "./node_modules/mineflayer/lib/plugins/inventory.js";
+//   handleFile(oldPath) && fs.writeFileSync(oldPath, code);
+// }
 
 
 /**
@@ -98,17 +98,18 @@ function handleFile(filePath) {
   return true;
 }
 
+// 扩展 look2 方法
+function look2() {
+  const code = fs.readFileSync("./src/Fix/look2/physics.js", 'utf-8');
+  const oldCodePath = "./node_modules/mineflayer/lib/plugins/physics.js";
+  handleFile(oldCodePath) && fs.writeFileSync(oldCodePath, code);
 
-/***************** Fix code ***************** */
-export default {
-  fix() {
-    fixVelocity();
-    fixResourcePack();
-    fixFishing();
-  },
-  fixError1,
+  const code2 = fs.readFileSync("./src/Fix/look2/index.d.ts", 'utf-8');
+  const oldCodePath2 = "./node_modules/mineflayer/index.d.ts";
+  fs.writeFileSync(oldCodePath2, code2);
 }
 
+
 /* ********************** 手动修复 ********************** */
-fixVelocity();
-fixFishing();
+// fixVelocity();
+look2();
