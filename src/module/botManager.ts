@@ -14,7 +14,7 @@ import infomationPlugin from "../plugins/infomation.js";
 import actionPlugin from "../plugins/action.js";
 import fishmanPlugin from "../plugins/fishman.js";
 
-
+// { `${username}@${servername}` : Bot }
 const botMap: Record<string, mineflayer.Bot> = {};
 let baseConfig = JSON.parse(fs.readFileSync("./config/config.json", 'utf-8')) as UserConfig;
 let currentBot: string | null = null;
@@ -127,6 +127,10 @@ function registCmd(bot: mineflayer.Bot) {
         // @ts-ignore
         bot.baseInfo('state', `${property}: ${JSON.stringify(bot[property], null, 2)}`);
       })))
+    .then(CommandManager.command('fix')
+      .then(CommandManager.command('isAlive')
+        // @ts-ignore
+        .execute(bot => bot.isAlive = true)))
   );
 
 }

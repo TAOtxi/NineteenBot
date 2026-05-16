@@ -193,9 +193,9 @@ function dropSlot(bot: mineflayer.Bot, slot: number) {
   bot.clickWindow(slot, 1, 4);
 }
   
-function tick(bot: mineflayer.Bot) {
+function tick(bot: mineflayer.Bot, checkNotEmptySlots = true) {
   const notEmptySlots = getNotEmptySlot(bot);
-  if (notEmptySlots.length < bot._autodrop('triggerMinNotEmptySlots')) {
+  if (checkNotEmptySlots && notEmptySlots.length < bot._autodrop('triggerMinNotEmptySlots')) {
     return;
   }
 
@@ -223,7 +223,7 @@ function registCmd(bot: mineflayer.Bot) {
     .execute(showHelp)
     .then(CommandManager.command('on').execute(bot => bot.enableAutoDrop()))
     .then(CommandManager.command('off').execute(bot => bot.disableAutoDrop()))
-    .then(CommandManager.command('test').execute(tick))
+    .then(CommandManager.command('test').execute(bot => tick(bot, false)))
     .then(CommandManager.command('ignore')
       .then(CommandManager.command('current').execute(ignoreCurrentSlot))
       .then(CommandManager.command('reset').execute(bot => bot.setConfig(pluginName, 'ignoreSlots', [])))
@@ -302,9 +302,13 @@ function registCmd(bot: mineflayer.Bot) {
         }))
     )
     .then(CommandManager.command('config')
-      .then(CommandManager.command('show').execute(bot => {
-        bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(bot.configMap[pluginName], null, 2));
-      }))
+      .then(CommandManager.command('show')
+        .then(CommandManager.value('<property>')
+          .suggests(Object.keys(defaultConfig))
+          .execute((bot, property) => {
+            bot.baseInfo(pluginName, `${property}: ${JSON.stringify(bot._autodrop(property), null, 2)}`);
+          }))
+      )
       .then(CommandManager.command('reload').execute(async (bot) => {
         await bot.loadConfig(pluginName, defaultConfig);
         if (bot.hasTimeTask(pluginName)) {

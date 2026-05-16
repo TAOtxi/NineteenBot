@@ -125,7 +125,12 @@ function registCmd(bot: mineflayer.Bot) {
       .then(CommandManager.command('reset')
         .execute(bot => bot.saveConfig(pluginName, defaultConfig)))
       .then(CommandManager.command('show')
-        .execute(bot => bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(bot.configMap[pluginName]))))
+        .then(CommandManager.value('<property>')
+          .suggests(Object.keys(defaultConfig))
+          .execute((bot, property) => {
+            bot.baseInfo(pluginName, `${property}: ${JSON.stringify(bot.getConfig(pluginName, property), null, 2)}`);
+          }))
+      )
     )
   );
 }
@@ -133,14 +138,6 @@ function registCmd(bot: mineflayer.Bot) {
 function isBobberRetrieved(bobber: prismEntity.Entity) {
   // See https://minecraft.wiki/w/Java_Edition_protocol/Entity_metadata#Fishing_Bobber
   return bobber.metadata?.[9]
-}
-
-function checkFishingRodIsSafe(bot: mineflayer.Bot) {
-  if (!bot.heldItem || bot.heldItem.name !== 'fishing_rod') {
-    return false;
-  }
-
-  return bot.heldItem.maxDurability - bot.heldItem.durabilityUsed >= 5;
 }
 
 function throwFishingRodAgain(bot: mineflayer.Bot) {
@@ -151,9 +148,9 @@ function throwFishingRodAgain(bot: mineflayer.Bot) {
   }
 
   if (bot.getConfig(pluginName, 'fishingRodProtect') && 
-      !checkFishingRodIsSafe(bot)
+      bot.heldItem.maxDurability - bot.heldItem.durabilityUsed <= 5
   ) {
-    bot.baseError(pluginName, 'Fishing rod is almost broken.');
+    bot.baseError(pluginName, 'Fishing rod is almost broken. Stop fishing.');
     bot.stopFishing();
     return;
   }
@@ -209,15 +206,15 @@ export default async function inject(bot: mineflayer.Bot)  {
         return;
       }
 
-      if (!bot.heldItem) {
-        bot.baseError(pluginName, 'Hand is empty');
+      if (!bot.heldItem || bot.heldItem.name !== 'fishing_rod') {
+        bot.baseError(pluginName, 'Not holding fishing rod.');
         return;
       }
 
       if (bot.getConfig(pluginName, 'fishingRodProtect') &&
-          !checkFishingRodIsSafe(bot)
+          bot.heldItem.maxDurability - bot.heldItem.durabilityUsed <= 5
       ) {
-        bot.baseError(pluginName, 'Fishing rod is almost broken or not holding.');
+        bot.baseError(pluginName, 'Fishing rod is almost broken. Stop fishing.');
         return;
       }
 
@@ -235,7 +232,7 @@ export default async function inject(bot: mineflayer.Bot)  {
       bot.removeTimeTask('checkIfFished');
       bot.removeTimeTask('rotationBot');
       bot.createTimeTask('fishingIntervalCheck', 40, fishingIntervalCheck);
-      bot.createTimeTask('rotationBot', bot.getConfig(pluginName, 'rotationIntervalTick'), rotationBot, true);
+      bot.createTimeTask('rotationBot', bot.getConfig(pluginName, 'rotationIntervalTick'), rotationBot);
       bot._isFishing = true;
     }
 
@@ -264,8 +261,12 @@ export default async function inject(bot: mineflayer.Bot)  {
 
 
     function onBobberSpawn(entity: prismEntity.Entity) {
-      // TODO: 加个距离判断防止误判
-      if (bot._isFishing && entity.entityType === bobberId && !bot._lastBobber) {
+      if (
+          bot._isFishing && 
+          entity.entityType === bobberId && 
+          !bot.isBobberExist() &&
+          entity.position.distanceSquared(bot.entity.position) < 2.72 // 实际上约为 2.714400007228016
+        ) {
         bot._lastBobber = entity;
       }
     }
