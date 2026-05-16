@@ -106,10 +106,20 @@ function look2() {
 
   const code2 = fs.readFileSync("./src/Fix/look2/index.d.ts", 'utf-8');
   const oldCodePath2 = "./node_modules/mineflayer/index.d.ts";
-  fs.writeFileSync(oldCodePath2, code2);
+  handleFile(oldCodePath2) && fs.writeFileSync(oldCodePath2, code2);
+}
+
+
+// enchant for 1.20.5+
+// https://github.com/PrismarineJS/prismarine-item/pull/176
+function enchant() {
+  const code = fs.readFileSync("./src/Fix/enchant/index.js", 'utf-8');
+  const oldCodePath = "./node_modules/prismarine-item/index.js";
+  handleFile(oldCodePath) && fs.writeFileSync(oldCodePath, code);
 }
 
 
 /* ********************** 手动修复 ********************** */
 // fixVelocity();
-look2();
+// look2();
+enchant();

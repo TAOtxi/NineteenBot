@@ -5,7 +5,7 @@
   "main": "src/main.ts",
   "scripts": {
     "dev:log": "npm run dev log=true",
-    "dev": "npx tsc && cls && node ./dist/main.js lang=zh_cn",
+    "dev": "npx tsc && clear && node ./dist/main.js lang=zh_cn",
 
     "test:cmd_helper": "npx tsc && node ./dist/test/testCmdHelper.js debug=true",
     "test:command": "npx tsc && node ./dist/test/testCmdManager.js debug=true",
