@@ -132,10 +132,32 @@ function registCmd(bot: mineflayer.Bot) {
           }))
       )
     )
+    .then(CommandManager.command('clean')
+      .execute(bot => {
+        const yaw = bot.entity.yaw;
+        const pitch = bot.entity.pitch;
+        
+        const nearestPlayer = bot.findNearestPlayer();
+        if (!nearestPlayer) {
+          bot.baseError(pluginName, 'No player found.');
+          return;
+        }
+        bot.lookAt(nearestPlayer.entity.position, true);
+        bot.createOnceTimeTask('cleanBagAndTurnBack', 10, () => {
+          const l = bot.inventory.inventoryStart;
+          const r = bot.inventory.inventoryEnd;
+          for (let i = l; i <= r; i++) {
+            if (bot.inventory.slots[i] && bot.inventory.slots[i]!.name !== 'fishing_rod') {
+              bot.clickWindow(i, 1, 4)
+            }
+          }
+          bot.look(yaw, pitch, true);
+        })
+      }))
   );
 }
 
-function isBobberRetrieved(bobber: prismEntity.Entity) {
+function isBobberCatchable(bobber: prismEntity.Entity) {
   // See https://minecraft.wiki/w/Java_Edition_protocol/Entity_metadata#Fishing_Bobber
   return bobber.metadata?.[9]
 }
@@ -241,8 +263,8 @@ export default async function inject(bot: mineflayer.Bot)  {
       bot.removeTimeTask('rotationBot');
       bot.removeTimeTask('fishingIntervalCheck');
       bot.removeTimeTask('throwFishingRodAgain');
-      bot.removeTimeTask('checkBobberRetrieved');
-      bot.removeTimeTask('checkBobberRetrieved_timeOut');
+      bot.removeTimeTask('checkBobberCatchable');
+      bot.removeTimeTask('checkBobberCatchable_timeOut');
       bot.removeListener('soundEffectHeard', onCatchFish);
       bot.removeListener('entitySpawn', onBobberSpawn);
       bot._client.removeListener('entity_destroy', onBobberDestory);
@@ -283,7 +305,7 @@ export default async function inject(bot: mineflayer.Bot)  {
       if (!bot._lastBobber || !bot._isFishing) return;
       if (sound !== 'entity.fishing_bobber.retrieve') return;
 
-      function emitfishEvent(bot: mineflayer.Bot) {
+      function emitFishEvent(bot: mineflayer.Bot) {
         if (!bot.hasTimeTask('catchFish')) {
           // 等钓上的东西进入背包后触发事件
           // TODO: 可以考虑用playerCollect事件代替
@@ -293,30 +315,30 @@ export default async function inject(bot: mineflayer.Bot)  {
         }
       }
 
-      if (isBobberRetrieved(bot._lastBobber)) {
+      if (isBobberCatchable(bot._lastBobber)) {
         bot.activateItem();
         throwFishingRodAgain(bot);
         bot._lastBobber = null;
-        emitfishEvent(bot);
+        emitFishEvent(bot);
         return;
       }
-      bot.removeTimeTask('checkBobberRetrieved_timeOut');
-      bot.createOnceTimeTask('checkBobberRetrieved_timeOut', 5, () => {
-        bot.removeTimeTask('checkBobberRetrieved');
+      bot.removeTimeTask('checkBobberCatchable_timeOut');
+      bot.createOnceTimeTask('checkBobberCatchable_timeOut', 5, () => {
+        bot.removeTimeTask('checkBobberCatchable');
       })
 
-      if (bot.hasTimeTask('checkBobberRetrieved')) {
+      if (bot.hasTimeTask('checkBobberCatchable')) {
         return;
       }
       
-      bot.createTimeTask('checkBobberRetrieved', 1, bot => {
-        if (bot.isBobberExist() && isBobberRetrieved(bot._lastBobber!)) {
+      bot.createTimeTask('checkBobberCatchable', 1, bot => {
+        if (bot.isBobberExist() && isBobberCatchable(bot._lastBobber!)) {
           bot.activateItem();
           throwFishingRodAgain(bot);
           bot._lastBobber = null;
-          emitfishEvent(bot);
-          bot.removeTimeTask('checkBobberRetrieved');
-          bot.removeTimeTask('checkBobberRetrieved_timeOut');
+          emitFishEvent(bot);
+          bot.removeTimeTask('checkBobberCatchable');
+          bot.removeTimeTask('checkBobberCatchable_timeOut');
         }
       })
     }

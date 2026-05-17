@@ -240,6 +240,10 @@ async function initBot(bot: mineflayer.Bot) {
     // bot.baseInfo('bot', 'Spawned');
     // bot.isAlive = true;
   })
+
+  // bot.on('soundEffectHeard', (sound: string) => {
+  //   console.log(sound);
+  // })
 }
 
 async function loadPlugins(bot: mineflayer.Bot) {

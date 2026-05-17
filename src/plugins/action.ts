@@ -307,6 +307,7 @@ export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, ['task', 'command']);
   bot._actionVar = { ...defaultActionVar };
   bot.setDirection = (direction: string) => setDirection(bot, direction);
+  bot.findNearestPlayer = (minDistance?: number) => findNearestPlayer(bot, minDistance);
   initTask(bot);
   bot.on('physicsTick', () => {
     if (bot._actionVar.enabled) {
@@ -322,6 +323,7 @@ export default async function inject(bot: mineflayer.Bot) {
 declare module 'mineflayer' {
   interface Bot {
     _actionVar: typeof defaultActionVar;
-    setDirection: (direction: string) => void;
+    setDirection(direction: string): void;
+    findNearestPlayer(minDistance?: number): Player | null;
   }
 }
