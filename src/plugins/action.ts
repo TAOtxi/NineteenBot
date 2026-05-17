@@ -61,7 +61,7 @@ function setDirection(bot: mineflayer.Bot, direction: string) {
     bot.baseError(pluginName, `Invalid direction ${direction}`);
     return;
   }
-  bot.baseInfo(pluginName, `Look at ${direction} (${yaw}, ${pitch})`);
+  // bot.baseInfo(pluginName, `Look at ${direction} (${yaw}, ${pitch})`);
   bot.look2(yaw, pitch, true);
 }
 
@@ -71,7 +71,7 @@ function setLookPosition(bot: mineflayer.Bot, position: string) {
     bot.baseError(pluginName, `Invalid position ${position}`);
     return;
   }
-  bot.baseInfo(pluginName, `Look at ${position}`);
+  // bot.baseInfo(pluginName, `Look at ${position}`);
   bot.lookAt(new Vec3(pos[0], pos[1], pos[2]), true);
 }
 
@@ -81,7 +81,7 @@ function setRotation(bot: mineflayer.Bot, rotation: string) {
     bot.baseError(pluginName, `Invalid rotation ${rotation}`);
     return;
   }
-  bot.baseInfo(pluginName, `Look at (${pos[0]}, ${pos[1]})`);
+  // bot.baseInfo(pluginName, `Look at (${pos[0]}, ${pos[1]})`);
   bot.look2(pos[0], pos[1], true);
 }
 
@@ -91,7 +91,7 @@ function setLookPlayer(bot: mineflayer.Bot, player: string) {
     bot.baseError(pluginName, `Player ${player} not found`);
     return;
   }
-  bot.baseInfo(pluginName, `Look at player ${player}`);
+  // bot.baseInfo(pluginName, `Look at player ${player}`);
   bot.lookAt(target.entity.position, true);
 }
 
