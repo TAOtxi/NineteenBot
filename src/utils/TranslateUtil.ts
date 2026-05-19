@@ -39,6 +39,12 @@ loadLangData(defaultLang);
  * "item.minecraft.apple": "苹果",
  * "entity.minecraft.wolf": "狼",
  */
+
+const itemKeyPrefix = 'item.minecraft.';
+const entityKeyPrefix = 'entity.minecraft.';
+const blockKeyPrefix = 'block.minecraft.';
+const enchantKeyPrefix = 'enchantment.minecraft.';
+
 export default class TranslateUtil {
   static t(key: string, lang: string = defaultLang) {
     loadLangData(lang);
@@ -50,6 +56,16 @@ export default class TranslateUtil {
       return fallbackTranslation ?? key;
     }
     return translation;
+  }
+
+  static item(key: string, lang: string = defaultLang) {
+    return this.tryTranslate(itemKeyPrefix + key, lang) ?? 
+          this.tryTranslate(blockKeyPrefix + key, lang) ?? 
+          this.tryTranslate(entityKeyPrefix + key, lang) ?? null;
+  }
+
+  static enchant(key: string, lang: string = defaultLang) {
+    return this.tryTranslate(enchantKeyPrefix + key, lang) ?? null;
   }
 
   static tryTranslate(key: string, lang: string = defaultLang) {
