@@ -1,7 +1,7 @@
 {
   "enableRotation": true,
   "fishingRodProtect": true,
-  "rotationIntervalTick": 400,
+  "throwDelay": 0,
   "rotationData": [
     {
       "yaw": 0,

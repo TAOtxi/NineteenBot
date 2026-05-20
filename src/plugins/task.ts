@@ -53,14 +53,19 @@ function createTimeTask(
 function createOnceTimeTask(
   bot: mineflayer.Bot,
   id: string,
-  runAfterTick: number,
+  delay: number,
   task: RunableTask
 ) {
+  if (delay <= 0) {
+    task(bot);
+    return;
+  }
+  
   const onceTask = (bot: mineflayer.Bot) => {
     task(bot);
     bot.removeTimeTask(id);
   }
-  createTimeTask(bot, id, runAfterTick, onceTask, false);
+  createTimeTask(bot, id, delay, onceTask, false);
 }
 
 function removeTimeTask(bot: mineflayer.Bot, id: string) {
@@ -84,6 +89,14 @@ function updateTimeTask(
   }
   taskData.task = task || taskData.task;
   taskData.interval = interval;
+}
+
+function restartTimeTask(bot: mineflayer.Bot, id: string) {
+  const taskData = bot.timeTaskList.find(t => t.id === id);
+  if (taskData === undefined) {
+    throw new Error(`Task ${id} not found`);
+  }
+  taskData.nextRunTick = bot.ticker + taskData.interval;
 }
 
 function createTickTask(
@@ -150,8 +163,9 @@ export default function inject(bot: mineflayer.Bot) {
   bot.tickTaskList = {};
   bot.throttle = (id, interval, task) => throttle(bot, id, interval, task);
   bot.updateTimeTask = (id, interval, task) => updateTimeTask(bot, id, interval, task);
+  bot.restartTimeTask = (id) => restartTimeTask(bot, id);
   bot.removeTimeTask = (id) => removeTimeTask(bot, id);
-  bot.createOnceTimeTask = (id, runAfterTick, task) => createOnceTimeTask(bot, id, runAfterTick, task);
+  bot.createOnceTimeTask = (id, delay, task) => createOnceTimeTask(bot, id, delay, task);
   bot.createTimeTask = (id, interval, task, runImmediately) => createTimeTask(bot, id, interval, task, runImmediately);
   bot.tickTask = (id) => tickTask(bot, id);
   bot.createTickTask = (id, interval, task) => createTickTask(bot, id, interval, task);
@@ -207,6 +221,7 @@ declare module 'mineflayer' {
     createOnceTimeTask(id: string, runAfterTick: number, task: RunableTask): void;
     createTimeTask(id: string, interval: number, task: RunableTask, runImmediately?: boolean): void;
     updateTimeTask(id: string, interval: number, task?: RunableTask): void;
+    restartTimeTask(id: string): void;
     removeTimeTask(id: string): void;
     throttle(id: string, interval: number, task: RunableTask): void;
     createTickTask(id: string, interval: number, task: RunableTask): void;

@@ -235,10 +235,9 @@ async function initBot(bot: mineflayer.Bot) {
     bot.identifier === currentBot && bot.emit('display');
   });
 
-  bot.on('spawn', () => {
-    // @ts-ignore
-    // bot.baseInfo('bot', 'Spawned');
-    // bot.isAlive = true;
+  bot.once('spawn', () => {
+    bot.chat('/stp survival');
+
   })
 
   // bot.on('soundEffectHeard', (sound: string) => {

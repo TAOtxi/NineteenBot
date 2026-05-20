@@ -116,7 +116,7 @@
     },
     {
       "enabled": true,
-      "id": "/^netherite.*$/"
+      "id": "/^netherite_(?:scrap|ingot)$/"
     }
   ]
 }

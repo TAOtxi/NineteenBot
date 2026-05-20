@@ -8,7 +8,7 @@ const pluginName = 'fishman'
 const defaultConfig: FishmanConfig = {
   enableRotation: true,
   fishingRodProtect: true,
-  rotationIntervalTick: 20 * 20,
+  throwDelay: 5,
   rotationData: [
     {yaw: 0, pitch: 30},
     {yaw: -90, pitch: 30},
@@ -25,16 +25,16 @@ function heldFishRod(bot: mineflayer.Bot) {
 
 
 function isBobberExist(bot: mineflayer.Bot) {
-  return bot._lastBobber !== null &&
-    bot.entities[bot._lastBobber!.id] !== undefined;
+  return bot.bobber !== null &&
+    bot.entities[bot.bobber!.id] !== undefined;
 }
 
 function shouldThrowAgain(bot: mineflayer.Bot) {
-  if (!bot._lastBobber) {
+  if (!bot.bobber) {
     throw new Error('Bobber not found');
   }
 
-  const bobberPos = bot._lastBobber.position;
+  const bobberPos = bot.bobber.position;
   const blockUnderBobber = bot.blockAt(bobberPos);
   if (blockUnderBobber?.name === 'water') {
     bot._bobberNotInWaterTick = 0;
@@ -48,7 +48,7 @@ function shouldThrowAgain(bot: mineflayer.Bot) {
   }
 
   // 检查鱼钩是否勾到物品或生物
-  if (bot._lastBobber.metadata[8] && Number(bot._lastBobber.metadata[8]) - 1 !== 0) {
+  if (bot.bobber.metadata[8] && Number(bot.bobber.metadata[8]) - 1 !== 0) {
     return true;
   }
 
@@ -56,23 +56,22 @@ function shouldThrowAgain(bot: mineflayer.Bot) {
 }
 
 async function fishingIntervalCheck(bot: mineflayer.Bot) {
-  try {
-    await bot.heldFishRod();
-  } catch (err) {
-    bot.baseError(pluginName, String(err))
+  if (bot.heldItem?.name !== 'fishing_rod') {
+    bot.baseError(pluginName, 'Not holding fishing rod');
     bot.stopFishing();
+    return;
   }
 
   // 检查鱼钩是否存在
-  if (!isBobberExist(bot)) {
-    bot.activateItem();
+  if (!bot.isBobberExist()) {
+    bot.bobber = null;
     throwFishingRodAgain(bot);
     return;
   }
 
   // 检查是否需要重新抛钩
   if (shouldThrowAgain(bot)) {
-    bot._lastBobber = null;
+    bot.bobber = null;
     bot.activateItem();
     throwFishingRodAgain(bot);
   }
@@ -90,7 +89,7 @@ function registCmd(bot: mineflayer.Bot) {
     .then(CommandManager.command('on').execute(bot => bot.startFishing()))
     .then(CommandManager.command('off').execute(bot => bot.stopFishing()))
     .then(CommandManager.command('bobber')
-      .execute(bot => bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(bot._lastBobber))))
+      .execute(bot => bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(bot.bobber))))
     .then(CommandManager.command('rotation')
       .then(CommandManager.command('on').execute(bot => bot.setConfig(pluginName, 'enableRotation', true)))
       .then(CommandManager.command('off').execute(bot => bot.setConfig(pluginName, 'enableRotation', false)))
@@ -105,22 +104,11 @@ function registCmd(bot: mineflayer.Bot) {
               [...bot.getConfig(pluginName, 'rotationData'), {yaw: Number(yawPitch[0]), pitch: Number(yawPitch[1])}]);
           })))
       .then(CommandManager.command('clear').execute(bot => bot.setConfig(pluginName, 'rotationData', [])))
-      .then(CommandManager.command(['interval', 'i'])
-        .then(CommandManager.value('<tick>')
-          .execute((bot, value) => {
-            const interval = Number(value);
-            bot.updateTimeTask('rotationBot', interval);
-            bot.setConfig(pluginName, 'rotationIntervalTick', interval);
-          }))
-      )
     )
     .then(CommandManager.command('config')
       .then(CommandManager.command('reload')
         .execute(bot => {
           bot.loadConfig(pluginName, defaultConfig);
-          if (bot.hasTimeTask('rotationBot')) {
-            bot.updateTimeTask('rotationBot', bot.getConfig(pluginName, 'rotationIntervalTick'));
-          }
         }))
       .then(CommandManager.command('reset')
         .execute(bot => bot.saveConfig(pluginName, defaultConfig)))
@@ -154,6 +142,13 @@ function registCmd(bot: mineflayer.Bot) {
           bot.look(yaw, pitch, true);
         })
       }))
+    .then(CommandManager.command('throwDelay')
+      .then(CommandManager.value('<delay>')
+        .execute((bot, value) => {
+          bot.setConfig(pluginName, 'throwDelay', parseInt(value));
+          bot.baseInfo(pluginName, `Throw delay set to ${parseInt(value)}`);
+        }))
+    )
   );
 }
 
@@ -172,21 +167,23 @@ function throwFishingRodAgain(bot: mineflayer.Bot) {
   if (bot.getConfig(pluginName, 'fishingRodProtect') && 
       bot.heldItem.maxDurability - bot.heldItem.durabilityUsed <= 5
   ) {
-    bot.baseError(pluginName, 'Fishing rod is almost broken. Stop fishing.');
+    bot.baseError(pluginName, 'Fishing rod is almost broken.');
     bot.stopFishing();
     return;
   }
 
-  if (!bot.hasTimeTask('throwFishingRodAgain')) {
-      bot.createOnceTimeTask('throwFishingRodAgain', 5, () => {
-        if (!bot.usingHeldItem || !isBobberExist(bot)) {
-          bot.activateItem();
-        }
-      })
+  if (bot.hasTimeTask('throwFishingRodAgain')) {
+    return;
+  }
+  bot.createOnceTimeTask('throwFishingRodAgain', bot.getConfig(pluginName, 'throwDelay'), () => {
+    if (!bot.usingHeldItem || !bot.isBobberExist()) {
+      bot.activateItem();
+      rotationBot(bot);
     }
+  })
 }
 
-// 防止被检测为脚本
+// 自动转向
 function rotationBot(bot: mineflayer.Bot) {
   if (!bot.getConfig(pluginName, 'enableRotation')) {
     return;
@@ -212,7 +209,7 @@ export default async function inject(bot: mineflayer.Bot)  {
     bot.loadConfig(pluginName, defaultConfig);
 
     bot._isFishing = false;
-    bot._lastBobber = null;
+    bot.bobber = null;
     bot._bobberNotInWaterTick = 0;
     bot._rotationIndex = 0;
     bot.heldFishRod = () => heldFishRod(bot);
@@ -228,7 +225,7 @@ export default async function inject(bot: mineflayer.Bot)  {
         return;
       }
 
-      if (!bot.heldItem || bot.heldItem.name !== 'fishing_rod') {
+      if (bot.heldItem?.name !== 'fishing_rod') {
         bot.baseError(pluginName, 'Not holding fishing rod.');
         return;
       }
@@ -239,28 +236,28 @@ export default async function inject(bot: mineflayer.Bot)  {
         bot.baseError(pluginName, 'Fishing rod is almost broken. Stop fishing.');
         return;
       }
+      bot.bobber = null;
 
       bot.activateItem();
       
       bot._rotationIndex = 0;
-      bot._bobberNotInWaterTick = -1;
-      bot.removeListener('entitySpawn', onBobberSpawn);
-      bot._client.removeListener('entity_destroy', onBobberDestory);
+      bot._bobberNotInWaterTick = 0;
+      
+      cleanup();
+
       bot.on('entitySpawn', onBobberSpawn);
       bot.on('soundEffectHeard', onCatchFish);
       bot._client.on('entity_destroy', onBobberDestory);
-
-      bot.removeTimeTask('fishingIntervalCheck');
-      bot.removeTimeTask('checkIfFished');
-      bot.removeTimeTask('rotationBot');
       bot.createTimeTask('fishingIntervalCheck', 40, fishingIntervalCheck);
-      bot.createTimeTask('rotationBot', bot.getConfig(pluginName, 'rotationIntervalTick'), rotationBot);
       bot._isFishing = true;
     }
 
     bot.stopFishing = () => {
       bot.baseInfo(pluginName, 'stopFishing');
-      bot.removeTimeTask('rotationBot');
+      cleanup();
+    }
+
+    function cleanup() {
       bot.removeTimeTask('fishingIntervalCheck');
       bot.removeTimeTask('throwFishingRodAgain');
       bot.removeTimeTask('checkBobberCatchable');
@@ -271,11 +268,11 @@ export default async function inject(bot: mineflayer.Bot)  {
       bot._isFishing = false;
 
       if (bot.heldItem?.name === 'fishing_rod' &&
-          isBobberExist(bot)
+          bot.isBobberExist()
       ) {
         bot.activateItem();
       }
-      bot._lastBobber = null;
+      bot.bobber = null;
     }
 
     const bobberId = bot.supportFeature('fishingBobberCorrectlyNamed') ? 
@@ -289,39 +286,37 @@ export default async function inject(bot: mineflayer.Bot)  {
           !bot.isBobberExist() &&
           entity.position.distanceSquared(bot.entity.position) < 2.72 // 实际上约为 2.714400007228016
         ) {
-        bot._lastBobber = entity;
+        bot.bobber = entity;
       }
     }
 
     function onBobberDestory(packet: any) {
-      if (!bot._lastBobber || !bot._isFishing) return;
-      if (packet.entityIds.some((id: number) => id === bot._lastBobber!.id)) {
-        bot._lastBobber = null;
+      if (!bot.bobber || !bot._isFishing) return;
+      if (packet.entityIds.some((id: number) => id === bot.bobber!.id)) {
+        bot.bobber = null;
         throwFishingRodAgain(bot);
       }
     }
 
     function onCatchFish(sound: string) {
-      if (!bot._lastBobber || !bot._isFishing) return;
+      if (!bot.bobber || !bot._isFishing) return;
       if (sound !== 'entity.fishing_bobber.retrieve') return;
 
-      function emitFishEvent(bot: mineflayer.Bot) {
-        if (!bot.hasTimeTask('catchFish')) {
-          // 等钓上的东西进入背包后触发事件
-          // TODO: 可以考虑用playerCollect事件代替
-          bot.createOnceTimeTask('catchFish', 10, () => {
-            bot.emit('fish');
-          })
+      function catchFish() {
+        bot.bobber = null;
+        bot.activateItem();
+        if (bot.hasTimeTask('fishingIntervalCheck')) {
+          bot.restartTimeTask('fishingIntervalCheck');
         }
+        throwFishingRodAgain(bot);
+        bot.emit('fish');
       }
 
-      if (isBobberCatchable(bot._lastBobber)) {
-        bot.activateItem();
-        throwFishingRodAgain(bot);
-        bot._lastBobber = null;
-        emitFishEvent(bot);
+      if (isBobberCatchable(bot.bobber)) {
+        catchFish();
         return;
       }
+
       bot.removeTimeTask('checkBobberCatchable_timeOut');
       bot.createOnceTimeTask('checkBobberCatchable_timeOut', 5, () => {
         bot.removeTimeTask('checkBobberCatchable');
@@ -332,11 +327,8 @@ export default async function inject(bot: mineflayer.Bot)  {
       }
       
       bot.createTimeTask('checkBobberCatchable', 1, bot => {
-        if (bot.isBobberExist() && isBobberCatchable(bot._lastBobber!)) {
-          bot.activateItem();
-          throwFishingRodAgain(bot);
-          bot._lastBobber = null;
-          emitFishEvent(bot);
+        if (bot.isBobberExist() && isBobberCatchable(bot.bobber!)) {
+          catchFish();
           bot.removeTimeTask('checkBobberCatchable');
           bot.removeTimeTask('checkBobberCatchable_timeOut');
         }
@@ -344,13 +336,16 @@ export default async function inject(bot: mineflayer.Bot)  {
     }
 
     registCmd(bot);
+
+    bot.on('cleanup', cleanup);
+
     pluginReady(bot, pluginName);
 }
 
 declare module 'mineflayer' {
   interface Bot {
     _isFishing: boolean,
-    _lastBobber: prismEntity.Entity | null,
+    bobber: prismEntity.Entity | null,
     _bobberNotInWaterTick: number,
     _rotationIndex: number,
     isBobberExist(): boolean,
@@ -367,6 +362,6 @@ declare module 'mineflayer' {
 interface FishmanConfig {
   enableRotation: boolean,
   fishingRodProtect: boolean,
-  rotationIntervalTick: number,
+  throwDelay: number,
   rotationData: {yaw: number, pitch: number}[]
 }
