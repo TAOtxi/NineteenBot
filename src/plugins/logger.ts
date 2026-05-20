@@ -101,7 +101,7 @@ export default async function inject(bot: mineflayer.Bot) {
   // TODO: 更优雅地方式
   // await new Promise(resolve => bot.once('login', () => resolve(1)));
   
-  bot.canLog = true;
+  bot.canLog = false;
   bot.canSaveLog = LOG_TO_FILE;
   bot.maxLogSize = 1024 * 1024 * 10; // 10MB
   bot.logDir = `./log/${bot.username}`;
