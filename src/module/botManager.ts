@@ -118,13 +118,12 @@ function registCmd(bot: mineflayer.Bot) {
   );
 
   bot.registerCmd(CommandManager.command('state')
-    .then(CommandManager.command('enablePhysics')
-      .execute(bot => bot.physicsEnabled = true))
     .then(CommandManager.command('getYawPitch')
       .execute(bot => bot.baseInfo('state', JSON.stringify(bot.getNotchYawPitch()))))
     .then(CommandManager.command('get')
       .then(CommandManager.value('<property>')
-        .suggests(() => Object.keys(bot))
+        // @ts-ignore
+        .suggests(() => Object.keys(bot).filter(key => !key.startsWith('_') && typeof bot[key] !== 'function'))
         .execute((bot, property) => {
           // @ts-ignore
           bot.baseInfo('state', `${property}: ${JSON.stringify(bot[property], null, 2)}`);
@@ -138,10 +137,15 @@ function registCmd(bot: mineflayer.Bot) {
   bot.registerCmd(CommandManager.command('all')
     .then(CommandManager.value('<command>')
       .execute((bot, command) => {
+        bot.baseInfo('BOT', `Execute command ${command} on all bots.`);
         for (const b of Object.values(botMap)) {
           b?.tryExecute(command);
         }
       }))
+  );
+
+  bot.registerCmd(CommandManager.command('who')
+    .execute(bot => bot.baseInfo('BOT', bot.identifier))
   );
 
   testCmd(bot);
@@ -243,6 +247,8 @@ async function initBot(bot: mineflayer.Bot) {
 
   registCmd(bot);
   registEvent(bot);
+  bot.admins = baseConfig.Admin;
+  
   bot.once('login', () => {
     bot.identifier === currentBot && bot.emit('display');
   });
@@ -354,6 +360,7 @@ declare module 'mineflayer' {
   interface Bot {
     servername: string;
     identifier: string;
+    admins: string[];
   }
 
   interface BotEvents {

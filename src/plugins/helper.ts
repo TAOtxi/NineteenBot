@@ -17,6 +17,7 @@ import {
   type Status,
   type KeypressEvent,
   AbortPromptError,
+  ExitPromptError,
 } from '@inquirer/core';
 import { styleText } from 'node:util';
 import figures from '@inquirer/figures';
@@ -438,10 +439,15 @@ export default async function inject(bot: mineflayer.Bot) {
         }
         await bot.tryExecute(input);
       } catch (error) {
-        if (!(error instanceof AbortPromptError)) {
-          bot.baseError('helper', error as string);
+        if (error instanceof ExitPromptError) {
+          bot.emit('cleanup');
+          process.exit(0);
         }
-        break;
+        if (error instanceof AbortPromptError) {
+          break;
+        }
+        bot.baseError('helper', error as string);
+        console.trace(error);
       }
     }
   };

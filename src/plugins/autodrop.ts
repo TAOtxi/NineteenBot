@@ -320,6 +320,10 @@ function registCmd(bot: mineflayer.Bot) {
   )
 }
 
+function cleanup(bot: mineflayer.Bot) {
+  bot.removeTimeTask(pluginName);
+}
+
 
 export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, ['makeConfig', 'logger', 'command', 'task', 'action']);
@@ -330,15 +334,19 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.tryDrop = () => tick(bot);
 
   bot.enableAutoDrop = () => {
-    bot.removeTimeTask(pluginName);
+    cleanup(bot);
     bot.createTimeTask(pluginName, bot._autodrop('checkInterval'), tick);
     bot.baseInfo(pluginName, 'Autodrop enabled.');
   }
 
   bot.disableAutoDrop = () => {
-    bot.removeTimeTask(pluginName);
+    cleanup(bot);
     bot.baseInfo(pluginName, 'Autodrop disabled.');
   }
+
+  bot.on('cleanup', () => {
+    cleanup(bot);
+  })
 
   registCmd(bot);
   pluginReady(bot, pluginName);

@@ -124,12 +124,11 @@ export default class CmdParser {
     const match = cmd.match(/".*?"|'.*?'/g);
     if (match) {
       for (const item of match) {
-        const value = item.replace(' ', whiteSpace).slice(1, -1);
-        cmd = cmd.replace(item, value);
+        const value = item.replaceAll(' ', whiteSpace).slice(1, -1);
+        cmd = cmd.replaceAll(item, value);
       } 
     }
-    
-    return cmd.split(' ').filter(arg => arg !== '').map(item => item.replace(whiteSpace, ' '));
+    return cmd.split(' ').filter(arg => arg !== '').map(item => item.replaceAll(whiteSpace, ' '));
   }
 
   /**

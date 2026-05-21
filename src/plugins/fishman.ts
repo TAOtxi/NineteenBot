@@ -124,13 +124,27 @@ function registCmd(bot: mineflayer.Bot) {
       .execute(bot => {
         const yaw = bot.entity.yaw;
         const pitch = bot.entity.pitch;
-        
-        const nearestPlayer = bot.findNearestPlayer();
-        if (!nearestPlayer) {
-          bot.baseError(pluginName, 'No player found.');
-          return;
+
+        if (bot.admins && bot.admins.length > 0) {
+          const admin = bot.players[bot.admins[0]!];
+          if (admin?.entity?.position) {
+            bot.lookAt(
+              // @ts-ignore
+              admin.entity.position.offset(0, admin.entity.eyeHeight, 0), 
+              true
+            );
+          } else {
+            const nearestPlayer = bot.findNearestPlayer();
+            if (nearestPlayer?.entity?.position) {
+              bot.lookAt(
+                // @ts-ignore
+                nearestPlayer.entity.position.offset(0, nearestPlayer.entity.height, 0), 
+                true
+              );
+            }
+          }
         }
-        bot.lookAt(nearestPlayer.entity.position, true);
+
         bot.createOnceTimeTask('cleanBagAndTurnBack', 10, () => {
           const l = bot.inventory.inventoryStart;
           const r = bot.inventory.inventoryEnd;
