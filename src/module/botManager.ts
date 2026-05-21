@@ -248,19 +248,10 @@ async function initBot(bot: mineflayer.Bot) {
   registCmd(bot);
   registEvent(bot);
   bot.admins = baseConfig.Admin;
-  
+
   bot.once('login', () => {
     bot.identifier === currentBot && bot.emit('display');
   });
-
-  bot.once('spawn', () => {
-    bot.chat('/stp survival');
-
-  })
-
-  // bot.on('soundEffectHeard', (sound: string) => {
-  //   console.log(sound);
-  // })
 }
 
 async function loadPlugins(bot: mineflayer.Bot) {
