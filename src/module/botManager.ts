@@ -3,6 +3,7 @@ import fs from "fs";
 import { select } from '@inquirer/prompts';
 import { type ChatMessage } from "prismarine-chat";
 import { waitPluginLoads } from "../utils/pluginWaiter.js";
+import testCmd from "./test.js";
 
 import CommandPlugin from "../plugins/command.js";
 import AutoDropPlugin from "../plugins/autodrop.js";
@@ -123,16 +124,27 @@ function registCmd(bot: mineflayer.Bot) {
       .execute(bot => bot.baseInfo('state', JSON.stringify(bot.getNotchYawPitch()))))
     .then(CommandManager.command('get')
       .then(CommandManager.value('<property>')
-      .execute((bot, property) => {
-        // @ts-ignore
-        bot.baseInfo('state', `${property}: ${JSON.stringify(bot[property], null, 2)}`);
-      })))
+        .suggests(() => Object.keys(bot))
+        .execute((bot, property) => {
+          // @ts-ignore
+          bot.baseInfo('state', `${property}: ${JSON.stringify(bot[property], null, 2)}`);
+        })))
     .then(CommandManager.command('fix')
       .then(CommandManager.command('isAlive')
         // @ts-ignore
         .execute(bot => bot.isAlive = true)))
   );
 
+  bot.registerCmd(CommandManager.command('all')
+    .then(CommandManager.value('<command>')
+      .execute((bot, command) => {
+        for (const b of Object.values(botMap)) {
+          b?.tryExecute(command);
+        }
+      }))
+  );
+
+  testCmd(bot);
 }
 
 function changeBot(identifier: string) {
