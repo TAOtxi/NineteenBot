@@ -128,6 +128,10 @@ function isPageDownKey(key: KeypressEvent) {
   return key.name === 'pagedown';
 }
 
+function isDelKey(key: KeypressEvent) {
+  return key.name === 'delete';
+}
+
 
 const cmdHelper = (bot: mineflayer.Bot, config: SearchConfig, signal: AbortSignal) => createPrompt(
   (config: SearchConfig, done: (value: string) => void) => {
@@ -199,6 +203,25 @@ const cmdHelper = (bot: mineflayer.Bot, config: SearchConfig, signal: AbortSigna
     const [historyIndex, setHistoryIndex] = useState<number>(bot._commandHistory.length - 1);
 
     useKeypress(async (key, rl) => {
+      if (isDelKey(key)) {
+        rl.clearLine(0);
+        const whiteSpaceIndex = fullCommand.lastIndexOf(' ');
+        if (whiteSpaceIndex === fullCommand.length - 1) {
+          setFullCommand(fullCommand.slice(0, whiteSpaceIndex));
+          rl.write(fullCommand.slice(0, whiteSpaceIndex));
+          return;
+        }
+
+        let newCommand;
+        if (whiteSpaceIndex !== -1) {
+          newCommand = fullCommand.slice(0, whiteSpaceIndex + 1);
+        } else {
+          newCommand = '';
+        }
+        setFullCommand(newCommand);
+        rl.write(newCommand);
+        return;
+      }
       if (isPageUpKey(key)) {
         if (historyIndex <= 0) return;
         setFullCommand(bot._commandHistory[historyIndex - 1]!);
