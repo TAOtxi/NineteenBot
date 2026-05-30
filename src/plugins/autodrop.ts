@@ -214,6 +214,9 @@ function tick(bot: mineflayer.Bot, checkNotEmptySlots = true) {
       needDropSlots.push(i);
     }
   }
+  if (needDropSlots.length === 0) {
+    return;
+  }
   handleDrop(bot, needDropSlots);
 }
 
@@ -246,7 +249,7 @@ function registCmd(bot: mineflayer.Bot) {
             return;
           }
           bot.baseInfo(pluginName, `Ignore set to ${slots}`);
-          return bot.setConfig(pluginName, 'ignoreSlots', slots);
+          bot.setConfig(pluginName, 'ignoreSlots', slots);
         }))
       )
     )
@@ -259,7 +262,7 @@ function registCmd(bot: mineflayer.Bot) {
           const interval = parseInt(value);
           bot.updateTimeTask(pluginName, interval);
           bot.baseInfo(pluginName, `Interval set to ${interval}`);
-          return bot.setConfig(pluginName, 'checkInterval', interval);
+          bot.setConfig(pluginName, 'checkInterval', interval);
       }))
       .then(CommandManager.argument(['-m', '--mode']).execute((bot, value) => {
         if (!value || !['whitelist', 'blacklist'].includes(value)) {
@@ -267,7 +270,7 @@ function registCmd(bot: mineflayer.Bot) {
           return;
         }
         bot.baseInfo(pluginName, `Mode set to ${value}`);
-        return bot.setConfig(pluginName, 'dropMode', value);
+        bot.setConfig(pluginName, 'dropMode', value);
       }))
       .then(CommandManager.argument(['-d', '--direction']).execute((bot, value) => {
         if (!value) {
@@ -275,7 +278,7 @@ function registCmd(bot: mineflayer.Bot) {
           return;
         }
         bot.baseInfo(pluginName, `Direction set to ${value}`);
-        return bot.setConfig(pluginName, 'dropDirection', value);
+        bot.setConfig(pluginName, 'dropDirection', value);
       }))
       .then(CommandManager.argument(['-r', '--rotation']).execute(async (bot, value) => {
         if (!value) {
@@ -288,8 +291,8 @@ function registCmd(bot: mineflayer.Bot) {
           return;
         }
         bot.baseInfo(pluginName, `Rotation set to ${value}`);
-        await bot.setConfig(pluginName, 'dropYaw', rotation[0]);
-        return bot.setConfig(pluginName, 'dropPitch', rotation[1]);
+        bot.setConfig(pluginName, 'dropYaw', rotation[0]);
+        bot.setConfig(pluginName, 'dropPitch', rotation[1]);
       }))
       .then(CommandManager.argument('--dropWay')
         .execute((bot, way) => {
@@ -298,7 +301,7 @@ function registCmd(bot: mineflayer.Bot) {
             return;
           }
           bot.baseInfo(pluginName, `Drop way set to ${way}`);
-          return bot.setConfig(pluginName, 'useDropRotation', way === 'rotation');
+          bot.setConfig(pluginName, 'useDropRotation', way === 'rotation');
         }))
     )
     .then(CommandManager.command('config')

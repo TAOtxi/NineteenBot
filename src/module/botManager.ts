@@ -4,6 +4,7 @@ import { select } from '@inquirer/prompts';
 import { type ChatMessage } from "prismarine-chat";
 import { waitPluginLoads } from "../utils/pluginWaiter.js";
 import testCmd from "./test.js";
+import registCommonCmd from "./command.js";
 
 import CommandPlugin from "../plugins/command.js";
 import AutoDropPlugin from "../plugins/autodrop.js";
@@ -77,11 +78,6 @@ function registCmd(bot: mineflayer.Bot) {
         .execute((bot, identifier) => changeBot(identifier))))
   );
 
-  bot.registerCmd(CommandManager.command(['cls', 'clear'])
-    .execute(bot => {
-      console.clear();
-    }));
-
   bot.registerCmd(CommandManager.command('quit')
     .execute(bot => {
       bot.baseInfo('BOT', 'Quit');
@@ -104,36 +100,6 @@ function registCmd(bot: mineflayer.Bot) {
       process.exit(0);
     }));
 
-  // TODO: 完善help命令
-  bot.registerCmd(CommandManager.command('help')
-    .execute(bot => {
-      // console.clear();
-    }));
-
-  bot.registerCmd(CommandManager.command(['msg', 'chat', '.'])
-    .then(CommandManager.value('<Message or Command>')
-      .execute((bot, value) => {
-        value && bot.chat(value);
-      }))
-  );
-
-  bot.registerCmd(CommandManager.command('state')
-    .then(CommandManager.command('getYawPitch')
-      .execute(bot => bot.baseInfo('state', JSON.stringify(bot.getNotchYawPitch()))))
-    .then(CommandManager.command('get')
-      .then(CommandManager.value('<property>')
-        // @ts-ignore
-        .suggests(() => Object.keys(bot).filter(key => !key.startsWith('_') && typeof bot[key] !== 'function'))
-        .execute((bot, property) => {
-          // @ts-ignore
-          bot.baseInfo('state', `${property}: ${JSON.stringify(bot[property], null, 2)}`);
-        })))
-    .then(CommandManager.command('fix')
-      .then(CommandManager.command('isAlive')
-        // @ts-ignore
-        .execute(bot => bot.isAlive = true)))
-  );
-
   bot.registerCmd(CommandManager.command('all')
     .then(CommandManager.value('<command>')
       .execute((bot, command) => {
@@ -144,10 +110,13 @@ function registCmd(bot: mineflayer.Bot) {
       }))
   );
 
-  bot.registerCmd(CommandManager.command('who')
-    .execute(bot => bot.baseInfo('BOT', bot.identifier))
-  );
+  bot.registerCmd(CommandManager.command('restart')
+    .execute(bot => {
+      bot.baseInfo('BOT', `Restart bot ${bot.identifier}`);
+      recreateBot(bot.identifier);
+    }));
 
+  registCommonCmd(bot);
   testCmd(bot);
 }
 
@@ -278,6 +247,7 @@ function registEvent(bot: mineflayer.Bot) {
   });
 
   bot.on("message", (msg: ChatMessage) => {
+    // bot.withoutLogTitle().baseInfo('chat', JSON.stringify(msg, null, 2));
     bot.baseInfo('chat', msg.toAnsi() + "\x1b[0m");
   });
 

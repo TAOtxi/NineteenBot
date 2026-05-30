@@ -58,10 +58,22 @@ export default class TranslateUtil {
     return translation;
   }
 
-  static item(key: string, lang: string = defaultLang) {
+  static translate(key: string, lang: string = defaultLang) {
     return this.tryTranslate(itemKeyPrefix + key, lang) ?? 
           this.tryTranslate(blockKeyPrefix + key, lang) ?? 
           this.tryTranslate(entityKeyPrefix + key, lang) ?? null;
+  }
+
+  static item(key: string, lang: string = defaultLang) {
+    return this.tryTranslate(itemKeyPrefix + key, lang) ?? null;
+  }
+
+  static entity(key: string, lang: string = defaultLang) {
+    return this.tryTranslate(entityKeyPrefix + key, lang) ?? null;
+  }
+
+  static block(key: string, lang: string = defaultLang) {
+    return this.tryTranslate(blockKeyPrefix + key, lang) ?? null;
   }
 
   static enchant(key: string, lang: string = defaultLang) {
