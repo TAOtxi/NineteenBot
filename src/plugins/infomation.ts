@@ -177,19 +177,47 @@ function showInventory(bot: mineflayer.Bot, args: Record<string, string>) {
     const item = bot.inventory.slots[i];
     if (!item) continue;
     
-    let info = `[${padZero(i)}] ${getItemName(item)}`;
-    
-    if (args['-d'] !== undefined && item.maxDurability) {
-      info += `\t耐久: ${item.maxDurability - item.durabilityUsed}/${item.maxDurability}`;
-    }
-    if (args['-c'] !== undefined && item.stackSize !== 1) {
-      info += `\t数量: ${item.count}/${item.stackSize}`;
-    }
-    if (args['-e'] !== undefined && item.enchants.length > 0) {
-      info += `\t附魔: [${getEnchantList(item)}]`;
-    }
-
+    const info = getItemInfoInline(bot, i, args);
     bot.withoutLogTitle().baseInfo(pluginName, info);
+  }
+}
+
+function getItemInfoInline(bot: mineflayer.Bot, slot: number, args: Record<string, string>) {
+  const item = bot.inventory.slots[slot];
+  if (!item) {
+    return `[${padZero(slot)}] Empty`;
+  }
+  let info = `[${padZero(slot)}] ${getItemName(item)}`;
+    
+  if (args['-d'] !== undefined && item.maxDurability) {
+    info += `\t耐久: ${item.maxDurability - item.durabilityUsed}/${item.maxDurability}`;
+  }
+  if (args['-c'] !== undefined && item.stackSize !== 1) {
+    info += `\t数量: ${item.count}/${item.stackSize}`;
+  }
+  if (args['-e'] !== undefined && item.enchants.length > 0) {
+    info += `\t附魔: [${getEnchantList(item)}]`;
+  }
+  return info;
+}
+
+function showMatchItems(bot: mineflayer.Bot, toPlayer: string) {
+  const inventoryStart = bot.inventory.inventoryStart;
+  const inventoryEnd = bot.inventory.inventoryEnd;
+  const showInfoList: Array<string> = [];
+  for (let i = inventoryStart; i < inventoryEnd; i++) {
+    const item = bot.inventory.slots[i];
+    if (!item) continue;
+    if (item.name === 'fishing_rod') continue;
+    if (!bot.isItemMatch(item)) continue;
+    const info = getItemInfoInline(bot, i, {'-c':'', '-e': ''}).replace("\t", ' ');
+    showInfoList.push(info);
+  }
+
+  for (let i = 0; i < showInfoList.length; i++) {
+    bot.createOnceTimeTask(`showMatchItem_${i}`, i * 5, () => {
+      bot.whisper(toPlayer, showInfoList[i]!);
+    });
   }
 }
 
@@ -228,6 +256,12 @@ function registCmd(bot: mineflayer.Bot) {
       .then(CommandManager.argument('-c'))
       .then(CommandManager.argument('-r'))
       .then(CommandManager.argument('-d'))
+    )
+    .then(CommandManager.command('show')
+      .then(CommandManager.command('matchItems')
+        .then(CommandManager.value('<Player>')
+          .suggests(() => Object.keys(bot.players))
+          .execute(showMatchItems)))
     )
   );
 }

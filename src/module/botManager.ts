@@ -1,10 +1,10 @@
 import mineflayer from "mineflayer";
 import fs from "fs";
 import { select } from '@inquirer/prompts';
-import { type ChatMessage } from "prismarine-chat";
 import { waitPluginLoads } from "../utils/pluginWaiter.js";
 import testCmd from "./test.js";
 import registCommonCmd from "./command.js";
+import registEvent from "./registerEvent.js";
 
 import CommandPlugin from "../plugins/command.js";
 import AutoDropPlugin from "../plugins/autodrop.js";
@@ -15,10 +15,13 @@ import taskPlugin from "../plugins/task.js";
 import infomationPlugin from "../plugins/infomation.js";
 import actionPlugin from "../plugins/action.js";
 import fishmanPlugin from "../plugins/fishman.js";
+import { getTaskMap } from "./applyTask.js";
 
 // { `${username}@${servername}` : Bot }
 const botMap: Record<string, mineflayer.Bot> = {};
-let baseConfig = JSON.parse(fs.readFileSync("./config/config.json", 'utf-8')) as UserConfig;
+const botTaskCache: Record<string, string[]> = {};
+
+const baseConfig = JSON.parse(fs.readFileSync("./config/config.json", 'utf-8')) as UserConfig;
 let currentBot: string | null = null;
 
 function isBotExsit(identifier: string | null) {
@@ -214,12 +217,26 @@ function createBot(username: string, servername: string) {
 async function initBot(bot: mineflayer.Bot) {
   await loadPlugins(bot);
 
+  bot.admins = baseConfig.Admin;
   registCmd(bot);
   registEvent(bot);
-  bot.admins = baseConfig.Admin;
+
+  const taskMap = getTaskMap();
+  for (const task of botTaskCache[bot.identifier] || []) {
+    if (taskMap[task] === undefined) {
+      bot.baseError('BOT', `${task} task is not exist.`);
+      continue;
+    }
+    taskMap[task](bot);
+  }
 
   bot.once('login', () => {
-    bot.identifier === currentBot && bot.emit('display');
+    if (currentBot === null) {
+      currentBot = bot.identifier;
+      bot.emit('display');
+    } else if (bot.identifier === currentBot) {
+      bot.emit('display');
+    }
   });
 }
 
@@ -232,52 +249,10 @@ async function loadPlugins(bot: mineflayer.Bot) {
   return waitPluginLoads(bot, ['logger', 'helper', 'task']);
 }
 
-function registEvent(bot: mineflayer.Bot) {
-  bot.on('whisper', (username: string, message: string) => {
-    if (!baseConfig.Admin.includes(username)) return;
 
-    message = message.trim();
-    if (message.startsWith('/')) {
-      bot.chat(message);
-    } else if (message.match(/^c |^chat /)) {
-      bot.chat(message.replace(/^c |^chat /, ''));
-    } else {
-      bot.tryExecute(message);
-    }
-  });
-
-  bot.on("message", (msg: ChatMessage) => {
-    // bot.withoutLogTitle().baseInfo('chat', JSON.stringify(msg, null, 2));
-    bot.baseInfo('chat', msg.toAnsi() + "\x1b[0m");
-  });
-
-  bot.once("login", () => {
-    bot.baseInfo('login', `Login as ${bot.username}`);
-  })
-
-  bot.on("resourcePack", (url: string, hash?: string, uuid?: string) => {
-    bot.baseInfo('resourcePack', `Resource pack URL: ${url} UUID: ${uuid} Hash: ${hash}`);
-    bot.acceptResourcePack();
-  });
-
-  bot.on("kicked", (reason: string) => {
-    bot.baseError('kicked', `Kicked: ${JSON.stringify(reason, null, 2)}`);
-    recreateBot(bot.identifier);
-  });
-
-  bot.on("error", (err: Error) => {
-    bot.baseError('error event', err.message);
-    recreateBot(bot.identifier);
-  });
-
-  bot.on('end', (reason: string) => {
-    bot.baseError('end', reason);
-    recreateBot(bot.identifier);
-  });
-}
 
 const timerMap: Record<string, NodeJS.Timeout | null> = {};
-const DELAY = 10000;
+const DELAY = 20000;
 
 function recreateBot(identifier: string) {
   timerMap[identifier] && clearTimeout(timerMap[identifier]);
@@ -291,9 +266,11 @@ function recreateBot(identifier: string) {
     bot.emit('hidden');
     bot.emit('cleanup');
     bot.end('ohoh');
+    // bot._client.emit('end');
+    // bot._client.removeAllListeners();
     
     bot.removeAllListeners();
-    botMap[identifier] = createBot(
+    createBot(
       bot.username, 
       bot.servername  // TODO: 检测 end 事件后 bot 的属性是否存在
     );
@@ -307,15 +284,43 @@ async function createBotWithConfig() {
     return true;
   }
   const bot = createBot(username, servername);
-  botMap[bot.identifier] = bot;
-  currentBot = bot.identifier;
   initBot(bot);
   return false;
 }
 
+async function createBotWithTask(username: string, servername: string, task: string) {
+  const bot = createBot(username, servername);
+
+  if (botTaskCache[bot.identifier] === undefined) {
+    botTaskCache[bot.identifier] = [];
+  }
+  botTaskCache[bot.identifier]!.push(task);
+
+  initBot(bot);
+}
+
+function removeTask(bot: mineflayer.Bot, task: string) {
+  if (!Array.isArray(botTaskCache[bot.identifier])) {
+    bot.baseError('BOT', `${task} task is not exist.`);
+    return;
+  }
+
+  if (!botTaskCache[bot.identifier]!.includes(task)) {
+    bot.baseError('BOT', `${task} task is not exist.`);
+    return;
+  }
+  bot.baseInfo('BOT', `Remove task ${task}.`);
+  botTaskCache[bot.identifier] = botTaskCache[bot.identifier]!.filter(t => t !== task);
+}
+
 export {
   createBotWithConfig,
-}
+  recreateBot,
+  createBotWithTask,
+  removeTask,
+};
+
+export type { UserConfig };
 
 declare module 'mineflayer' {
   interface Bot {

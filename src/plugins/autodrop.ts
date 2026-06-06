@@ -104,6 +104,10 @@ function ignoreCurrentSlot(bot: mineflayer.Bot) {
   bot.setConfig(pluginName, 'ignoreSlots', ignoreSlots);
 }
 
+function isItemMatch(bot: mineflayer.Bot, item: prisItem.Item) {
+  return isMatch(item, bot._autodrop('items'));
+}
+
 function isMatch(item: prisItem.Item, checkItems: Config['items']) {
   for (const checker of checkItems) {
     if (!(checker.enabled ?? true)) {
@@ -335,6 +339,7 @@ export default async function inject(bot: mineflayer.Bot) {
   bot._autodrop = (key: string) => bot.getConfig(pluginName, key);
   bot._autodrop_isTurnBack = true;
   bot.tryDrop = () => tick(bot);
+  bot.isItemMatch = (item: prisItem.Item) => isItemMatch(bot, item);
 
   bot.enableAutoDrop = () => {
     cleanup(bot);
@@ -363,6 +368,7 @@ declare module 'mineflayer' {
     tryDrop(): void;
     enableAutoDrop(): void;
     disableAutoDrop(): void;
+    isItemMatch(item: prisItem.Item): boolean;
   }
 }
 

@@ -1,4 +1,6 @@
 import mineflayer from 'mineflayer';
+import { getTaskMap } from './applyTask.js';
+import { removeTask } from './botManager.js';
 
 export default function registCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
@@ -50,6 +52,47 @@ export default function registCmd(bot: mineflayer.Bot) {
           bot.baseInfo('task', `[${task.id}]:\tNext Run Tick: ${task.nextRunTick}.\tInterval: ${task.interval}.`);
         }
         bot.withoutLogTitle().baseInfo('task', '');
-      })
-  ));
+      }))
+    .then(CommandManager.command('apply')
+      .then(CommandManager.value('<task>')
+        .suggests(() => Object.keys(getTaskMap()))
+        .execute((bot, task) => {
+          const taskMap = getTaskMap();
+          // @ts-ignore
+          taskMap[task](bot);
+        })))
+    .then(CommandManager.command('remove')
+      .then(CommandManager.value('<task>')
+        .suggests(() => Object.keys(getTaskMap()))
+        .execute((bot, task) => {
+          removeTask(bot, task);
+        })))
+  );
+
+  bot.registerCmd(CommandManager.command('q')
+    .then(CommandManager.command('inv')
+      .execute(bot => {
+        bot.tryExecute('info inv -c -d -e');
+      }))
+    .then(CommandManager.command(['h', 'harvest'])
+      .execute(bot => {
+        bot.tryExecute('all "info show matchItems TAOtxi"');
+      }))
+    .then(CommandManager.command('1')
+      .execute(bot => {
+        bot.chat('/stp survival');
+      }))
+    .then(CommandManager.command('2')
+      .execute(bot => {
+        bot.chat('/stp survival2');
+      }))
+    .then(CommandManager.command('tp')
+      .execute(bot => {
+        bot.chat('/tpa TAOtxi');
+      }))
+    .then(CommandManager.command('fish')
+      .execute(bot => {
+        bot.tryExecute('all "fish on"');
+      }))
+  )
 }
