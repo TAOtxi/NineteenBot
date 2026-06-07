@@ -215,6 +215,7 @@ function showMatchItems(bot: mineflayer.Bot, toPlayer: string) {
   }
 
   for (let i = 0; i < showInfoList.length; i++) {
+    bot.withoutLogTitle().baseInfo(pluginName, showInfoList[i]!);
     bot.createOnceTimeTask(`showMatchItem_${i}`, i * 5, () => {
       bot.whisper(toPlayer, showInfoList[i]!);
     });

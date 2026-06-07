@@ -1,6 +1,6 @@
 import mineflayer from "mineflayer";
-
-
+import { simplify } from "prismarine-nbt";
+import loader from 'prismarine-chat';
 
 function testCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
@@ -13,11 +13,30 @@ function testCmd(bot: mineflayer.Bot) {
         console.log('recipes', recipes[0]);
         const result = await bot.craft(recipes[0]!, 1, craftingTable);
         console.log(result);
-      })))
+      }))
+    .then(CommandManager.command('showDisplayName')
+      .execute(bot => {
+        console.log(bot.players['TAOtxi']?.displayName.toAnsi());
+      }))
+    .then(CommandManager.command('customName')
+      .execute(bot => {
+        // @ts-ignore
+        const ChatMessage = loader(bot.registry);
+        const l = bot.inventory.inventoryStart;
+        const r = bot.inventory.inventoryEnd;
+        for (let i = l; i <= r; i++) {
+          const item = bot.inventory.slots[i];
+          if (!item) continue;
+          // @ts-ignore
+          console.log(item.componentMap?.get('custom_name'))
+          console.log(item.customName);
+        }
+      }))
+  )
 
-  bot._client.on('chat', (packet) => {
-    console.log('chat', JSON.stringify(packet, null, 2));
-  })
+  // bot._client.on('chat', (packet) => {
+  //   console.log('chat', JSON.stringify(packet, null, 2));
+  // })
 
   // bot._client.on('systemChat', (packet) => {
   //   console.log('systemChat', JSON.stringify(packet, null, 2));

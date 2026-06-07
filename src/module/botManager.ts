@@ -1,6 +1,6 @@
 import mineflayer from "mineflayer";
 import fs from "fs";
-import { select } from '@inquirer/prompts';
+import { checkbox, select } from '@inquirer/prompts';
 import { waitPluginLoads } from "../utils/pluginWaiter.js";
 import testCmd from "./test.js";
 import registCommonCmd from "./command.js";
@@ -69,10 +69,34 @@ function registCmd(bot: mineflayer.Bot) {
         bot.baseInfo('BOT', '|     Start to create bot    |');
         bot.baseInfo('BOT', '==============================');
         bot.emit('hidden');
-        const isCancel = await createBotWithConfig();
-        if (isCancel) {
+
+        const task = await select({
+          message: 'Apply task or create bot',
+          choices: ['Apply task', 'Create bot', 'Cancel'],
+        });
+
+        if (task === 'Cancel') {
           console.info(`\nCancel create bot. Turn back to ${bot.identifier}\n`);
           bot.emit('display');
+          return;
+        }
+
+        if (task === 'Apply task') {
+          currentBot = null;
+          createBotAndApplyTask();
+          return;
+        }
+        
+        if (task !== 'Create bot') {
+          throw new Error('Invalid choice');
+        }
+
+        const identifier = await createBotWithConfig();
+        if (identifier === '') {
+          console.info(`\nCancel create bot. Turn back to ${bot.identifier}\n`);
+          bot.emit('display');
+        } else {
+          currentBot = identifier;
         }
       }))
     .then(CommandManager.command('change')
@@ -143,6 +167,45 @@ function changeBot(identifier: string) {
   currentBot = identifier;
   botMap[identifier]!.emit('display');
   return botMap[identifier]!;
+}
+
+async function applyTaskOrCreateBot() {
+  const task = await select({
+    message: 'Apply task or create bot',
+    choices: ['Apply task', 'Create bot'],
+  });
+
+  if (task === 'Apply task') {
+    createBotAndApplyTask();
+  } else if (task === 'Create bot') {
+    createBotWithConfig();
+  }
+}
+
+async function createBotAndApplyTask() {
+  const botNameList = Object.keys(baseConfig.Users);
+
+  const bots = await checkbox({
+    message: 'Select the bots to create',
+    choices: botNameList,
+    validate: (val) => val.length > 0,
+  });
+
+  const server = await select({
+    message: 'Select the server to create',
+    choices: Object.keys(baseConfig.Servers),
+  });
+
+  const task = await select({
+    message: 'Select the task to apply',
+    choices: Object.keys(getTaskMap()),
+  });
+
+  for (const bot of bots) {
+    createBotWithTask(bot, server, task);
+  }
+
+  return true;
 }
 
 async function getSelectConfig() {
@@ -281,22 +344,28 @@ function recreateBot(identifier: string) {
 async function createBotWithConfig() {
   const { username, servername } = await getSelectConfig();
   if (username === '' || servername === '') {
-    return true;
+    return '';
   }
   const bot = createBot(username, servername);
   initBot(bot);
-  return false;
+  return bot.identifier;
 }
 
 async function createBotWithTask(username: string, servername: string, task: string) {
   const bot = createBot(username, servername);
+  addTask(bot, task);
 
+  initBot(bot);
+}
+
+function addTask(bot: mineflayer.Bot, task: string) {
   if (botTaskCache[bot.identifier] === undefined) {
     botTaskCache[bot.identifier] = [];
   }
+  if (botTaskCache[bot.identifier]!.includes(task)) {
+    return;
+  }
   botTaskCache[bot.identifier]!.push(task);
-
-  initBot(bot);
 }
 
 function removeTask(bot: mineflayer.Bot, task: string) {
@@ -314,10 +383,10 @@ function removeTask(bot: mineflayer.Bot, task: string) {
 }
 
 export {
-  createBotWithConfig,
   recreateBot,
-  createBotWithTask,
   removeTask,
+  addTask,
+  applyTaskOrCreateBot,
 };
 
 export type { UserConfig };

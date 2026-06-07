@@ -2,6 +2,7 @@ const nbt = require('prismarine-nbt')
 
 function loader (registryOrVersion) {
   const registry = typeof registryOrVersion === 'string' ? require('prismarine-registry')(registryOrVersion) : registryOrVersion
+  const ChatMessage = require('prismarine-chat')(registry)
   class Item {
     constructor (type, count, metadata, nbt, stackId, sentByServer) {
       if (type == null) return
@@ -192,7 +193,9 @@ function loader (registryOrVersion) {
 
     get customName () {
       if (this.componentMap?.has('custom_name')) {
-        return this.componentMap.get('custom_name').data
+        const data = this.componentMap.get('custom_name').data || ''
+        const parsedData = ChatMessage.fromNotch(data)
+        return parsedData.toAnsi()
       }
       return this?.nbt?.value?.display?.value?.Name?.value ?? null
     }

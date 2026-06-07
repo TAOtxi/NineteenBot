@@ -1,6 +1,6 @@
 import mineflayer from 'mineflayer';
 import { getTaskMap } from './applyTask.js';
-import { removeTask } from './botManager.js';
+import { addTask, removeTask } from './botManager.js';
 
 export default function registCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
@@ -58,15 +58,29 @@ export default function registCmd(bot: mineflayer.Bot) {
         .suggests(() => Object.keys(getTaskMap()))
         .execute((bot, task) => {
           const taskMap = getTaskMap();
+          addTask(bot, task);
           // @ts-ignore
           taskMap[task](bot);
+          bot.baseInfo('task', `Apply Task: ${task}`);
+        })))
+    .then(CommandManager.command('add')
+      .then(CommandManager.value('<task>')
+        .suggests(() => Object.keys(getTaskMap()))
+        .execute((bot, task) => {
+          addTask(bot, task);
+          bot.baseInfo('task', `Add Task: ${task}`);
         })))
     .then(CommandManager.command('remove')
       .then(CommandManager.value('<task>')
         .suggests(() => Object.keys(getTaskMap()))
         .execute((bot, task) => {
           removeTask(bot, task);
+          bot.baseInfo('task', `Remove Task: ${task}`);
         })))
+  );
+
+  bot.registerCmd(CommandManager.command('list')
+    .execute(displayOnlinePlayers)
   );
 
   bot.registerCmd(CommandManager.command('q')
@@ -94,5 +108,36 @@ export default function registCmd(bot: mineflayer.Bot) {
       .execute(bot => {
         bot.tryExecute('all "fish on"');
       }))
+    .then(CommandManager.command('clean')
+      .execute(bot => {
+        bot.tryExecute('all "fish clean"');
+      }))
   )
+}
+
+
+function displayOnlinePlayers(bot: mineflayer.Bot) {
+  const worlds: Record<string, string[]> = {};
+  bot.withoutLogTitle().baseInfo('CMD', '=======================================');
+  bot.withoutLogTitle().baseInfo('CMD', `Total Players: ${Object.keys(bot.players).length}`);
+  // TODO: 匹配逻辑待优化
+  for (const player of Object.values(bot.players)) {
+    // toAnsi ==>  \x1B[0m\x1B[90m[\x1B[38;2;225;249;232m\x1B[1m传送大厅\x1B[90m]\x1B[97mTAOtxi\x1B[0m
+    const styleName = player.displayName.toAnsi();
+    const prefixEnd = styleName.indexOf(']');
+    const worldName = prefixEnd !== -1 ? styleName.substring(0, prefixEnd + 1) : 'unknown';
+    if (worlds[worldName] === undefined) {
+      worlds[worldName] = [];
+    }
+    worlds[worldName].push(player.username);
+  }
+  const worldList = Object.keys(worlds).sort();
+  if (worldList.length === 1 && worldList[0] === 'unknown') {
+    bot.withoutLogTitle().baseInfo('CMD', `${worlds[worldList[0]]?.join(', ')}`);
+  } else {
+    for (const world of worldList) {
+      bot.withoutLogTitle().baseInfo('CMD', `${world}\x1b[0m ${worlds[world]!.join(', ')}`);
+    }
+  }
+  bot.withoutLogTitle().baseInfo('CMD', '\x1b[0m=======================================');
 }

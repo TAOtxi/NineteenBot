@@ -156,7 +156,7 @@ function registCmd(bot: mineflayer.Bot) {
           const r = bot.inventory.inventoryEnd;
           for (let i = l; i <= r; i++) {
             const item = bot.inventory.slots[i];
-            if (item && item.name !== 'fishing_rod' && !bot.isItemMatch(item)) {
+            if (item && item.name !== 'fishing_rod' && bot.isItemMatch(item)) {
               bot.clickWindow(i, 1, 4)
             }
           }
