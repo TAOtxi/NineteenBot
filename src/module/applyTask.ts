@@ -3,6 +3,9 @@ import mineflayer from 'mineflayer'
 function getTaskMap(): Record<string, Runable> {
   return {
     fish: fishTask,
+    signIn: signIn,
+    water: water,
+    empty: () => {}
   }
 }
 
@@ -17,31 +20,115 @@ function fishTask(bot: mineflayer.Bot) {
   })
 }
 
+function awaitEvent(bot: mineflayer.Bot, event: string, timeout: number = 20000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Event ${event} timeout ${timeout}ms`));
+    }, timeout);
+
+    function oncleanup() {
+      clearTimeout(timer);
+    }
+
+    bot.once('cleanup', oncleanup);
+
+    // @ts-ignore
+    bot.once(event, () => {
+      clearTimeout(timer);
+      bot.off('cleanup', oncleanup);
+      resolve();
+    });
+  })
+}
+
+
+async function signIn(bot: mineflayer.Bot) {
+  const taskQueue = TaskQueue.createTaskQueue(bot, 'signIn');
+  taskQueue
+    .addTask(() => bot.chat('/19'))
+    .addTask(() => awaitEvent(bot, 'windowOpen'))
+    .addTask(() => bot.clickWindow(33, 0, 0))
+    .addTask(() => awaitEvent(bot, 'windowOpen'))
+    .addTask(() => bot.clickWindow(20, 0, 0))
+    .addTask(() => awaitEvent(bot, 'windowOpen'))
+    .addTask(() => {
+      const day = new Date().getDate();
+      const row = Math.floor((day - 1) / 8);
+      const col = (day - 1) % 8;
+      const slot = row * 9 + col;
+      bot.clickWindow(slot, 0, 0);
+    })
+    .addTask(() => {
+      if (bot.currentWindow !== null) {
+        bot.closeWindow(bot.currentWindow);
+      }
+    })
+
+  try {
+    await taskQueue.buid();
+  } catch (error) {
+    bot.baseError('SignInTask', error as string);
+  }
+}
+
+async function water(bot: mineflayer.Bot) {
+  const taskQueue = TaskQueue.createTaskQueue(bot, 'water');
+  taskQueue
+    .addTask(async () => {
+      bot.chat("/guilds open");
+      await awaitEvent(bot, 'windowOpen');
+    })
+    .addTask(async () => {
+      bot.clickWindow(14, 0, 0);
+      await awaitEvent(bot, 'windowOpen');
+    })
+    .addTask(() => bot.clickWindow(38, 0, 0), 5)
+    .addTask(() => bot.clickWindow(38, 0, 0), 5)
+    .addTask(() => bot.clickWindow(38, 0, 0), 5)
+    .addTask(() => bot.clickWindow(40, 0, 0), 5)
+    .addTask(() => bot.clickWindow(40, 0, 0), 5)
+    .addTask(() => bot.clickWindow(41, 0, 0), 5)
+    .addTask(() => bot.clickWindow(42, 0, 0), 5)
+    .addTask(() => bot.clickWindow(29, 0, 0), 5)
+    .addTask(() => {
+      if (bot.currentWindow !== null) {
+        bot.closeWindow(bot.currentWindow);
+      }
+    })
+  
+  try {
+    await taskQueue.buid();
+  } catch (error) {
+    bot.baseError('WaterTask', error as string);
+  }
+}
+
+
 type Runable = (bot: mineflayer.Bot) => void
-type RunableTask = () => void
+type RunableTask = () => Promise<void> | void
 
 class Task {
   public task: RunableTask;
-  public delay: number;
+  public minDelay: number;
 
   constructor(task: RunableTask, delay: number = -1) {
     this.task = task;
-    this.delay = delay;
+    this.minDelay = delay;
   }
 
   run() {
-    this.task();
+    return this.task();
   }
 }
 
 class TaskQueue {
   private id: string;
-  private task: Task[];
+  private taskList: Task[];
   private bot: mineflayer.Bot;
 
   constructor(bot: mineflayer.Bot, id: string) {
     this.id = id;
-    this.task = [];
+    this.taskList = [];
     this.bot = bot;
   }
 
@@ -49,33 +136,36 @@ class TaskQueue {
     return new TaskQueue(bot, id);
   }
 
-  addTask(task: RunableTask, delay: number = -1) {
-    if (this.task.at(-1) !== undefined && this.task.at(-1)!.delay < 0) {
+  addTask(task: RunableTask, minDelay: number = 0) {
+    if (this.taskList.at(-1) !== undefined && this.taskList.at(-1)!.minDelay < 0) {
       throw new Error('Task delay must be greater than 0');
     }
-    this.task.push(new Task(task, delay))
+    this.taskList.push(new Task(task, minDelay))
     return this;
   }
 
-  buid() {
-    if (this.task.length === 0) {
+  async buid() {
+    if (this.taskList.length === 0) {
       throw new Error(`TaskQueue ${this.id} is empty`);
     }
-    const firstTask = this.task[0]!;
-    if (firstTask.delay < 0) {
-      throw new Error('Task delay must be greater than 0');
-    }
-    this.bot.createTimeTask(this.id, firstTask.delay, () => {
-      firstTask.run();
-      const nextTask = this.task.shift();
-      if (nextTask === undefined) {
-        this.bot.removeTimeTask(this.id);
-        return;
+    
+    for (let i = 0; i < this.taskList.length; i++) {
+      const lastRunTick = this.bot.ticker;
+      const task = this.taskList[i];
+      if (!task) {
+        throw new Error(`TaskQueue ${this.id} task ${i} is undefined`);
       }
-
-      this.bot.updateTimeTask(this.id, nextTask.delay, nextTask.run);
-      this.bot.restartTimeTask(this.id);
-    })
+      await task.run();
+      
+      const delta = task.minDelay - (this.bot.ticker - lastRunTick);
+      if (delta > 0) {
+        await this.bot.createOnceTimeTask(
+          `waiting_${this.id}_${i}`, 
+          delta, 
+          () => {}
+        );
+      }
+    }
   }
 }
 

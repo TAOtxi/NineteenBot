@@ -1,8 +1,21 @@
 import mineflayer from 'mineflayer';
-import { type ChatMessage } from "prismarine-chat";
+import ChatMessageLoader, { type ChatMessage } from "prismarine-chat";
+import { type Window } from 'prismarine-windows'
 import { recreateBot } from "./botManager.js";
 
+let ChatMessageClass: ChatMessage;
+
+function getAnsi(message: string | Object) {
+  if (typeof message === 'string') {
+    return message;
+  }
+  // @ts-ignore
+  return ChatMessageClass.fromNotch(message).toAnsi();
+}
+
 function registEvent(bot: mineflayer.Bot) {
+  // @ts-ignore
+  ChatMessageClass = ChatMessageLoader(bot.registry);
   bot.on('whisper', (username: string, message: string) => {
     if (!bot.admins.includes(username)) return;
 
@@ -18,7 +31,7 @@ function registEvent(bot: mineflayer.Bot) {
 
   bot.on("message", (msg: ChatMessage) => {
     // bot.withoutLogTitle().baseInfo('chat', JSON.stringify(msg, null, 2));
-    bot.baseInfo('chat', msg.toAnsi() + "\x1b[0m");
+    bot.baseInfo('chat', msg.toAnsi());
   });
 
   bot.once("login", () => {
@@ -45,6 +58,23 @@ function registEvent(bot: mineflayer.Bot) {
     bot.baseError('end', reason);
     recreateBot(bot.identifier);
   });
+
+  bot.on('windowOpen', (window: Window) => {
+    bot.baseInfo('windowOpen', `Open window: ${getAnsi(window.title)}, windowType: ${window.type}, windowId: ${window.id}`);
+  });
+
+  bot.on('windowClose', (window: Window) => {
+    if (!window) return;
+    bot.baseInfo('windowClose', `Close window: ${getAnsi(window.title)}, windowType: ${window.type}, windowId: ${window.id}`);
+  });
+
+  // 修复拾玖世界菜单界面无法正常关闭问题
+  bot._client.on('set_slot', (packet) => {
+    // 传的 windowId 不为0，但客户端上的 currentWindow 为 null
+    if (packet.windowId !== 0 && bot.currentWindow === null) {
+      bot._client.write('close_window', { windowId: packet.windowId })
+    }
+  })
 }
 
 export default registEvent;

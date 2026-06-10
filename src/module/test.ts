@@ -1,35 +1,55 @@
 import mineflayer from "mineflayer";
 import { simplify } from "prismarine-nbt";
 import loader from 'prismarine-chat';
+import { Vec3 } from 'vec3';
+
+function padZero(num: number, length: number = 2) {
+  return num.toString().padStart(length, '0');
+}
+
 
 function testCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
   bot.registerCmd(CommandManager.command('test')
-    .then(CommandManager.command('1')
-      .execute(async bot => {
-        const itemType = bot.registry.itemsArray.find(i => i.name === 'stone_pickaxe')?.id!;
-        const craftingTable = bot.findBlock({ matching: b => b.name === 'crafting_table', maxDistance: 5 })!
-        const recipes = bot.recipesFor(itemType, null, 1, craftingTable);
-        console.log('recipes', recipes[0]);
-        const result = await bot.craft(recipes[0]!, 1, craftingTable);
-        console.log(result);
-      }))
-    .then(CommandManager.command('showDisplayName')
+    .then(CommandManager.command('openChest')
       .execute(bot => {
-        console.log(bot.players['TAOtxi']?.displayName.toAnsi());
+        const chestBlock = bot.findBlock({ matching: b => b.name === 'chest' });
+        if (!chestBlock) {
+          console.log('chest not found');
+          return;
+        }
+        bot.openChest(chestBlock);
       }))
-    .then(CommandManager.command('customName')
+    .then(CommandManager.command('block')
+      .then(CommandManager.value("<position>")
+        .execute((bot, position) => {
+          const arr = position.replaceAll(" ", "").split(',');
+          if (arr.length !== 3) {
+            console.log('position error');
+            return;
+          }
+          const block = bot.blockAt(new Vec3(Number(arr[0]), Number(arr[1]), Number(arr[2])));
+          console.log(block);
+        })))
+    .then(CommandManager.command("showChestItem")
       .execute(bot => {
-        // @ts-ignore
-        const ChatMessage = loader(bot.registry);
-        const l = bot.inventory.inventoryStart;
-        const r = bot.inventory.inventoryEnd;
-        for (let i = l; i <= r; i++) {
-          const item = bot.inventory.slots[i];
+        const type = bot.currentWindow?.type;
+        if (type !== "minecraft:generic_9x6" && type !== "minecraft:generic_9x3") {
+          bot.baseInfo("TEST", "chest not found");
+          return;
+        };
+
+        const option = {
+          count: true,
+          enchant: true,
+          durability: true,
+        }
+        for (let i=0; i<bot.currentWindow!.inventoryStart; i++) {
+          const item = bot.currentWindow!.slots[i];
           if (!item) continue;
-          // @ts-ignore
-          console.log(item.componentMap?.get('custom_name'))
-          console.log(item.customName);
+          
+          const info = bot.showItemInfoInline(item, option);
+          bot.baseInfo("TEST", `[${padZero(i)}] ${info}`);
         }
       }))
   )

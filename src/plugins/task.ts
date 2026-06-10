@@ -55,17 +55,21 @@ function createOnceTimeTask(
   id: string,
   delay: number,
   task: RunableTask
-) {
-  if (delay <= 0) {
-    task(bot);
-    return;
-  }
-  
-  const onceTask = (bot: mineflayer.Bot) => {
-    task(bot);
-    bot.removeTimeTask(id);
-  }
-  createTimeTask(bot, id, delay, onceTask, false);
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+      if (delay <= 0) {
+      task(bot);
+      resolve();
+      return;
+    }
+    
+    const onceTask = (bot: mineflayer.Bot) => {
+      task(bot);
+      bot.removeTimeTask(id);
+      resolve();
+    }
+    createTimeTask(bot, id, delay, onceTask, false);
+  })
 }
 
 function removeTimeTask(bot: mineflayer.Bot, id: string) {
@@ -218,7 +222,7 @@ declare module 'mineflayer' {
     timeTaskList: TimeTask[];
     tickTaskList: Record<string, TickTask>;
     _throttleVar: Record<string, ThrottleTaskInfo>;
-    createOnceTimeTask(id: string, runAfterTick: number, task: RunableTask): void;
+    createOnceTimeTask(id: string, runAfterTick: number, task: RunableTask): Promise<void>;
     createTimeTask(id: string, interval: number, task: RunableTask, runImmediately?: boolean): void;
     updateTimeTask(id: string, interval: number, task?: RunableTask): void;
     restartTimeTask(id: string): void;

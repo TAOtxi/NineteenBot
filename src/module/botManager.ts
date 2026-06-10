@@ -15,7 +15,10 @@ import taskPlugin from "../plugins/task.js";
 import infomationPlugin from "../plugins/infomation.js";
 import actionPlugin from "../plugins/action.js";
 import fishmanPlugin from "../plugins/fishman.js";
+import menuClickPlugin from "../plugins/menuClick.js";
+import controlPlugin from "../plugins/control.js";
 import { getTaskMap } from "./applyTask.js";
+import onMessage from "./onMessage.js";
 
 // { `${username}@${servername}` : Bot }
 const botMap: Record<string, mineflayer.Bot> = {};
@@ -71,7 +74,7 @@ function registCmd(bot: mineflayer.Bot) {
         bot.emit('hidden');
 
         const task = await select({
-          message: 'Apply task or create bot',
+          message: 'Select your action:',
           choices: ['Apply task', 'Create bot', 'Cancel'],
         });
 
@@ -171,7 +174,7 @@ function changeBot(identifier: string) {
 
 async function applyTaskOrCreateBot() {
   const task = await select({
-    message: 'Apply task or create bot',
+    message: 'Select your action:',
     choices: ['Apply task', 'Create bot'],
   });
 
@@ -283,6 +286,7 @@ async function initBot(bot: mineflayer.Bot) {
   bot.admins = baseConfig.Admin;
   registCmd(bot);
   registEvent(bot);
+  onMessage(bot);
 
   const taskMap = getTaskMap();
   for (const task of botTaskCache[bot.identifier] || []) {
@@ -307,7 +311,8 @@ async function loadPlugins(bot: mineflayer.Bot) {
   bot.loadPlugins([
       loggerPlugin, makeConfigPlugin, AutoDropPlugin, 
       CommandPlugin, helperPlugin, taskPlugin, 
-      infomationPlugin, actionPlugin, fishmanPlugin
+      infomationPlugin, actionPlugin, fishmanPlugin,
+      menuClickPlugin, controlPlugin,
   ]);
   return waitPluginLoads(bot, ['logger', 'helper', 'task']);
 }

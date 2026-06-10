@@ -95,6 +95,21 @@ function base(bot: mineflayer.Bot, prefix: string, msg: string, type: string) {
   bot._withLogTitle = true;
 }
 
+function notSaveLog(bot: mineflayer.Bot, prefix: string, msg: string, type: string) {
+  if (!bot.canLog) return;
+
+  let logData = '';
+  if (bot._withLogTitle) {
+    const title = `${getTimeStr()} ${prefix? `[${prefix}][${type}] ` : `[${type}] `}`;
+    logData = `${title}${msg}`;
+  } else {
+    logData = msg;
+  }
+  
+  console.log('\r' + logData);
+  bot._withLogTitle = true;
+}
+
 const LOG_TO_FILE = CmdUtil.getValueByArgName(process.argv, 'log') === 'true';
 
 export default async function inject(bot: mineflayer.Bot) {
@@ -110,6 +125,7 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.baseInfo = (prefix: string, msg: string) => base(bot, prefix, msg, 'INFO');
   bot.baseWarn = (prefix: string, msg: string) => base(bot, prefix, msg, 'WARN');
   bot.baseError = (prefix: string, msg: string) => base(bot, prefix, msg, 'ERROR');
+  bot.notSaveLog = (prefix: string, msg: string) => notSaveLog(bot, prefix, msg, 'INFO');
   bot.withoutLogTitle = () => {
     bot._withLogTitle = false;
     return bot;
@@ -134,5 +150,6 @@ declare module 'mineflayer' {
     baseInfo(prefix: string, msg: string): void;
     baseWarn(prefix: string, msg: string): void;
     baseError(prefix: string, msg: string): void;
+    notSaveLog(prefix: string, msg: string): void;
   }
 }

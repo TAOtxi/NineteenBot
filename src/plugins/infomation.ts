@@ -173,29 +173,34 @@ function padZero(num: number, length: number = 2) {
 function showInventory(bot: mineflayer.Bot, args: Record<string, string>) {
   const l = bot.inventory.inventoryStart;
   const r = bot.inventory.inventoryEnd;
+
+  const option = {
+    count: args['-c'] !== undefined,
+    enchant: args['-e'] !== undefined,
+    durability: args['-d'] !== undefined,
+  };
   for (let i = l; i < r; i++) {
     const item = bot.inventory.slots[i];
     if (!item) continue;
     
-    const info = getItemInfoInline(bot, i, args);
-    bot.withoutLogTitle().baseInfo(pluginName, info);
+    const info = showItemInfoInline(item, option);
+    bot.withoutLogTitle().baseInfo(pluginName, `[${padZero(i)}] ${info}`);
   }
 }
 
-function getItemInfoInline(bot: mineflayer.Bot, slot: number, args: Record<string, string>) {
-  const item = bot.inventory.slots[slot];
+function showItemInfoInline(item: prisItem.Item, option: ShowItemOption) {
   if (!item) {
-    return `[${padZero(slot)}] Empty`;
+    return `Empty`;
   }
-  let info = `[${padZero(slot)}] ${getItemName(item)}`;
+  let info = `${getItemName(item)}`;
     
-  if (args['-d'] !== undefined && item.maxDurability) {
+  if (option.durability && item.maxDurability) {
     info += `\t耐久: ${item.maxDurability - item.durabilityUsed}/${item.maxDurability}`;
   }
-  if (args['-c'] !== undefined && item.stackSize !== 1) {
+  if (option.count && item.stackSize !== 1) {
     info += `\t数量: ${item.count}/${item.stackSize}`;
   }
-  if (args['-e'] !== undefined && item.enchants.length > 0) {
+  if (option.enchant && item.enchants.length > 0) {
     info += `\t附魔: [${getEnchantList(item)}]`;
   }
   return info;
@@ -205,13 +210,19 @@ function showMatchItems(bot: mineflayer.Bot, toPlayer: string) {
   const inventoryStart = bot.inventory.inventoryStart;
   const inventoryEnd = bot.inventory.inventoryEnd;
   const showInfoList: Array<string> = [];
+
+  const option = {
+    count: true,
+    enchant: true
+  };
+
   for (let i = inventoryStart; i < inventoryEnd; i++) {
     const item = bot.inventory.slots[i];
     if (!item) continue;
     if (item.name === 'fishing_rod') continue;
     if (!bot.isItemMatch(item)) continue;
-    const info = getItemInfoInline(bot, i, {'-c':'', '-e': ''}).replace("\t", ' ');
-    showInfoList.push(info);
+    const info = showItemInfoInline(item, option);
+    showInfoList.push(info.replace("\t", ' '));
   }
 
   for (let i = 0; i < showInfoList.length; i++) {
@@ -276,6 +287,7 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.showRawItem = (item: prisItem.Item) => showRawItemInfo(bot, item);
   bot.showItemInSlot = (slot: number) => showItemInSlot(bot, slot, true);
   bot.showEntityInfo = (entity: prismEntity.Entity, displayProperties?: Array<string>) => showEntityInfo(bot, entity, displayProperties ?? []);
+  bot.showItemInfoInline = showItemInfoInline;
 
   registCmd(bot);
 
@@ -284,10 +296,18 @@ export default async function inject(bot: mineflayer.Bot) {
 
 declare module 'mineflayer' {
   interface Bot {
-    showItem: (item: prisItem.Item) => void;
-    showHandItem: (raw?: boolean) => void;
-    showRawItem: (item: prisItem.Item) => void;
-    showItemInSlot: (slot: number, raw?: boolean) => void;
-    showEntityInfo: (entity: prismEntity.Entity, displayProperties?: Array<string>) => void;
+    showItem(item: prisItem.Item): void;
+    showHandItem(raw?: boolean): void;
+    showRawItem(item: prisItem.Item): void;
+    showItemInSlot(slot: number, raw?: boolean): void;
+    showEntityInfo(entity: prismEntity.Entity, displayProperties?: Array<string>): void;
+    showItemInfoInline(item: prisItem.Item, option: ShowItemOption): string;
   }
+}
+
+
+interface ShowItemOption {
+  durability?: boolean;
+  count?: boolean;
+  enchant?: boolean;
 }
