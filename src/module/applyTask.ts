@@ -3,6 +3,7 @@ import mineflayer from 'mineflayer'
 function getTaskMap(): Record<string, Runable> {
   return {
     fish: fishTask,
+    fish1: fishTask1,
     signIn: signIn,
     water: water,
     empty: () => {}
@@ -13,6 +14,16 @@ function getTaskMap(): Record<string, Runable> {
 function fishTask(bot: mineflayer.Bot) {
   bot.once('spawn', () => {
     bot.chat('/stp survival2');
+
+    bot.createOnceTimeTask("doFish", 20 * 10, () => {
+      bot.startFishing();
+    });
+  })
+}
+
+function fishTask1(bot: mineflayer.Bot) {
+  bot.once('spawn', () => {
+    bot.chat('/stp survival');
 
     bot.createOnceTimeTask("doFish", 20 * 10, () => {
       bot.startFishing();

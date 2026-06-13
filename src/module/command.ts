@@ -1,6 +1,6 @@
 import mineflayer from 'mineflayer';
 import { getTaskMap } from './applyTask.js';
-import { addTask, removeTask } from './botManager.js';
+import { addTask, removeTask, getBotMap } from './botManager.js';
 
 export default function registCmd(bot: mineflayer.Bot) {
   const CM = bot.getCommandManager();
@@ -131,6 +131,28 @@ export default function registCmd(bot: mineflayer.Bot) {
     .then(CM.command('clean')
       .execute(bot => {
         bot.tryExecute('all "fish clean"');
+      }))
+    .then(CM.command('drop')
+      .execute(bot => {
+        bot.tryExecute('all "ad test"');
+      }))
+    .then(CM.command('sign')
+      .execute(bot => {
+        bot.tryExecute('all "task apply signIn"');
+      }))
+    .then(CM.command('water')
+      .execute(bot => {
+        for (const bot of Object.values(getBotMap())) {
+          if (bot._isFishing) {
+            bot.stopFishing();
+            bot.createOnceTimeTask('restartFishing', 20 * 20, () => {
+              bot.startFishing();
+            })
+          }
+        }
+        bot.createOnceTimeTask('waterTask', 10 * 20, () => {
+          bot.tryExecute('task apply water');
+        })
       }))
   )
 }

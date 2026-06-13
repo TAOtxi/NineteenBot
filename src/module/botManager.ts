@@ -27,6 +27,10 @@ const botTaskCache: Record<string, string[]> = {};
 const baseConfig = JSON.parse(fs.readFileSync("./config/config.json", 'utf-8')) as UserConfig;
 let currentBot: string | null = null;
 
+function getBotMap() {
+  return botMap;
+}
+
 function isBotExsit(identifier: string | null) {
   if (!identifier) {
     return false;
@@ -392,6 +396,7 @@ export {
   removeTask,
   addTask,
   applyTaskOrCreateBot,
+  getBotMap,
 };
 
 export type { UserConfig };
