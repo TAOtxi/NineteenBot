@@ -151,7 +151,7 @@ export default function registCmd(bot: mineflayer.Bot) {
           }
         }
         bot.createOnceTimeTask('waterTask', 10 * 20, () => {
-          bot.tryExecute('task apply water');
+          bot.tryExecute('all "task apply water"');
         })
       }))
   )

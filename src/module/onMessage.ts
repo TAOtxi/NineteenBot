@@ -11,6 +11,16 @@ export default function onMessage(bot: mineflayer.Bot) {
   //   const message = match[0]!;
   //   bot.chat(message);
   // })
+
+  bot.addChatPattern(
+    'onReward', 
+    /^\[Server -> me\] 24小时在线奖励/, 
+    { parse: false, repeat: true }
+  );
+
+  bot.on('chat:onReward', (match: string[]) => {
+    bot.chat('');
+  })
 }
 
 
@@ -19,5 +29,6 @@ type MatcherCallback = (match: string[]) => void;
 declare module 'mineflayer' {
   interface BotEvents {
     'chat:onQQMessage': MatcherCallback,
+    'chat:onReward': MatcherCallback,
   }
 }

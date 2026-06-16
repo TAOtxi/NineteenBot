@@ -208,8 +208,10 @@ async function createBotAndApplyTask() {
     choices: Object.keys(getTaskMap()),
   });
 
-  for (const bot of bots) {
-    createBotWithTask(bot, server, task);
+  for (let i = 0; i < bots.length; i++) {
+    setTimeout(() => {
+      createBotWithTask(bots[i]!, server, task);
+    }, i * 10000);
   }
 
   return true;
