@@ -115,6 +115,9 @@ function registCmd(bot: mineflayer.Bot) {
   bot.registerCmd(CommandManager.command('quit')
     .execute(bot => {
       bot.baseInfo('BOT', 'Quit');
+      if (botTaskCache[bot.identifier]) {
+        botTaskCache[bot.identifier] = [];
+      }
       removeBot(bot.identifier);
 
       const bots = Object.keys(botMap);

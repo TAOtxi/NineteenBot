@@ -73,7 +73,7 @@ export default function registCmd(bot: mineflayer.Bot) {
         .suggests(() => Object.keys(getTaskMap()))
         .execute((bot, task) => {
           const taskMap = getTaskMap();
-          addTask(bot, task);
+          // addTask(bot, task);
           // @ts-ignore
           taskMap[task](bot);
           bot.baseInfo('task', `Apply Task: ${task}`);
@@ -114,6 +114,10 @@ export default function registCmd(bot: mineflayer.Bot) {
     .then(CM.command('2')
       .execute(bot => {
         bot.chat('/stp survival2');
+      }))
+    .then(CM.command('3')
+      .execute(bot => {
+        bot.chat('/stp industry');
       }))
     .then(CM.command('tp')
       .execute(bot => {
