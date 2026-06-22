@@ -9,9 +9,6 @@ const defaultConfig: FishmanConfig = {
   enableRotation: true,
   fishingRodProtect: true,
   throwDelay: 5,
-  autodrop: true,
-  triggerDropBy: '',  // diamond
-  dropTimeoutIfNotTrigger: 1200,
   rotationData: [
     { yaw: 0, pitch: 30 },
     { yaw: -90, pitch: 30 },
@@ -111,10 +108,6 @@ function registCmd(bot: mineflayer.Bot) {
       .then(CommandManager.command('reload')
         .execute(bot => {
           bot.loadConfig(pluginName, defaultConfig);
-          if (bot.hasTimeTask('dropTimeoutIfNotTrigger')) {
-            bot.updateTimeTask('dropTimeoutIfNotTrigger', bot.getConfig(pluginName, 'dropTimeoutIfNotTrigger'));
-          }
-          bot._triggerItemId = bot.registry.itemsByName[bot.getConfig(pluginName, 'triggerDropBy')]?.id ?? -1;
         }))
       .then(CommandManager.command('reset')
         .execute(bot => bot.saveConfig(pluginName, defaultConfig)))
@@ -169,9 +162,6 @@ function registCmd(bot: mineflayer.Bot) {
           bot.setConfig(pluginName, 'throwDelay', parseInt(value));
           bot.baseInfo(pluginName, `Throw delay set to ${parseInt(value)}`);
         })))
-    .then(CommandManager.command('autodrop')
-      .then(CommandManager.command('on').execute(bot => bot.startFishAutoDrop()))
-      .then(CommandManager.command('off').execute(bot => bot.stopFishAutoDrop())))
   );
 }
 
@@ -230,7 +220,6 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.bobber = null;
   bot._bobberNotInWaterTick = 0;
   bot._rotationIndex = 0;
-  bot._triggerItemId = -1;
   bot.heldFishRod = () => heldFishRod(bot);
   bot.isBobberExist = () => isBobberExist(bot);
 
@@ -259,10 +248,6 @@ export default async function inject(bot: mineflayer.Bot) {
 
     bot.activateItem();
 
-    if (bot.getConfig(pluginName, 'autodrop')) {
-      bot.startFishAutoDrop();
-    }
-
     bot.on('entitySpawn', onBobberSpawn);
     bot.on('entityUpdate', onCatchFish);
     bot.on('entityGone', onBobberDestory);
@@ -275,53 +260,11 @@ export default async function inject(bot: mineflayer.Bot) {
     cleanup();
   }
 
-  bot.startFishAutoDrop = () => {
-    bot.baseInfo(pluginName, 'startFishAutoDrop');
-    bot.removeTimeTask('dropTimeoutIfNotTrigger');
-    bot.removeListener('playerCollect', onPlayerCollectItem);
-
-    const dropTimeOut = bot.getConfig(pluginName, 'dropTimeoutIfNotTrigger');
-    if (dropTimeOut > 0) {
-      bot.createTimeTask('dropTimeoutIfNotTrigger', () => {
-        bot.tryDrop();
-      }, dropTimeOut);
-    }
-    bot.on('playerCollect', onPlayerCollectItem);
-
-    if (!bot.getConfig(pluginName, 'autodrop')) {
-      bot.setConfig(pluginName, 'autodrop', true);
-    }
-    bot._triggerItemId = bot.registry.itemsByName[bot.getConfig(pluginName, 'triggerDropBy')]?.id ?? -1;
-  }
-
-  bot.stopFishAutoDrop = () => {
-    bot.baseInfo(pluginName, 'stopFishAutoDrop');
-    bot.removeTimeTask('dropTimeoutIfNotTrigger');
-    bot.removeListener('playerCollect', onPlayerCollectItem);
-  }
-
-  function onPlayerCollectItem(player: prismEntity.Entity, item: prismEntity.Entity) {
-    if (bot._triggerItemId === -1) {
-      // bot.baseError(pluginName, `Illegal trigger item: ${bot.getConfig(pluginName, 'triggerDropBy')}`);
-      return;
-    }
-    if (player.username !== bot.username) return;
-    // @ts-ignore  // https://minecraft.wiki/w/Java_Edition_protocol/Slot_data
-    if (bot._triggerItemId !== item.metadata[8]?.itemId) return;
-
-    bot.tryDrop();
-    bot.restartTimeTask('dropTimeoutIfNotTrigger');
-  }
-
   function cleanup() {
     bot.removeTimeTask('fishingIntervalCheck');
     bot.removeTimeTask('throwFishingRodAgain');
     bot.removeListener('entitySpawn', onBobberSpawn);
     bot.removeListener('entityGone', onBobberDestory);
-    
-    if (bot._isFishing && bot.getConfig(pluginName, 'autodrop')) {
-      bot.stopFishAutoDrop();
-    }
 
     bot._rotationIndex = 0;
     bot._bobberNotInWaterTick = 0;
@@ -384,13 +327,10 @@ declare module 'mineflayer' {
     bobber: prismEntity.Entity | null,
     _bobberNotInWaterTick: number,
     _rotationIndex: number,
-    _triggerItemId: number,
     isBobberExist(): boolean,
     heldFishRod(): Promise<void> | void,
     startFishing(): Promise<void>,
     stopFishing(): void,
-    startFishAutoDrop(): void,
-    stopFishAutoDrop(): void,
   }
 
   interface BotEvents {
@@ -402,8 +342,5 @@ interface FishmanConfig {
   enableRotation: boolean,
   fishingRodProtect: boolean,
   throwDelay: number,
-  autodrop: boolean,
-  triggerDropBy: string,
-  dropTimeoutIfNotTrigger: number,
   rotationData: { yaw: number, pitch: number }[]
 }

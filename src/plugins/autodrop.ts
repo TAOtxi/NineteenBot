@@ -1,5 +1,6 @@
 import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
+import prismEntity from 'prismarine-entity';
 import StringUtil from '../utils/StringUtil.js';
 import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 import CmdParser from '../utils/CmdParser.js';
@@ -9,12 +10,17 @@ const pluginName = 'autodrop';
 const defaultConfig: Config = {
   ignoreSlots: [],
   useDropRotation: false,
-  dropYaw: 0,
-  dropPitch: 0,
+  dropRotation: {
+    yaw: 0,
+    pitch: 0,
+  },
   dropDirection: "look",
-  checkInterval: 40,
+  triggerInterval: 3600,
   dropMode: "whitelist",
-  triggerMinNotEmptySlots: 20,
+  triggerMinNotEmptySlots: 0,
+  triggerByTime: true,
+  triggerByItem: false,
+  triggerItemId: "*",
   items: [
     {
       // /give @a minecraft:diamond_sword[minecraft:enchantments={sharpness:5,smite:5,bane_of_arthropods:5}]
@@ -105,7 +111,7 @@ function ignoreCurrentSlot(bot: mineflayer.Bot) {
 }
 
 function isItemMatch(bot: mineflayer.Bot, item: prisItem.Item) {
-  return isMatch(item, bot._autodrop('items'));
+  return isMatch(item, bot.getConfig(pluginName, 'items'));
 }
 
 function isMatch(item: prisItem.Item, checkItems: Config['items']) {
@@ -181,7 +187,9 @@ function handleDrop(bot: mineflayer.Bot, slot: number[]) {
     return;
   }
 
-  if (!bot._autodrop('useDropRotation') && bot._autodrop('dropDirection') === 'look') {
+  const useDropRotation = bot.getConfig(pluginName, 'useDropRotation');
+
+  if (!useDropRotation && bot.getConfig(pluginName, 'dropDirection') === 'look') {
     slot.forEach(slot => dropSlot(bot, slot));
     return;
   }
@@ -189,10 +197,11 @@ function handleDrop(bot: mineflayer.Bot, slot: number[]) {
   const originYaw = bot.entity.yaw;
   const originPitch = bot.entity.pitch;
 
-  if (bot._autodrop('useDropRotation')) {
-    bot.look2(bot._autodrop('dropYaw'), bot._autodrop('dropPitch'), true);
+  if (useDropRotation) {
+    const dropRotation = bot.getConfig(pluginName, 'dropRotation');
+    bot.look2(dropRotation.yaw, dropRotation.pitch, true);
   } else {
-    bot.setDirection(bot._autodrop('dropDirection'));
+    bot.setDirection(bot.getConfig(pluginName, 'dropDirection'));
   }
 
   bot.createOnceTimeTask('autodrop_drop_task', bot => {
@@ -217,15 +226,19 @@ function tick(bot: mineflayer.Bot, checkNotEmptySlots = true) {
   }
 
   const notEmptySlots = getNotEmptySlot(bot);
-  if (checkNotEmptySlots && notEmptySlots.length < bot._autodrop('triggerMinNotEmptySlots')) {
+  if (
+    checkNotEmptySlots && 
+    notEmptySlots.length < bot.getConfig(pluginName, 'triggerMinNotEmptySlots')
+  ) {
     return;
   }
 
   const needDropSlots: number[] = [];
-  const dropMode = bot._autodrop('dropMode');
-  const checkItems = bot._autodrop('items');
+  const dropMode = bot.getConfig(pluginName, 'dropMode');
+  const checkItems = bot.getConfig(pluginName, 'items');
+  const ignoreSlots = bot.getConfig(pluginName, 'ignoreSlots');
   for (const i of notEmptySlots) {
-    if (bot._autodrop('ignoreSlots').includes(i)) {
+    if (ignoreSlots.includes(i)) {
       continue;
     }
     const item = bot.inventory.slots[i];
@@ -259,12 +272,12 @@ function registCmd(bot: mineflayer.Bot) {
             bot.baseError(pluginName, 'Slot value is empty.');
             return;
           }
-          const newIgnoreSlots = [...new Set([...bot._autodrop('ignoreSlots'), ...slots])];
+          const newIgnoreSlots = [...new Set([...bot.getConfig(pluginName, 'ignoreSlots'), ...slots])];
           bot.setConfig(pluginName, 'ignoreSlots', newIgnoreSlots);
         }))
       )
       .then(CommandManager.command('set')
-        .then(CommandManager.value('<slot1>,<slot2>,<slot3>...>').execute((bot, value) => {
+        .then(CommandManager.value('<slot1>,<slot2>,<slot3>...').execute((bot, value) => {
           const slots = CmdParser.parseArrayInt(value);
           if (!slots.length) {
             bot.baseError(pluginName, 'Slot value is empty.');
@@ -284,45 +297,45 @@ function registCmd(bot: mineflayer.Bot) {
           const interval = parseInt(value);
           bot.updateTimeTask(pluginName, interval);
           bot.baseInfo(pluginName, `Interval set to ${interval}`);
-          bot.setConfig(pluginName, 'checkInterval', interval);
+          bot.setConfig(pluginName, 'triggerInterval', interval);
       }))
       .then(CommandManager.argument(['-m', '--mode']).execute((bot, value) => {
-        if (!value || !['whitelist', 'blacklist'].includes(value)) {
-          bot.baseError(pluginName, 'Mode value is invalid.');
+        if (!['whitelist', 'blacklist'].includes(value)) {
+          bot.baseError(pluginName, `Mode ${value} is invalid.`);
           return;
         }
         bot.baseInfo(pluginName, `Mode set to ${value}`);
         bot.setConfig(pluginName, 'dropMode', value);
       }))
       .then(CommandManager.argument(['-d', '--direction']).execute((bot, value) => {
-        if (!value) {
-          bot.baseError(pluginName, 'Direction value is empty.');
+        if (!['north', 'south', 'east', 'west', 'up', 'down', 'looking'].includes(value)) {
+          bot.baseError(pluginName, `Direction ${value} is invalid.`);
           return;
         }
+
         bot.baseInfo(pluginName, `Direction set to ${value}`);
         bot.setConfig(pluginName, 'dropDirection', value);
       }))
       .then(CommandManager.argument(['-r', '--rotation']).execute(async (bot, value) => {
-        if (!value) {
-          bot.baseError(pluginName, 'Rotation value is empty.');
+        const matcher = value.match(/^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)$/);
+        if (!matcher) {
+          bot.baseError(pluginName, `Rotation value is invalid.`);
           return;
         }
-        const rotation = StringUtil.stringToList(value, ',', parseFloat);
-        if (rotation.length !== 2) {
-          bot.baseError(pluginName, 'Rotation value is invalid.');
-          return;
+        const rotation = {
+          yaw: parseFloat(matcher[1]!),
+          pitch: parseFloat(matcher[2]!),
         }
-        bot.baseInfo(pluginName, `Rotation set to ${value}`);
-        bot.setConfig(pluginName, 'dropYaw', rotation[0]);
-        bot.setConfig(pluginName, 'dropPitch', rotation[1]);
+        bot.setConfig(pluginName, 'dropRotation', rotation);
+        bot.baseInfo(pluginName, `Rotation set to ${JSON.stringify(rotation)}`);
       }))
       .then(CommandManager.argument('--dropWay')
         .execute((bot, way) => {
           if (!['direction', 'rotation'].includes(way)) {
-            bot.baseError(pluginName, `Value ${way} is invalid.`);
+            bot.baseError(pluginName, `DropWay ${way} is invalid.`);
             return;
           }
-          bot.baseInfo(pluginName, `Drop way set to ${way}`);
+          bot.baseInfo(pluginName, `DropWay set to ${way}`);
           bot.setConfig(pluginName, 'useDropRotation', way === 'rotation');
         }))
     )
@@ -331,48 +344,109 @@ function registCmd(bot: mineflayer.Bot) {
         .then(CommandManager.value('<property>')
           .suggests(Object.keys(defaultConfig))
           .execute((bot, property) => {
-            bot.baseInfo(pluginName, `${property}: ${JSON.stringify(bot._autodrop(property), null, 2)}`);
+            bot.baseInfo(
+              pluginName, 
+              `${property}: ${JSON.stringify(bot.getConfig(pluginName, property), null, 2)}`);
           }))
       )
       .then(CommandManager.command('reload').execute(async (bot) => {
-        await bot.loadConfig(pluginName, defaultConfig);
-        if (bot.hasTimeTask(pluginName)) {
-          bot.updateTimeTask(pluginName, bot._autodrop('checkInterval'));
-        }
+        bot.loadConfig(pluginName, defaultConfig);
+        bot.onAutoDropConfigReload();
         bot.baseInfo(pluginName, 'Config reloaded.');
       }))
     )
   )
 }
 
-function cleanup(bot: mineflayer.Bot) {
-  bot.removeTimeTask(pluginName);
+function updateTriggerItemId(bot: mineflayer.Bot) {
+  const triggerItemId = bot.getConfig(pluginName, 'triggerItemId');
+  if (triggerItemId === '*') {
+    bot._triggerItemId = -1;
+    return;
+  }
+  const itemId = bot.registry.itemsByName[triggerItemId]?.id;
+  if (!itemId) {
+    throw new Error(`Item ${triggerItemId} not found.`);
+  }
+  bot._triggerItemId = itemId;
 }
 
+const AUTO_DROP_TICK = 'autoDropTick';
 
 export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, ['makeConfig', 'logger', 'command', 'task', 'action']);
   
   bot.loadConfig(pluginName, defaultConfig);
-  bot._autodrop = (key: string) => bot.getConfig(pluginName, key);
   bot._autodrop_isTurnBack = true;
   bot.tryDrop = () => tick(bot);
   bot.isItemMatch = (item: prisItem.Item) => isItemMatch(bot, item);
+  bot._triggerItemId = 0;
+
+  updateTriggerItemId(bot);
 
   bot.enableAutoDrop = () => {
-    cleanup(bot);
-    bot.createTimeTask(pluginName, tick, bot._autodrop('checkInterval'));
+    cleanup();
     bot.baseInfo(pluginName, 'Autodrop enabled.');
+
+    if (bot.getConfig(pluginName, 'triggerByTime')) {
+      bot.createTimeTask(AUTO_DROP_TICK, tick, bot.getConfig(pluginName, 'triggerInterval'));
+    }
+    
+    if (bot.getConfig(pluginName, 'triggerByItem')) {
+      bot.on('playerCollect', onPlayerCollectItem);
+    }
   }
 
   bot.disableAutoDrop = () => {
-    cleanup(bot);
+    cleanup();
     bot.baseInfo(pluginName, 'Autodrop disabled.');
   }
 
-  bot.on('cleanup', () => {
-    cleanup(bot);
-  })
+  function cleanup() {
+    bot._autodrop_isTurnBack = true;
+    bot.off('playerCollect', onPlayerCollectItem);
+    bot.removeTimeTask(AUTO_DROP_TICK);
+  }
+
+  function onPlayerCollectItem(player: prismEntity.Entity, item: prismEntity.Entity) {
+    if (player.username !== bot.username) return;
+    if (
+      bot._triggerItemId !== -1 &&
+
+      // @ts-ignore  // https://minecraft.wiki/w/Java_Edition_protocol/Slot_data
+      bot._triggerItemId !== item.metadata[8]?.itemId
+    ) {
+      return;
+    }
+
+    bot.tryDrop();
+    if (bot.hasTimeTask(AUTO_DROP_TICK)) {
+      bot.restartTimeTask(AUTO_DROP_TICK);
+    }
+  }
+
+  bot.onAutoDropConfigReload = () => {
+    updateTriggerItemId(bot);
+    if (bot.hasTimeTask(AUTO_DROP_TICK)) {
+      bot.updateTimeTask(AUTO_DROP_TICK, bot.getConfig(pluginName, 'triggerInterval'));
+    }
+    bot.off('playerCollect', onPlayerCollectItem);
+    if (bot.getConfig(pluginName, 'triggerByItem')) {
+      bot.on('playerCollect', onPlayerCollectItem);
+    }
+
+    const triggerByTime = bot.getConfig(pluginName, 'triggerByTime');
+    if (
+      triggerByTime &&
+      !bot.hasTimeTask(AUTO_DROP_TICK)
+    ) {
+      bot.createTimeTask(AUTO_DROP_TICK, tick, bot.getConfig(pluginName, 'triggerInterval'));
+    } else if (!triggerByTime) {
+      bot.removeTimeTask(AUTO_DROP_TICK);
+    }
+  }
+
+  bot.once('cleanup', cleanup);
 
   registCmd(bot);
   pluginReady(bot, pluginName);
@@ -382,10 +456,11 @@ export default async function inject(bot: mineflayer.Bot) {
 declare module 'mineflayer' {
   interface Bot {
     _autodrop_isTurnBack: boolean;
-    _autodrop(key: string): any;
+    _triggerItemId: number;
     tryDrop(): void;
     enableAutoDrop(): void;
     disableAutoDrop(): void;
+    onAutoDropConfigReload(): void;
     isItemMatch(item: prisItem.Item): boolean;
   }
 }
@@ -394,12 +469,17 @@ declare module 'mineflayer' {
 interface Config {
   ignoreSlots: number[];
   useDropRotation: boolean;
-  dropYaw: number;
-  dropPitch: number;
+  dropRotation: {
+    yaw: number;
+    pitch: number;
+  };
   dropDirection: string;
-  checkInterval: number;
+  triggerInterval: number;
   dropMode: 'whitelist' | 'blacklist';
   triggerMinNotEmptySlots: number;
+  triggerByTime: boolean;
+  triggerByItem: boolean;
+  triggerItemId: string;
   items: {
     enabled?: boolean;     // default true
     name?: string;         // string or regex pattern (e.g. '/^Golden Apple$/')
