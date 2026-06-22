@@ -5,7 +5,7 @@
 // bot.emit('windowClose', window)
 ``` -->
 
-`node_modules\mineflayer\lib\plugins\blocks.js`
+`node_modules/mineflayer/lib/plugins/blocks.js`
 ```js
 // insert:160
 const maxDistance2 = maxDistance * maxDistance

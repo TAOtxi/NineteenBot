@@ -26,6 +26,8 @@ function tryToReplaceMendingEquipment(bot: mineflayer.Bot) {
   const l = bot.inventory.inventoryStart;
   const r = bot.inventory.inventoryEnd;
   for (let i = l; i < r; i++) {
+    if (i === bot.quickBarSlot + bot.inventory.hotbarStart) continue;
+
     if (shouldAtOffhand(bot, bot.inventory.slots[i])) {
       // 交互副手与 i 的位置
       bot.moveSlotItem(i, 45);
