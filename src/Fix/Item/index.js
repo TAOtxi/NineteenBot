@@ -194,8 +194,7 @@ function loader (registryOrVersion) {
     get customName () {
       if (this.componentMap?.has('custom_name')) {
         const data = this.componentMap.get('custom_name').data || ''
-        const parsedData = ChatMessage.fromNotch(data)
-        return parsedData.toAnsi()
+        return ChatMessage.fromNotch(data).toAnsi() + "\x1b[0m"
       }
       return this?.nbt?.value?.display?.value?.Name?.value ?? null
     }
@@ -263,6 +262,13 @@ function loader (registryOrVersion) {
 
       if (this.componentMap?.has('enchantments')) {
         return this.componentMap.get('enchantments').data?.enchantments?.map(
+          (ench) => ({
+            name: registry.enchantments[ench.id]?.name || null,
+            lvl: ench.level
+          })
+        ) || []
+      } else if (this.componentMap?.has('stored_enchantments')) {
+        return this.componentMap.get('stored_enchantments').data?.enchantments?.map(
           (ench) => ({
             name: registry.enchantments[ench.id]?.name || null,
             lvl: ench.level

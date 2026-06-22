@@ -37,8 +37,8 @@ function runClickTask(bot: mineflayer.Bot, taskName: string) {
   const actions = task.actions.map(parseActionStr);
   bot._menuClickRunIndexMap[taskName] = 0;
 
-  bot.createOnceTimeTask(`${pluginName}_start_${taskName}`, task.startDelay, () => {
-    bot.createTimeTask(`${pluginName}_${taskName}`, task.delay, () => {
+  bot.createOnceTimeTask(`${pluginName}_start_${taskName}`, () => {
+    bot.createTimeTask(`${pluginName}_${taskName}`, () => {
       let index = bot._menuClickRunIndexMap[taskName];
       if (index === undefined) {
         throw new Error('index is undefined');
@@ -78,8 +78,8 @@ function runClickTask(bot: mineflayer.Bot, taskName: string) {
         throw new Error(`action ${action} is invalid`);
       }
       bot._menuClickRunIndexMap[taskName] = index + 1;
-    });
-  });
+    }, task.delay);
+  }, task.startDelay);
 }
 
 function stopClickTask(bot: mineflayer.Bot, taskName: string) {

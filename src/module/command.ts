@@ -146,17 +146,7 @@ export default function registCmd(bot: mineflayer.Bot) {
       }))
     .then(CM.command('water')
       .execute(bot => {
-        for (const bot of Object.values(getBotMap())) {
-          if (bot._isFishing) {
-            bot.stopFishing();
-            bot.createOnceTimeTask('restartFishing', 20 * 20, () => {
-              bot.startFishing();
-            })
-          }
-        }
-        bot.createOnceTimeTask('waterTask', 10 * 20, () => {
-          bot.tryExecute('all "task apply water"');
-        })
+        bot.tryExecute('all "task apply water"');
       }))
   )
 }

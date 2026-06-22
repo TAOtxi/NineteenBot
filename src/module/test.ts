@@ -1,4 +1,4 @@
-import mineflayer from "mineflayer";
+import mineflayer, { type Anvil } from "mineflayer";
 import { simplify } from "prismarine-nbt";
 import loader from 'prismarine-chat';
 import { Vec3 } from 'vec3';
@@ -11,15 +11,19 @@ function padZero(num: number, length: number = 2) {
 function testCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
   bot.registerCmd(CommandManager.command('test')
-    .then(CommandManager.command('openChest')
-      .execute(bot => {
-        const chestBlock = bot.findBlock({ matching: b => b.name === 'chest' });
-        if (!chestBlock) {
-          console.log('chest not found');
-          return;
-        }
-        bot.openChest(chestBlock);
-      }))
+    .then(CommandManager.command('openBlock')
+      .then(CommandManager.value("<position>")
+        .execute(async (bot, position) => {
+          const arr = position.replaceAll(" ", "").split(',');
+          const posVec3 = new Vec3(Number(arr[0]), Number(arr[1]), Number(arr[2]));
+          const block = bot.blockAt(posVec3);
+          if (!block) {
+            console.log('block not found');
+            return;
+          }
+          const window = await bot.openAnvil(block);
+          console.log(window);
+        })))
     .then(CommandManager.command('block')
       .then(CommandManager.value("<position>")
         .execute((bot, position) => {
@@ -52,6 +56,46 @@ function testCmd(bot: mineflayer.Bot) {
           bot.baseInfo("TEST", `[${padZero(i)}] ${info}`);
         }
       }))
+    .then(CommandManager.command('combine')
+      .then(CommandManager.value('<slot1, slot2>')
+        .execute(async (bot, slots) => {
+          const matcher = slots.match(/^(\d+)[,，]\s*(\d+)$/);
+          if (!matcher) {
+            bot.baseError("TEST", 'Invalid slot format');
+            return;
+          }
+          const slot1 = parseInt(matcher[1]!) - 6;
+          const slot2 = parseInt(matcher[2]!) - 6;
+
+          let window = bot.currentWindow as Anvil;
+          if (bot.currentWindow?.type !== "minecraft:anvil") {
+            bot.currentWindow && bot.closeWindow(bot.currentWindow);
+            const anvilBlock = bot.findBlock({
+              maxDistance: 4.5,
+              matching: block => /_?anvil$/.test(block.name)
+            });
+            if (anvilBlock === null) {
+              bot.baseError("TEST", 'Anvil not found');
+              return;
+            }
+            window = await bot.openAnvil(anvilBlock);
+          }
+
+          if (window.type !== "minecraft:anvil") {
+            bot.baseError("TEST", 'Not anvil window');
+            return;
+          }
+          
+          if (!window.slots[slot1] || !window.slots[slot2]) {
+            bot.baseError("TEST", 'Slot is empty');
+            return;
+          }
+          console.log('combine1', bot.showItemInfoInline(window.slots[slot1]));
+          console.log('combine2', bot.showItemInfoInline(window.slots[slot2]));
+
+          await window.combine(window.slots[slot1], window.slots[slot2]);
+          bot.closeWindow(window);
+        })))
   )
 
   // bot._client.on('chat', (packet) => {

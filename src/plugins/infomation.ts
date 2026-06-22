@@ -1,10 +1,21 @@
 import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import prismEntity from 'prismarine-entity';
+import ChatMessageLoader from "prismarine-chat";
 import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 import TranslateUtil from '../utils/TranslateUtil.js';
 
 const pluginName = 'infomation';
+
+function getAnsi(bot: mineflayer.Bot, message: string | Object) {
+  if (typeof message === 'string') {
+    return message;
+  }
+  // @ts-ignore
+  const ChatMessageClass = ChatMessageLoader(bot.registry)
+  // @ts-ignore
+  return ChatMessageClass.fromNotch(message).toAnsi();
+}
 
 function showRawItemInfo(bot: mineflayer.Bot, item: prisItem.Item) {
   bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(item, null, 2));
@@ -171,8 +182,11 @@ function padZero(num: number, length: number = 2) {
 }
 
 function showInventory(bot: mineflayer.Bot, args: Record<string, string>) {
-  const l = bot.inventory.inventoryStart;
-  const r = bot.inventory.inventoryEnd;
+  const currentWindow = bot.currentWindow ?? bot.inventory;
+  bot.withoutLogTitle().baseInfo(pluginName, `CurrentWindow: ${getAnsi(bot, currentWindow.title)}`);
+
+  const l = currentWindow.inventoryStart;
+  const r = currentWindow.inventoryEnd;
 
   const option = {
     count: args['-c'] !== undefined,
@@ -180,7 +194,7 @@ function showInventory(bot: mineflayer.Bot, args: Record<string, string>) {
     durability: args['-d'] !== undefined,
   };
   for (let i = l; i < r; i++) {
-    const item = bot.inventory.slots[i];
+    const item = currentWindow.slots[i];
     if (!item) continue;
     
     const info = showItemInfoInline(item, option);
@@ -188,9 +202,16 @@ function showInventory(bot: mineflayer.Bot, args: Record<string, string>) {
   }
 }
 
-function showItemInfoInline(item: prisItem.Item, option: ShowItemOption) {
+function showItemInfoInline(item: prisItem.Item, option?: ShowItemOption) {
   if (!item) {
     return `Empty`;
+  }
+  if (!option) {
+    option = {
+      count: true,
+      enchant: true,
+      durability: true,
+    };
   }
   let info = `${getItemName(item)}`;
     
@@ -227,9 +248,9 @@ function showMatchItems(bot: mineflayer.Bot, toPlayer: string) {
 
   for (let i = 0; i < showInfoList.length; i++) {
     bot.withoutLogTitle().baseInfo(pluginName, showInfoList[i]!);
-    bot.createOnceTimeTask(`showMatchItem_${i}`, i * 5, () => {
+    bot.createOnceTimeTask(`showMatchItem_${i}`, () => {
       bot.whisper(toPlayer, showInfoList[i]!);
-    });
+    }, i * 5);
   }
 }
 
@@ -265,9 +286,9 @@ function registCmd(bot: mineflayer.Bot) {
       .then(CommandManager.argument('--entityType'))
       .then(CommandManager.argument('--display'))
       .then(CommandManager.argument('--username'))
-      .then(CommandManager.argument('-c'))
-      .then(CommandManager.argument('-r'))
-      .then(CommandManager.argument('-d'))
+      .then(CommandManager.argument('-c'))  // count
+      .then(CommandManager.argument('-r'))  // raw
+      .then(CommandManager.argument('-d'))  // distance
     )
     .then(CommandManager.command('show')
       .then(CommandManager.command('matchItems')
@@ -301,7 +322,7 @@ declare module 'mineflayer' {
     showRawItem(item: prisItem.Item): void;
     showItemInSlot(slot: number, raw?: boolean): void;
     showEntityInfo(entity: prismEntity.Entity, displayProperties?: Array<string>): void;
-    showItemInfoInline(item: prisItem.Item, option: ShowItemOption): string;
+    showItemInfoInline(item: prisItem.Item, option?: ShowItemOption): string;
   }
 }
 

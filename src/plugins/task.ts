@@ -31,8 +31,8 @@ function tryClearThrottle(bot: mineflayer.Bot) {
 function createTimeTask(
   bot: mineflayer.Bot, 
   id: string, 
-  interval: number, 
   task: RunableTask, 
+  interval: number, 
   runImmediately = false
 ) {
   if (bot.timeTaskList.some(task => task.id === id)) {
@@ -68,7 +68,7 @@ function createOnceTimeTask(
       bot.removeTimeTask(id);
       resolve();
     }
-    createTimeTask(bot, id, delay, onceTask, false);
+    createTimeTask(bot, id, onceTask, delay, false);
   })
 }
 
@@ -169,8 +169,8 @@ export default function inject(bot: mineflayer.Bot) {
   bot.updateTimeTask = (id, interval, task) => updateTimeTask(bot, id, interval, task);
   bot.restartTimeTask = (id) => restartTimeTask(bot, id);
   bot.removeTimeTask = (id) => removeTimeTask(bot, id);
-  bot.createOnceTimeTask = (id, delay, task) => createOnceTimeTask(bot, id, delay, task);
-  bot.createTimeTask = (id, interval, task, runImmediately) => createTimeTask(bot, id, interval, task, runImmediately);
+  bot.createOnceTimeTask = (id, task, delay) => createOnceTimeTask(bot, id, delay, task);
+  bot.createTimeTask = (id, task, interval, runImmediately) => createTimeTask(bot, id, task, interval, runImmediately);
   bot.tickTask = (id) => tickTask(bot, id);
   bot.createTickTask = (id, interval, task) => createTickTask(bot, id, interval, task);
   bot.updateTickTask = (id, interval, task) => updateTickTask(bot, id, interval, task);
@@ -222,8 +222,8 @@ declare module 'mineflayer' {
     timeTaskList: TimeTask[];
     tickTaskList: Record<string, TickTask>;
     _throttleVar: Record<string, ThrottleTaskInfo>;
-    createOnceTimeTask(id: string, runAfterTick: number, task: RunableTask): Promise<void>;
-    createTimeTask(id: string, interval: number, task: RunableTask, runImmediately?: boolean): void;
+    createOnceTimeTask(id: string, task: RunableTask, runAfterTick: number): Promise<void>;
+    createTimeTask(id: string, task: RunableTask, interval: number, runImmediately?: boolean): void;
     updateTimeTask(id: string, interval: number, task?: RunableTask): void;
     restartTimeTask(id: string): void;
     removeTimeTask(id: string): void;

@@ -91,7 +91,7 @@ function getNotEmptySlot(bot: mineflayer.Bot) {
   const r = bot.inventory.inventoryEnd;
 
   const ignoreSlots: number[] = [];
-  for (let i = l; i <= r; i++) {
+  for (let i = l; i < r; i++) {
     if (bot.inventory.slots[i]) {
       ignoreSlots.push(i);
     }
@@ -129,6 +129,19 @@ function isMatch(item: prisItem.Item, checkItems: Config['items']) {
         !StringUtil.regMatchOrEqual(checker.id, item.name)
     ) {
       continue;
+    }
+
+    // durability
+    if (item.maxDurability !== undefined && checker.durability !== undefined) {
+      if (checker.durability === -1 && item.durabilityUsed !== 0) {
+        continue;
+      }
+      if (checker.durability === -2 && item.durabilityUsed == 0) {
+        continue;
+      }
+      if (item.maxDurability - item.durabilityUsed < checker.durability) {
+        continue;
+      }
     }
 
     if (!checker.enchants || checker.enchants.length === 0) {
@@ -182,10 +195,10 @@ function handleDrop(bot: mineflayer.Bot, slot: number[]) {
     bot.setDirection(bot._autodrop('dropDirection'));
   }
 
-  bot.createOnceTimeTask('autodrop_drop_task', 15, bot => {
+  bot.createOnceTimeTask('autodrop_drop_task', bot => {
     slot.forEach(slot => dropSlot(bot, slot));
     bot.look(originYaw, originPitch, true);
-  })
+  }, 15)
 }
 
 function dropSlot(bot: mineflayer.Bot, slot: number) {
@@ -198,6 +211,11 @@ function dropSlot(bot: mineflayer.Bot, slot: number) {
 }
   
 function tick(bot: mineflayer.Bot, checkNotEmptySlots = true) {
+  if (bot.currentWindow !== null) {
+    bot.baseWarn(pluginName, 'Player has open a window. Skip drop.');
+    return;
+  }
+
   const notEmptySlots = getNotEmptySlot(bot);
   if (checkNotEmptySlots && notEmptySlots.length < bot._autodrop('triggerMinNotEmptySlots')) {
     return;
@@ -335,7 +353,7 @@ function cleanup(bot: mineflayer.Bot) {
 export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, ['makeConfig', 'logger', 'command', 'task', 'action']);
   
-  await bot.loadConfig(pluginName, defaultConfig);
+  bot.loadConfig(pluginName, defaultConfig);
   bot._autodrop = (key: string) => bot.getConfig(pluginName, key);
   bot._autodrop_isTurnBack = true;
   bot.tryDrop = () => tick(bot);
@@ -343,7 +361,7 @@ export default async function inject(bot: mineflayer.Bot) {
 
   bot.enableAutoDrop = () => {
     cleanup(bot);
-    bot.createTimeTask(pluginName, bot._autodrop('checkInterval'), tick);
+    bot.createTimeTask(pluginName, tick, bot._autodrop('checkInterval'));
     bot.baseInfo(pluginName, 'Autodrop enabled.');
   }
 
@@ -383,10 +401,11 @@ interface Config {
   dropMode: 'whitelist' | 'blacklist';
   triggerMinNotEmptySlots: number;
   items: {
-    enabled?: boolean;  // default true
-    name?: string;   // string or regex pattern (e.g. '/^Golden Apple$/')
-    id?: string;     // https://zh.minecraft.wiki/w/Java版数据值#物品
-    enchants?: {    // https://zh.minecraft.wiki/w/Java版数据值#魔咒
+    enabled?: boolean;     // default true
+    name?: string;         // string or regex pattern (e.g. '/^Golden Apple$/')
+    id?: string;           // https://zh.minecraft.wiki/w/Java版数据值#物品
+    durability?: number;   // default 0, -1 for full durability, -2 for none full durability
+    enchants?: {           // https://zh.minecraft.wiki/w/Java版数据值#魔咒
       name: string;
       lvl: number;
     }[];

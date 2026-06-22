@@ -17,6 +17,8 @@ import actionPlugin from "../plugins/action.js";
 import fishmanPlugin from "../plugins/fishman.js";
 import menuClickPlugin from "../plugins/menuClick.js";
 import controlPlugin from "../plugins/control.js";
+import autoRepairPlugin from "../plugins/autorepair.js";
+import autoReplacePlugin from "../plugins/autoreplace.js";
 import { getTaskMap } from "./applyTask.js";
 import onMessage from "./onMessage.js";
 
@@ -318,10 +320,10 @@ async function initBot(bot: mineflayer.Bot) {
 
 async function loadPlugins(bot: mineflayer.Bot) {
   bot.loadPlugins([
-      loggerPlugin, makeConfigPlugin, AutoDropPlugin, 
-      CommandPlugin, helperPlugin, taskPlugin, 
-      infomationPlugin, actionPlugin, fishmanPlugin,
-      menuClickPlugin, controlPlugin,
+      loggerPlugin, makeConfigPlugin, AutoDropPlugin, CommandPlugin, 
+      helperPlugin, taskPlugin, infomationPlugin, actionPlugin, 
+      fishmanPlugin, menuClickPlugin, controlPlugin, autoRepairPlugin, 
+      autoReplacePlugin,
   ]);
   return waitPluginLoads(bot, ['logger', 'helper', 'task']);
 }

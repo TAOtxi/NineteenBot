@@ -240,9 +240,9 @@ function swingArmAction(bot: mineflayer.Bot) {
 function sneakAction(bot: mineflayer.Bot) {
   bot.setControlState('sneak', true);
 
-  bot.createOnceTimeTask('sneakUp', bot._actionVar.sneakInterval / 2, bot => {
+  bot.createOnceTimeTask('sneakUp', bot => {
     bot.setControlState('sneak', false);
-  })
+  }, bot._actionVar.sneakInterval / 2)
 }
 
 function jumpAction(bot: mineflayer.Bot) {

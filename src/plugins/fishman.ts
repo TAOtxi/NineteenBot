@@ -151,17 +151,17 @@ function registCmd(bot: mineflayer.Bot) {
           }
         }
 
-        bot.createOnceTimeTask('cleanBagAndTurnBack', 10, () => {
+        bot.createOnceTimeTask('cleanBagAndTurnBack', () => {
           const l = bot.inventory.inventoryStart;
           const r = bot.inventory.inventoryEnd;
-          for (let i = l; i <= r; i++) {
+          for (let i = l; i < r; i++) {
             const item = bot.inventory.slots[i];
             if (item && item.name !== 'fishing_rod' && bot.isItemMatch(item)) {
               bot.clickWindow(i, 1, 4)
             }
           }
           bot.look(yaw, pitch, true);
-        })
+        }, 10)
       }))
     .then(CommandManager.command('throwDelay')
       .then(CommandManager.value('<delay>')
@@ -193,7 +193,7 @@ function throwFishingRodAgain(bot: mineflayer.Bot) {
   if (bot.hasTimeTask('throwFishingRodAgain')) {
     return;
   }
-  bot.createOnceTimeTask('throwFishingRodAgain', bot.getConfig(pluginName, 'throwDelay'), () => {
+  bot.createOnceTimeTask('throwFishingRodAgain', () => {
     if (!bot.usingHeldItem || !bot.isBobberExist()) {
       bot.activateItem();
 
@@ -201,7 +201,7 @@ function throwFishingRodAgain(bot: mineflayer.Bot) {
         rotationBot(bot);
       }
     }
-  })
+  }, bot.getConfig(pluginName, 'throwDelay'))
 }
 
 // 自动转向
@@ -266,7 +266,7 @@ export default async function inject(bot: mineflayer.Bot) {
     bot.on('entitySpawn', onBobberSpawn);
     bot.on('entityUpdate', onCatchFish);
     bot.on('entityGone', onBobberDestory);
-    bot.createTimeTask('fishingIntervalCheck', 40, fishingIntervalCheck);
+    bot.createTimeTask('fishingIntervalCheck', fishingIntervalCheck, 40);
     bot._isFishing = true;
   }
 
@@ -282,9 +282,9 @@ export default async function inject(bot: mineflayer.Bot) {
 
     const dropTimeOut = bot.getConfig(pluginName, 'dropTimeoutIfNotTrigger');
     if (dropTimeOut > 0) {
-      bot.createTimeTask('dropTimeoutIfNotTrigger', dropTimeOut, () => {
+      bot.createTimeTask('dropTimeoutIfNotTrigger', () => {
         bot.tryDrop();
-      })
+      }, dropTimeOut);
     }
     bot.on('playerCollect', onPlayerCollectItem);
 
@@ -298,10 +298,6 @@ export default async function inject(bot: mineflayer.Bot) {
     bot.baseInfo(pluginName, 'stopFishAutoDrop');
     bot.removeTimeTask('dropTimeoutIfNotTrigger');
     bot.removeListener('playerCollect', onPlayerCollectItem);
-
-    if (bot.getConfig(pluginName, 'autodrop')) {
-      bot.setConfig(pluginName, 'autodrop', false);
-    }
   }
 
   function onPlayerCollectItem(player: prismEntity.Entity, item: prismEntity.Entity) {
@@ -322,8 +318,11 @@ export default async function inject(bot: mineflayer.Bot) {
     bot.removeTimeTask('throwFishingRodAgain');
     bot.removeListener('entitySpawn', onBobberSpawn);
     bot.removeListener('entityGone', onBobberDestory);
-    bot.removeListener('playerCollect', onPlayerCollectItem);
-    bot.removeTimeTask('dropTimeoutIfNotTrigger');
+    
+    if (bot._isFishing && bot.getConfig(pluginName, 'autodrop')) {
+      bot.stopFishAutoDrop();
+    }
+
     bot._rotationIndex = 0;
     bot._bobberNotInWaterTick = 0;
     bot._isFishing = false;

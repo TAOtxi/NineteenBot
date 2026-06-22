@@ -31,21 +31,15 @@ function openNearstContainer(bot: mineflayer.Bot) {
 }
 
 function dropInventorySlot(bot: mineflayer.Bot, slot: number) {
-  let offset = 0;
-  let item;
-  if (bot.currentWindow !== null) {
-    offset += bot.currentWindow.inventoryStart - bot.inventory.inventoryStart;
-    item = bot.currentWindow.slots[slot + offset];
-  } else {
-    item = bot.inventory.slots[slot];
-  }
+  const window = bot.currentWindow ?? bot.inventory;
+  const item = window.slots[slot];
   if (item) {
     const info = bot.showItemInfoInline(item, { count: true, durability: true, enchant: true });
     bot.baseInfo(pluginName, `Drop ${info}`)
   } else {
     bot.baseError(pluginName, 'Slot is empty');
   }
-  bot.clickWindow(slot + offset, 1, 4)
+  bot.clickWindow(slot, 1, 4)
 }
 
 function dropContainerSlot(bot: mineflayer.Bot, slot: number) {
@@ -82,18 +76,17 @@ function registerCmd(bot: mineflayer.Bot) {
   const CM = bot.getCommandManager();
 
   const dropCmd = CM.command('drop')
-    .then(CM.command('inventory')
+    .then(CM.command('slot')
       .then(CM.value('<Slot>')
         .execute((bot, slot) => {
           const slotNum = parseInt(slot);
           dropInventorySlot(bot, slotNum);
         })))
-    .then(CM.command('container')
-      .then(CM.value('<Slot>')
-        .execute((bot, slot) => {
-          const slotNum = parseInt(slot);
-          dropContainerSlot(bot, slotNum);
-        })))
+    .then(CM.command('hand')
+      .execute(bot => {
+        const window = bot.currentWindow ?? bot.inventory;
+        dropInventorySlot(bot, window.inventoryEnd - (9 - bot.quickBarSlot));
+      }))
 
   const openCmd = CM.command('open')
     .then(CM.command('container')
@@ -102,29 +95,81 @@ function registerCmd(bot: mineflayer.Bot) {
       .then(CM.command('at')
         .then(CM.value('<Position>')
           .execute((bot, position) => {
-            const arr = position.replaceAll(' ', '').split(',');
-            if (!arr || arr.length !== 3) {
-              bot.baseError(pluginName, 'Invalid position');
+            const pattern = /^(-?\d+),\s*(-?\d+),\s*(-?\d+)$/;
+            const match = pattern.exec(position);
+            if (!match) {
+              bot.baseError(pluginName, `Invalid position ${position}`);
               return;
             }
             const pos = new Vec3(
-              parseFloat(arr[0]!), 
-              parseFloat(arr[1]!), 
-              parseFloat(arr[2]!)
+              parseInt(match[1]!), 
+              parseInt(match[2]!), 
+              parseInt(match[3]!)
             );
             openContainer(bot, pos);
-          })))
-    )
+          }))))
+    .then(CM.command('block')
+      .then(CM.value('<Position>')
+        .execute((bot, position) => {
+          const pattern = /^(-?\d+),\s*(-?\d+),\s*(-?\d+)$/;
+          const match = position.match(pattern);
+          if (!match) {
+            bot.baseError(pluginName, `Invalid position ${position}`);
+            return;
+          }
+          const pos = new Vec3(
+            parseInt(match[1]!), 
+            parseInt(match[2]!), 
+            parseInt(match[3]!)
+          );
+          const block = bot.blockAt(pos);
+          if (!block) {
+            bot.baseError(pluginName, `Block not found at ${position}`);
+            return;
+          }
+          bot.openBlock(block);
+        }))
+    );
+
+    const quickBarCmd = CM.command('quickBar')
+      .then(CM.value('<Slot>')
+        .execute((bot, slot) => {
+          const slotNum = parseInt(slot);
+          if (slotNum < 0 || slotNum > 8) {
+            bot.baseError(pluginName, 'Invalid slot');
+            return;
+          }
+          bot.setQuickBarSlot(slotNum);
+        }));
+    
+    const moveSlot = CM.command('moveSlot')
+      .then(CM.value('<slot1, slot2>')
+        .execute((bot, slot) => {
+          const match = slot.match(/(\d{1,2}),\s*(\d{1,2})/);
+          if (!match) {
+            bot.baseError(pluginName, 'Invalid slot format');
+            return;
+          }
+          const sourceSlot = parseInt(match[1]!);
+          const destSlot = parseInt(match[2]!);
+          if (sourceSlot === destSlot) {
+            bot.baseError(pluginName, 'Same slot');
+            return;
+          }
+          bot.moveSlotItem(sourceSlot, destSlot);
+        }))
     
 
   bot.registerCmd(CM.command(['control', 'c'])
+    .then(moveSlot)
     .then(dropCmd)
     .then(openCmd)
+    .then(quickBarCmd)
     .then(CM.command('close')
       .execute((bot) => closeContainer(bot))
       .then(CM.value('<WindowId>')
         .execute((bot, windowId) => closeContainer(bot, parseInt(windowId)))))
-  )
+  );
 }
 
 

@@ -1,4 +1,5 @@
 import mineflayer from 'mineflayer'
+import prismEntity from 'prismarine-entity';
 
 function getTaskMap(): Record<string, Runable> {
   return {
@@ -15,9 +16,10 @@ function fishTask(bot: mineflayer.Bot) {
   bot.once('spawn', () => {
     bot.chat('/stp survival2');
 
-    bot.createOnceTimeTask("doFish", 20 * 10, () => {
+    bot.createOnceTimeTask("doFish", () => {
       bot.startFishing();
-    });
+      bot.startAutoReplace();
+    }, 20 * 10);
   })
 }
 
@@ -25,9 +27,10 @@ function fishTask1(bot: mineflayer.Bot) {
   bot.once('spawn', () => {
     bot.chat('/stp survival');
 
-    bot.createOnceTimeTask("doFish", 20 * 10, () => {
+    bot.createOnceTimeTask("doFish", () => {
       bot.startFishing();
-    });
+      bot.startAutoReplace();
+    }, 20 * 10);
   })
 }
 
@@ -83,6 +86,31 @@ async function signIn(bot: mineflayer.Bot) {
 }
 
 async function water(bot: mineflayer.Bot) {
+  const isFishing = bot._isFishing;
+  if (isFishing) {
+    bot.stopFishing();
+  }
+
+  if (bot.currentWindow !== null) {
+    bot.closeWindow(bot.currentWindow);
+  }
+
+  const diamondId = bot.registry.itemsByName['diamond']?.id;
+
+  // 捡到钻石就开始神树浇水
+  await new Promise(async resolve => {
+    function onPickDiamond(player: prismEntity.Entity, item: prismEntity.Entity) {
+      if (player.username !== bot.username) return;
+      // @ts-ignore
+      const itemId = item.metadata[8]?.itemId;
+      if (!itemId || itemId !== diamondId) return;
+      bot.off('playerCollect', onPickDiamond);
+      resolve(1);
+    }
+
+    bot.on('playerCollect', onPickDiamond);
+  })
+
   const taskQueue = TaskQueue.createTaskQueue(bot, 'water');
   taskQueue
     .addTask(async () => {
@@ -104,6 +132,11 @@ async function water(bot: mineflayer.Bot) {
     .addTask(() => {
       if (bot.currentWindow !== null) {
         bot.closeWindow(bot.currentWindow);
+      }
+    })
+    .addTask(() => {
+      if (isFishing) {
+        bot.startFishing();
       }
     })
   
@@ -172,8 +205,7 @@ class TaskQueue {
       if (delta > 0) {
         await this.bot.createOnceTimeTask(
           `waiting_${this.id}_${i}`, 
-          delta, 
-          () => {}
+          () => {}, delta
         );
       }
     }
