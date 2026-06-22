@@ -759,7 +759,7 @@ export class EnchantmentTable extends Window<ConditionalStorageEvents> {
   putLapis (item: Item): Promise<Item>;
 }
 
-export class Anvil {
+export class Anvil extends Window<ConditionalStorageEvents> {
   combine (itemOne: Item, itemTwo: Item, name?: string): Promise<void>
   rename (item: Item, name?: string): Promise<void>
 }

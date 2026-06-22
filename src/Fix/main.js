@@ -1,125 +1,63 @@
-import mineflayer from 'mineflayer';
 import fs from "fs";
 
-/**
- * Error: 无法连接 Velocity 端的子服务器
- * Fix: See: https://github.com/PrismarineJS/mineflayer/pull/3834/commits
- */
-// function fixVelocity(bot: mineflayer.Bot) {
-//   bot.on("spawn", () => {
-//     // bot.physicsEnabled = true
-//   });
-// }
+const basePath = './src/Fix/Files/'
 
-// function fixVelocity() {
-//   const code1 = fs.readFileSync("./src/Fix/VelocityFix/physics.js").toString();
-//   const oldCodePath = "./node_modules/mineflayer/lib/plugins/physics.js";
-//   handleFile(oldCodePath) && fs.writeFileSync(oldCodePath, code1);
+const map = [
+  /**
+   * Bug: 无法进入需要下载资源包的1.21+版本的服务器
+   * Fix: see: https://github.com/PrismarineJS/mineflayer/pull/3842/commits
+   */
+  ['plugins/resource_pack.js', './node_modules/mineflayer/lib/plugins/resource_pack.js'],
 
-//   const code2 = fs.readFileSync("./src/Fix/VelocityFix/velocity.js").toString();
-//   const oldCodePath2 = "./node_modules/mineflayer/lib/plugins/velocity.js";
-//   fs.writeFileSync(oldCodePath2, code2);
+  /**
+   * @desc: 扩展 look2 方法
+   * @see: https://github.com/PrismarineJS/mineflayer/pull/3901
+   */
+  ['plugins/physics.js', './node_modules/mineflayer/lib/plugins/physics.js'],
 
-//   const oldCodePath3 = "./node_modules/mineflayer/lib/loader.js";
-//   const code3 = fs.readFileSync(oldCodePath3).toString();
-//   handleFile(oldCodePath3) && fs.writeFileSync(oldCodePath3, 
-//     code3.replace("kick: require('./plugins/kick'),", 
-//                   "kick: require('./plugins/kick'),\n  velocity: require('./plugins/velocity'),"));
-// }
+  /**
+   * @desc: 优化寻找方法
+   */
+  ['plugins/blocks.js', './node_modules/mineflayer/lib/plugins/blocks.js'],
+
+  /**
+   * @desc: 修复重生问题
+   * @see: https://github.com/PrismarineJS/mineflayer/issues/3905
+   */
+  ['plugins/health.js', './node_modules/mineflayer/lib/plugins/health.js'],
+
+  /**
+   * @desc: look2 的ts类型，修复 Anvil 类型
+   */
+  ['index.d.ts', './node_modules/mineflayer/index.d.ts'],
+
+  /**
+   * @desc: enchant for 1.20.5+
+   * @see: https://github.com/PrismarineJS/prismarine-item/pull/176
+   */
+  ['prismarine-item/index.js', './node_modules/prismarine-item/index.js'],
+
+  /**
+   * Error: 报错 array size is abnormally large，来自识别失败的的数据包引起
+   * Fix: 修改 node_modules/protodef/src/datatypes/compiler-structures.js:13
+   *      跳过其抛出的错误，修改代码如下
+   * ```js
+   * // code += 'if (count > 0xffffff && !ctx.noArraySizeCheck) throw new Error("array size is abnormally large, not reading: " + count)\n'
+   *    code += 'if (count > 0xffffff && !ctx.noArraySizeCheck) { console.warn("[Protodef] Abnormally large array size ignored:", count); return { value: [], size: countSize } }\n'
+   * ```
+   */
+  ['./protodef/compiler-structures.js', './node_modules/protodef/src/datatypes/compiler-structures.js'],
+
+  /**
+   * fix: 忽略没有签名的信息
+   */
+  ['minecraft-protocol/chat.js', 'node_modules/minecraft-protocol/src/client/chat.js'],
+]
 
 
+for (const [src, dst] of map) {
+  const code = fs.readFileSync(basePath + src, 'utf-8');
+  fs.writeFileSync(dst, code);
 
-
-/**
- * Bug: 无法进入需要下载资源包的1.21+版本的服务器
- * Fix: see: https://github.com/PrismarineJS/mineflayer/pull/3842/commits
- */
-function fixResourcePack() {
-  const code = fs.readFileSync("./src/Fix/ResourcePackFix/resource_pack.js").toString();
-  const oldCodePath = "./node_modules/mineflayer/lib/plugins/resource_pack.js";
-  handleFile(oldCodePath) && fs.writeFileSync(oldCodePath, code);
+  console.log(`Update ${src}`);
 }
-
-
-
-
-/**
- * Error: 报错 array size is abnormally large，来自识别失败的的数据包引起
- * Fix: 修改 node_modules/protodef/src/datatypes/compiler-structures.js:13
- *      跳过其抛出的错误，修改代码如下
- * ```js
- * // code += 'if (count > 0xffffff && !ctx.noArraySizeCheck) throw new Error("array size is abnormally large, not reading: " + count)\n'
- *    code += 'if (count > 0xffffff && !ctx.noArraySizeCheck) { console.warn("[Protodef] Abnormally large array size ignored:", count); return { value: [], size: countSize } }\n'
- * ```
- */
-// function fixError1() {
-//   const filePath = "./node_modules/protodef/src/datatypes/compiler-structures.js";
-//   const code = fs.readFileSync(filePath).toString();
-//   const fixedCode = code.replace(
-//     /if \(count > 0xffffff && !ctx\.noArraySizeCheck\) throw new Error\("array size is abnormally large, not reading: " \+ count\)\\n/,
-//     'if (count > 0xffffff && !ctx.noArraySizeCheck) { console.warn("[Protodef] Abnormally large array size ignored:", count); return { value: [], size: countSize } }\\n'
-//   );
-//   handleFile(filePath) && fs.writeFileSync(filePath, fixedCode);
-// }
-
-/**
- * Bug: bot.fish() 钓鱼会自动转向 See: https://github.com/PrismarineJS/mineflayer/issues/3537
- */
-// function fixFishing() {
-//   const code = fs.readFileSync("./src/Fix/FishingFix/inventory.js").toString();
-//   const oldPath = "./node_modules/mineflayer/lib/plugins/inventory.js";
-//   handleFile(oldPath) && fs.writeFileSync(oldPath, code);
-// }
-
-
-/**
- * @ignore
- * Bug: varint is too big
- * Fix: 修改 node_modules/protodef/src/datatypes/varint.js:27
- *      跳过其抛出的错误，修改代码如下
- * ```js
- * // if (shift > 64) throw new PartialReadError(`varint is too big: ${shift}`) // Make sure our shift don't overflow.
- *    if (shift > 64) {
- *      console.warn(`varint is too big: ${shift}`) // Make sure our shift don't overflow.
- *      return { value: 0, size: cursor - offset }
- *    }
- * ```
- */
-
-
-function handleFile(filePath) {
-  if (!fs.existsSync(filePath)) {
-    console.warn(`File ${filePath} not found.`);
-    return false;
-  }
-  console.log(`Backup ${filePath}`);
-  const backupPath = filePath + Date.now() + ".backup";
-  fs.copyFileSync(filePath, backupPath);
-  return true;
-}
-
-// 扩展 look2 方法
-function look2() {
-  const code = fs.readFileSync("./src/Fix/look2/physics.js", 'utf-8');
-  const oldCodePath = "./node_modules/mineflayer/lib/plugins/physics.js";
-  handleFile(oldCodePath) && fs.writeFileSync(oldCodePath, code);
-
-  const code2 = fs.readFileSync("./src/Fix/look2/index.d.ts", 'utf-8');
-  const oldCodePath2 = "./node_modules/mineflayer/index.d.ts";
-  handleFile(oldCodePath2) && fs.writeFileSync(oldCodePath2, code2);
-}
-
-
-// enchant for 1.20.5+
-// https://github.com/PrismarineJS/prismarine-item/pull/176
-function enchant() {
-  const code = fs.readFileSync("./src/Fix/Item/index.js", 'utf-8');
-  const oldCodePath = "./node_modules/prismarine-item/index.js";
-  handleFile(oldCodePath) && fs.writeFileSync(oldCodePath, code);
-}
-
-
-/* ********************** 手动修复 ********************** */
-// fixVelocity();
-// look2();
-enchant();
