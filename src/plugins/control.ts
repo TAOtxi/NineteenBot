@@ -176,4 +176,12 @@ function registerCmd(bot: mineflayer.Bot) {
 export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, ['command', 'logger']);
   registerCmd(bot);
+
+  bot.closeContainer = (windowId?: number) => closeContainer(bot, windowId);
+}
+
+declare module 'mineflayer' {
+  interface Bot {
+    closeContainer: (windowId?: number) => void;
+  }
 }

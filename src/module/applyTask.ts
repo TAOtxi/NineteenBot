@@ -18,6 +18,7 @@ function fishTask(bot: mineflayer.Bot) {
 
     bot.createOnceTimeTask("doFish", () => {
       bot.startFishing();
+      bot.enableAutoDrop();
       bot.startAutoReplace();
     }, 20 * 10);
   })
@@ -29,6 +30,7 @@ function fishTask1(bot: mineflayer.Bot) {
 
     bot.createOnceTimeTask("doFish", () => {
       bot.startFishing();
+      bot.enableAutoDrop();
       bot.startAutoReplace();
     }, 20 * 10);
   })
@@ -87,9 +89,7 @@ async function signIn(bot: mineflayer.Bot) {
 
 async function water(bot: mineflayer.Bot) {
   const isFishing = bot._isFishing;
-  if (isFishing) {
-    bot.stopFishing();
-  }
+  bot.disableAutoDrop();
 
   if (bot.currentWindow !== null) {
     bot.closeWindow(bot.currentWindow);
@@ -129,16 +129,8 @@ async function water(bot: mineflayer.Bot) {
     .addTask(() => bot.clickWindow(41, 0, 0), 5)
     .addTask(() => bot.clickWindow(42, 0, 0), 5)
     .addTask(() => bot.clickWindow(29, 0, 0), 5)
-    .addTask(() => {
-      if (bot.currentWindow !== null) {
-        bot.closeWindow(bot.currentWindow);
-      }
-    })
-    .addTask(() => {
-      if (isFishing) {
-        bot.startFishing();
-      }
-    })
+    .addTask(() => bot.closeContainer())
+    .addTask(() => bot.enableAutoDrop())
   
   try {
     await taskQueue.buid();
