@@ -58,19 +58,22 @@ function loader (registryOrVersion) {
       }
     }
 
-    static equal (item1, item2, matchStackSize = true, matchNbt = true) {
-      if (item1 == null && item2 == null) {
+    static equal (item1, item2, matchStackSize = true, matchNbt = true, matchComponents = true) {
+      if (item1 === null && item2 === null) {
         return true
-      } else if (item1 == null) {
+      } else if (item1 === null) {
         return false
-      } else if (item2 == null) {
+      } else if (item2 === null) {
         return false
+      } else if (item1 === item2) {
+        return true
       } else {
         return (
           item1.type === item2.type &&
           item1.metadata === item2.metadata &&
           (matchStackSize ? item1.count === item2.count : true) &&
-          (matchNbt ? JSON.stringify(item1.nbt) === JSON.stringify(item2.nbt) : true)
+          (matchNbt ? JSON.stringify(item1.nbt) === JSON.stringify(item2.nbt) : true) &&
+          (matchComponents ? JSON.stringify(item1.components) === JSON.stringify(item2.components) : true)
         )
       }
     }
@@ -267,7 +270,7 @@ function loader (registryOrVersion) {
             lvl: ench.level
           })
         ) || []
-      } else if (this.componentMap?.has('stored_enchantments')) {
+      } else if (this.name === 'enchanted_book' && this.componentMap?.has('stored_enchantments')) {
         return this.componentMap.get('stored_enchantments').data?.enchantments?.map(
           (ench) => ({
             name: registry.enchantments[ench.id]?.name || null,

@@ -10,7 +10,7 @@ const map = [
   ['plugins/resource_pack.js', './node_modules/mineflayer/lib/plugins/resource_pack.js'],
 
   /**
-   * @desc: 扩展 look2 方法
+   * @desc: 扩展 look2 方法，取消 look 的return
    * @see: https://github.com/PrismarineJS/mineflayer/pull/3901
    */
   ['plugins/physics.js', './node_modules/mineflayer/lib/plugins/physics.js'],
@@ -25,6 +25,11 @@ const map = [
    * @see: https://github.com/PrismarineJS/mineflayer/issues/3905
    */
   ['plugins/health.js', './node_modules/mineflayer/lib/plugins/health.js'],
+  
+  /**
+   * @desc: 适配 component，取消激活方法时的自动转向
+   */
+  ['plugins/inventory.js', './node_modules/mineflayer/lib/plugins/inventory.js'],
 
   /**
    * @desc: look2 的ts类型，修复 Anvil 类型
@@ -32,7 +37,7 @@ const map = [
   ['index.d.ts', './node_modules/mineflayer/index.d.ts'],
 
   /**
-   * @desc: enchant for 1.20.5+
+   * @desc: enchant for 1.20.5+，适配 component
    * @see: https://github.com/PrismarineJS/prismarine-item/pull/176
    */
   ['prismarine-item/index.js', './node_modules/prismarine-item/index.js'],

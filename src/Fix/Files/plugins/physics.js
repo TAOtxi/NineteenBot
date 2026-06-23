@@ -348,7 +348,7 @@ function inject (bot, { physicsEnabled, maxCatchupTicks }) {
     if (force) {
       lastSentYaw = yaw
       lastSentPitch = pitch
-      return
+      // return
     }
 
     await lookingTask.promise
