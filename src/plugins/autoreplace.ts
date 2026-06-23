@@ -25,15 +25,24 @@ function tryToReplaceMendingEquipment(bot: mineflayer.Bot) {
   if (shouldAtOffhand(bot, bot.inventory.slots[45])) return;
   const l = bot.inventory.inventoryStart;
   const r = bot.inventory.inventoryEnd;
+
+  let minDamageItemSlot = -1;
+  let minDamage = Number.MAX_SAFE_INTEGER;
   for (let i = l; i < r; i++) {
     if (i === bot.quickBarSlot + bot.inventory.hotbarStart) continue;
 
-    if (shouldAtOffhand(bot, bot.inventory.slots[i])) {
-      // 交互副手与 i 的位置
-      bot.moveSlotItem(i, 45);
-      break;
+    if (
+      shouldAtOffhand(bot, bot.inventory.slots[i]) &&
+      bot.inventory.slots[i]!.durabilityUsed < minDamage
+    ) {
+      minDamageItemSlot = i;
+      minDamage = bot.inventory.slots[i]!.durabilityUsed;
     }
   }
+
+  if (minDamageItemSlot === -1) return;
+  bot.moveSlotItem(minDamageItemSlot, 45);
+
 }
 
 function registCmd(bot: mineflayer.Bot) {

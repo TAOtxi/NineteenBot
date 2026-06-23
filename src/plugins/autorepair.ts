@@ -1,11 +1,11 @@
-import mineflayer, { type Anvil } from 'mineflayer';
+import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import { Vec3 } from 'vec3';
 import { type Window } from 'prismarine-windows'
 import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
+import { moveSlot, putDownCarryItem } from '../utils/InventoryUtil.js';
 
 const defaultConfig: Config = {
-  enabled: false,
   minExpRequired: 5,
   mendingBookContainerPos: {
     x: 0,
@@ -15,7 +15,7 @@ const defaultConfig: Config = {
 };
 
 const pluginName = 'autorepair';
-const INTERACT_RADIUS = 4.5;
+const INTERACT_RADIUS = 4.0;
 const AUTO_REPAIR_COMBINE = 'autoRepairCombine';
 const AUTO_REPAIR_TICK = 'autoRepairTick';
 
@@ -27,13 +27,6 @@ const containerBlocks = [
   /_?chest$/,
   /_?shulker_box$/
 ]
-
-function findAnvilBlock(bot: mineflayer.Bot) {
-  return bot.findBlock({
-    maxDistance: INTERACT_RADIUS,
-    matching: block => /_?anvil$/.test(block.name)
-  });
-}
 
 function shouldEnchantMendingBook(bot: mineflayer.Bot, item: prisItem.Item) {
   if (item.maxDurability === undefined || item.durabilityUsed === 0) return false;
@@ -87,6 +80,9 @@ function getContainerSlotRange(window: Window): { startSlot: number, endSlot: nu
 }
 
 async function tryToGetMendingBookFromContainer(bot: mineflayer.Bot, count: number) {
+  if (count === 0) return;
+
+  const beforeCount = count;
   const pos = bot.getConfig(pluginName, 'mendingBookContainerPos') as Config['mendingBookContainerPos'];
   
   const vec3 = new Vec3(pos.x, pos.y, pos.z);
@@ -106,7 +102,6 @@ async function tryToGetMendingBookFromContainer(bot: mineflayer.Bot, count: numb
   const window = await bot.openContainer(block);
   const slotRange = getContainerSlotRange(window);
   if (!slotRange) {
-    bot._isGettingMendingBook = false;
     bot.stopAutoRepair();
     bot.baseError(pluginName, `Container type ${window.type} is not supported. Stop autorepair.`);
     return;
@@ -117,20 +112,35 @@ async function tryToGetMendingBookFromContainer(bot: mineflayer.Bot, count: numb
     if (!item) continue;
     if (isMendingBook(item)) {
       count--;
-      bot.clickWindow(i, 0, 1);
+      await moveSlot(bot, i);
     }
     if (count <= 0) break;
   }
   bot._isGettingMendingBook = false;
   bot.closeWindow(window);
+
+  if (count === beforeCount) {
+    bot.baseInfo(pluginName, `Container has no mending books. Stop autorepair.`);
+    bot.stopAutoRepair();
+   }
 }
 
 
-function tick(bot: mineflayer.Bot) {
+async function tick(bot: mineflayer.Bot) {
+  // if (
+  //   bot.currentWindow === null &&
+  //   (bot._isRepairing || bot._isGettingMendingBook)
+  // ) {
+  //   bot.baseInfo(pluginName, 'Window closed. Reset state.');
+  //   resetState(bot);
+  //   return;
+  // }
+
   if (bot._isGettingMendingBook) return;
   if (bot._isRepairing) return;
 
-  if (bot.experience.level < bot.getConfig(pluginName, 'minExpRequired')) {
+  const level = bot.experience.level;
+  if (level < bot.getConfig(pluginName, 'minExpRequired')) {
     return;
   }
 
@@ -151,35 +161,57 @@ function tick(bot: mineflayer.Bot) {
   }
   if (repairCount === 0) return;
 
-  if (repairCount - mendingBookCount > 0) {
-    tryToGetMendingBookFromContainer(bot, repairCount - mendingBookCount);
+  if (mendingBookCount === 0) {
+    const window = bot.currentWindow ?? bot.inventory;
+    const emptySlotCount = window.emptySlotCount();
+
+    tryToGetMendingBookFromContainer(
+      bot, 
+      Math.min(repairCount, emptySlotCount, Math.floor(level / 2))
+    ).catch(e => {
+      bot.baseError(pluginName, `Get mending book failed: ${e.message}`);
+      resetState(bot);
+    });
     return;
   }
 
   function isAnvilBlock(pos: Vec3) {
     const block = bot.blockAt(pos);
-    return block !== null && /^(?:chipped_|damaged_)?anvil$/.test(block.name);
+    return block && /anvil$/.test(block.name);
   }
 
   if (bot._anvilBlockPos === null || !isAnvilBlock(bot._anvilBlockPos)) {
-    const anvilBlock = findAnvilBlock(bot);
+    const anvilBlock = bot.findNearestAnvilBlock();
     if (anvilBlock === null) {
       return;
     }
     bot._anvilBlockPos = anvilBlock.position;
   }
 
-  bot._isRepairing = true;
   tryRepair(bot).catch(e => {
     bot.baseError(pluginName, `Repair failed: ${e.message}`);
+    resetState(bot);
+    // bot.stopAutoRepair();
   });
+}
+
+function resetState(bot: mineflayer.Bot) {
+  bot._isRepairing = false;
+  bot._isGettingMendingBook = false;
+  bot._isCombining = false;
+  bot.removeTimeTask(AUTO_REPAIR_COMBINE);
+  if (bot.currentWindow) {
+    bot.closeWindow(bot.currentWindow);
+  }
 }
 
 
 async function tryRepair(bot: mineflayer.Bot) {
+  bot._isRepairing = true;
   if (bot.currentWindow?.type !== 'minecraft:anvil') {
     if (bot.currentWindow !== null) {
-      bot.closeWindow(bot.currentWindow);
+      resetState(bot);
+      return;
     }
 
     if (bot._anvilBlockPos === null) {
@@ -195,41 +227,51 @@ async function tryRepair(bot: mineflayer.Bot) {
       throw new Error('Current window is not anvil window.');
     }
   }
-  bot.createTimeTask(AUTO_REPAIR_COMBINE, combineTask, 1);
+  bot.createTimeTask(AUTO_REPAIR_COMBINE, combineTask, 1, true);
 }
 
 async function combineTask(bot: mineflayer.Bot) {
-  if (bot.currentWindow?.type !== 'minecraft:anvil') {
-    bot.removeTimeTask(AUTO_REPAIR_COMBINE);
-    bot._isRepairing = false;
+  if (bot._isCombining) return;
+  bot._isCombining = true;
+  const window = bot.currentWindow;
+  if (window?.type !== 'minecraft:anvil') {
+    resetState(bot);
     return;
   }
-  const anvilWindow = bot.currentWindow as Anvil;
 
   let needToRepairItem = null;
   let mendingBookItem = null;
 
+  if (window.slots[0] && shouldEnchantMendingBook(bot, window.slots[0])) {
+    needToRepairItem = window.slots[0];
+  }
+  if (window.slots[1] && isMendingBook(window.slots[1])) {
+    mendingBookItem = window.slots[1];
+  }
+
   for (let i = 3; i < 39; i++) {
-    const item = anvilWindow.slots[i];
-    if (!item) continue;
-    if (!needToRepairItem && shouldEnchantMendingBook(bot, item)) {
-      needToRepairItem = item;
-    }
-    if (!mendingBookItem && isMendingBook(item)) {
-      mendingBookItem = item;
-    }
     if (needToRepairItem && mendingBookItem) {
       break;
     }
+
+    const item = window.slots[i];
+    if (!item) continue;
+
+    if (!needToRepairItem && shouldEnchantMendingBook(bot, item)) {
+      needToRepairItem = item;
+    }
+    
+    if (!mendingBookItem && isMendingBook(item)) {
+      mendingBookItem = item;
+    }
   }
+
   if (!needToRepairItem || !mendingBookItem) {
-    bot.closeWindow(anvilWindow);
-    bot.removeTimeTask(AUTO_REPAIR_COMBINE);
-    bot._isRepairing = false;
+    resetState(bot);
     return;
   }
-  await anvilWindow.combine(needToRepairItem, mendingBookItem);
-  bot._isRepairing = false;
+  await bot.anvilCombine(needToRepairItem, mendingBookItem);
+  bot._isCombining = false;
 }
 
 function registCmd(bot: mineflayer.Bot) {
@@ -243,6 +285,7 @@ function registCmd(bot: mineflayer.Bot) {
       .execute(bot => {
         bot.baseInfo(pluginName, `isGettingMendingBook: ${bot._isGettingMendingBook}`);
         bot.baseInfo(pluginName, `isRepairing:          ${bot._isRepairing}`);
+        bot.baseInfo(pluginName, `isCombining:          ${bot._isCombining}`);
       }))
     .then(CM.command('mendingBookPos')
       .then(CM.value('<x, y, z>')
@@ -267,29 +310,20 @@ export default async function inject(bot: mineflayer.Bot) {
   bot._anvilBlockPos = null;
   bot._isGettingMendingBook = false;
   bot._isRepairing = false;
+  bot._isCombining = false;
 
   bot.startAutoRepair = () => {
     bot._isRepairing = false;
     bot._isGettingMendingBook = false;
+    bot._isCombining = false;
     bot.baseInfo(pluginName, 'Enable AutoRepair.');
     if (!bot.hasTimeTask(AUTO_REPAIR_TICK)) {
-      bot.createTimeTask(AUTO_REPAIR_TICK, tick, 20);
+      bot.createTimeTask(AUTO_REPAIR_TICK, tick, 20 * 2);
     }
   }
 
   bot.stopAutoRepair = () => {
-    if (bot.currentWindow?.type === 'minecraft:anvil') {
-      bot.closeWindow(bot.currentWindow);
-    } else if (
-      bot._isGettingMendingBook && 
-      (bot.currentWindow?.type === 'minecraft:generic_9x3' || 
-        bot.currentWindow?.type === 'minecraft:generic_9x6')
-      ) {
-        bot.closeWindow(bot.currentWindow);
-    }
-
-    bot._isRepairing = false;
-    bot._isGettingMendingBook = false;
+    resetState(bot);
     bot.removeTimeTask(AUTO_REPAIR_TICK);
   }
 
@@ -308,6 +342,7 @@ declare module 'mineflayer' {
     _anvilBlockPos: Vec3 | null;
     _isGettingMendingBook: boolean;
     _isRepairing: boolean;
+    _isCombining: boolean;
     startAutoRepair: () => void;
     stopAutoRepair:  () => void;
   }
@@ -320,7 +355,6 @@ type Pos = {
 }
 
 interface Config {
-  enabled: boolean;
   minExpRequired: number;
   mendingBookContainerPos: Pos;
 }

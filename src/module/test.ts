@@ -1,4 +1,5 @@
 import mineflayer, { type Anvil } from "mineflayer";
+import prisItem from 'prismarine-item';
 import { simplify } from "prismarine-nbt";
 import loader from 'prismarine-chat';
 import { Vec3 } from 'vec3';
@@ -22,7 +23,6 @@ function testCmd(bot: mineflayer.Bot) {
             return;
           }
           const window = await bot.openAnvil(block);
-          console.log(window);
         })))
     .then(CommandManager.command('block')
       .then(CommandManager.value("<position>")
@@ -96,7 +96,44 @@ function testCmd(bot: mineflayer.Bot) {
           await window.combine(window.slots[slot1], window.slots[slot2]);
           bot.closeWindow(window);
         })))
-  )
+    .then(CommandManager.command('testAnvil')
+      .then(CommandManager.value('<slot1, slot2>')
+        .execute(async (bot, slots) => {
+          const matcher = slots.match(/^(\d+)[,，]\s*(\d+)$/);
+          if (!matcher) {
+            bot.baseError("TEST", 'Invalid slot format');
+            return;
+          }
+          const slot1 = parseInt(matcher[1]!) - 6;
+          const slot2 = parseInt(matcher[2]!) - 6;
+          
+          const window = await bot.openNearstAnvil();
+
+          if (!window) {
+            bot.baseError("TEST", 'Anvil not found');
+            return;
+          }
+          
+          if (!window.slots[slot1] || !window.slots[slot2]) {
+            bot.baseError("TEST", 'Slot is empty');
+            return;
+          }
+          console.log('combine1', bot.showItemInfoInline(window.slots[slot1]));
+          console.log('combine2', bot.showItemInfoInline(window.slots[slot2]));
+          await bot.anvilCombine(window.slots[slot1], window.slots[slot2]);
+          bot.closeWindow(window);
+        })))
+      .then(CommandManager.command('carryTest')
+        .execute(async bot => {
+          console.log(bot.inventory.selectedItem);
+          await bot.clickWindow(36, 0, 0);
+          console.log('36', bot.inventory.slots[36]);
+          console.log(bot.inventory.selectedItem);
+          await bot.clickWindow(25, 0, 0);
+          console.log('25', bot.inventory.slots[25]);
+          console.log(bot.inventory.selectedItem);
+        }))
+  );
 
   // bot._client.on('chat', (packet) => {
   //   console.log('chat', JSON.stringify(packet, null, 2));

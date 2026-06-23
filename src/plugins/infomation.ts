@@ -48,13 +48,8 @@ function showHandItem(bot: mineflayer.Bot, raw: boolean = false) {
 }
 
 function showItemInSlot(bot: mineflayer.Bot, slot: number, raw: boolean = false) {
-  if (slot < bot.inventory.inventoryStart ||
-      slot >= bot.inventory.inventoryEnd
-  ) {
-    bot.baseError(pluginName, `Slot ${slot} is out of range`);
-    return;
-  }
-  const item = bot.inventory.slots[slot];
+  const window = bot.currentWindow ?? bot.inventory;
+  const item = window.slots[slot];
   if (!item) {
     bot.baseInfo(pluginName, `Slot ${slot} is empty`);
     return;
@@ -181,19 +176,30 @@ function padZero(num: number, length: number = 2) {
   return num.toString().padStart(length, '0');
 }
 
-function showInventory(bot: mineflayer.Bot, args: Record<string, string>) {
+function showInventory(bot: mineflayer.Bot, start: number, end: number, args: Record<string, string>) {
   const currentWindow = bot.currentWindow ?? bot.inventory;
-  bot.withoutLogTitle().baseInfo(pluginName, `CurrentWindow: ${getAnsi(bot, currentWindow.title)}`);
+  const emptySlotCount = currentWindow.emptySlotCount();
+  const totalSlotCount = currentWindow.inventoryEnd - currentWindow.inventoryStart;
 
-  const l = currentWindow.inventoryStart;
-  const r = currentWindow.inventoryEnd;
+  start = Math.max(start, 0);
+  end = Math.min(end, currentWindow.inventoryEnd);
+
+  if (start > end) {
+    bot.baseError(pluginName, `start ${start} must be less than end ${end}`);
+    return;
+  }
+  
+  bot.withoutLogTitle().baseInfo(
+    pluginName,
+    `CurrentWindow: ${getAnsi(bot, currentWindow.title)}. ${totalSlotCount - emptySlotCount} / ${totalSlotCount}`
+  );
 
   const option = {
     count: args['-c'] !== undefined,
     enchant: args['-e'] !== undefined,
     durability: args['-d'] !== undefined,
   };
-  for (let i = l; i < r; i++) {
+  for (let i = start; i < end; i++) {
     const item = currentWindow.slots[i];
     if (!item) continue;
     
@@ -202,7 +208,7 @@ function showInventory(bot: mineflayer.Bot, args: Record<string, string>) {
   }
 }
 
-function showItemInfoInline(item: prisItem.Item, option?: ShowItemOption) {
+function showItemInfoInline(item: prisItem.Item | null, option?: ShowItemOption) {
   if (!item) {
     return `Empty`;
   }
@@ -259,7 +265,24 @@ function registCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
   bot.registerCmd(CommandManager.command('info')
     .then(CommandManager.command(['inv', 'inventory'])
-      .execute((bot, args) => showInventory(bot, args))
+      .execute((bot, args) => {
+        const window = bot.currentWindow ?? bot.inventory;
+        showInventory(bot, window.inventoryStart, window.inventoryEnd, args);
+      })
+      .then(CommandManager.argument(['-e', '--enchant']))
+      .then(CommandManager.argument(['-d', '--durability']))
+      .then(CommandManager.argument(['-c', '--count']))
+    )
+    .then(CommandManager.command(['cont', 'container'])
+      .execute((bot, args) => {
+        if (!bot.currentWindow) {
+          bot.baseError(pluginName, 'no container');
+          return;
+        }
+
+        const window = bot.currentWindow;
+        showInventory(bot, 0, window.inventoryStart, args);
+      })
       .then(CommandManager.argument(['-e', '--enchant']))
       .then(CommandManager.argument(['-d', '--durability']))
       .then(CommandManager.argument(['-c', '--count']))
@@ -322,7 +345,7 @@ declare module 'mineflayer' {
     showRawItem(item: prisItem.Item): void;
     showItemInSlot(slot: number, raw?: boolean): void;
     showEntityInfo(entity: prismEntity.Entity, displayProperties?: Array<string>): void;
-    showItemInfoInline(item: prisItem.Item, option?: ShowItemOption): string;
+    showItemInfoInline(item?: prisItem.Item | null, option?: ShowItemOption): string;
   }
 }
 

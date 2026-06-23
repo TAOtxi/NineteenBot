@@ -198,7 +198,7 @@ function inject (bot, { version, storageBuilder, hideErrors }) {
       next = it.next()
     }
     blocks.sort((a, b) => {
-      return a.distanceTo(point) - b.distanceTo(point)
+      return a.distanceSquared(point) - b.distanceSquared(point)
     })
     // We found more blocks than needed, shorten the array to not confuse people
     if (blocks.length > count) {

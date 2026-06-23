@@ -4,6 +4,7 @@ import prismEntity from 'prismarine-entity';
 import StringUtil from '../utils/StringUtil.js';
 import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 import CmdParser from '../utils/CmdParser.js';
+import { putDownCarryItem } from '../utils/InventoryUtil.js';
 
 
 const pluginName = 'autodrop';
@@ -154,11 +155,11 @@ function isMatch(item: prisItem.Item, checkItems: Config['items']) {
       return true;
     }
     
-    if (checker.minEntCounts === undefined || checker.minEntCounts === 0) {
+    if (checker.minEntCounts === 0) {
       return true;
     }
 
-    const minEntCounts = checker.minEntCounts === -1 ? 
+    const minEntCounts = checker.minEntCounts === -1 || checker.minEntCounts === undefined ? 
         checker.enchants.length : 
         checker.minEntCounts;
 
@@ -182,14 +183,19 @@ function isMatch(item: prisItem.Item, checkItems: Config['items']) {
   return false;
 }
 
-function handleDrop(bot: mineflayer.Bot, slot: number[]) {
+async function handleDrop(bot: mineflayer.Bot, slot: number[]) {
   if (bot.hasTimeTask('autodrop_drop_task')) {
     return;
   }
 
   const useDropRotation = bot.getConfig(pluginName, 'useDropRotation');
+  const dropDirection = bot.getConfig(pluginName, 'dropDirection');
 
-  if (!useDropRotation && bot.getConfig(pluginName, 'dropDirection') === 'look') {
+  if (bot.inventory.selectedItem) {
+    await putDownCarryItem(bot);
+  }
+
+  if (!useDropRotation && dropDirection === 'look') {
     slot.forEach(slot => dropSlot(bot, slot));
     return;
   }
@@ -199,15 +205,13 @@ function handleDrop(bot: mineflayer.Bot, slot: number[]) {
 
   if (useDropRotation) {
     const dropRotation = bot.getConfig(pluginName, 'dropRotation');
-    bot.look2(dropRotation.yaw, dropRotation.pitch, true);
+    await bot.look2(dropRotation.yaw, dropRotation.pitch, true);
   } else {
-    bot.setDirection(bot.getConfig(pluginName, 'dropDirection'));
+    await bot.setDirection(dropDirection);
   }
 
-  bot.createOnceTimeTask('autodrop_drop_task', bot => {
-    slot.forEach(slot => dropSlot(bot, slot));
-    bot.look(originYaw, originPitch, true);
-  }, 15)
+  slot.forEach(slot => dropSlot(bot, slot));
+  await bot.look(originYaw, originPitch, true);
 }
 
 function dropSlot(bot: mineflayer.Bot, slot: number) {
@@ -290,14 +294,12 @@ function registCmd(bot: mineflayer.Bot) {
     )
     .then(CommandManager.command('set')
       .then(CommandManager.argument(['-it', '--interval']).execute((bot, value) => {
-          if (!value) {
-            bot.baseError(pluginName, 'Interval value is empty.');
-            return;
-          }
           const interval = parseInt(value);
-          bot.updateTimeTask(pluginName, interval);
           bot.baseInfo(pluginName, `Interval set to ${interval}`);
           bot.setConfig(pluginName, 'triggerInterval', interval);
+          if (bot.hasTimeTask(AUTO_DROP_TICK)) {
+            bot.updateTimeTask(AUTO_DROP_TICK, interval);
+          }
       }))
       .then(CommandManager.argument(['-m', '--mode']).execute((bot, value) => {
         if (!['whitelist', 'blacklist'].includes(value)) {
@@ -489,6 +491,6 @@ interface Config {
       name: string;
       lvl: number;
     }[];
-    minEntCounts?: number;
+    minEntCounts?: number;  // default -1, match all enchants in config
   }[];
 }

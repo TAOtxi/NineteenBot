@@ -19,6 +19,7 @@ import menuClickPlugin from "../plugins/menuClick.js";
 import controlPlugin from "../plugins/control.js";
 import autoRepairPlugin from "../plugins/autorepair.js";
 import autoReplacePlugin from "../plugins/autoreplace.js";
+import anvilPlugin from "../plugins/anvil.js";
 import { getTaskMap } from "./applyTask.js";
 import onMessage from "./onMessage.js";
 
@@ -172,13 +173,14 @@ function changeBot(identifier: string) {
   if (currentBot) {
     botMap[currentBot]!.emit('hidden');
   }
+  const toShowBot = botMap[identifier]!;
 
   // TODO: 修改成日志输出方式
   console.log(`\nSwitch to bot ${identifier}\n`);
 
   currentBot = identifier;
-  botMap[identifier]!.emit('display');
-  return botMap[identifier]!;
+  toShowBot.emit('display');
+  return toShowBot;
 }
 
 async function applyTaskOrCreateBot() {
@@ -299,12 +301,14 @@ async function initBot(bot: mineflayer.Bot) {
   registEvent(bot);
   onMessage(bot);
 
+  bot._initTask = [];
   const taskMap = getTaskMap();
   for (const task of botTaskCache[bot.identifier] || []) {
     if (taskMap[task] === undefined) {
       bot.baseError('BOT', `${task} task is not exist.`);
       continue;
     }
+    bot._initTask.push(task);
     taskMap[task](bot);
   }
 
@@ -323,7 +327,7 @@ async function loadPlugins(bot: mineflayer.Bot) {
       loggerPlugin, makeConfigPlugin, AutoDropPlugin, CommandPlugin, 
       helperPlugin, taskPlugin, infomationPlugin, actionPlugin, 
       fishmanPlugin, menuClickPlugin, controlPlugin, autoRepairPlugin, 
-      autoReplacePlugin,
+      autoReplacePlugin, anvilPlugin,
   ]);
   return waitPluginLoads(bot, ['logger', 'helper', 'task']);
 }
@@ -413,6 +417,7 @@ declare module 'mineflayer' {
     servername: string;
     identifier: string;
     admins: string[];
+    _initTask: string[];
   }
 
   interface BotEvents {

@@ -58,11 +58,10 @@ function setDirection(bot: mineflayer.Bot, direction: string) {
   } else if (direction === 'south') {
     // yaw = 0;
   } else {
-    bot.baseError(pluginName, `Invalid direction ${direction}`);
-    return;
+    throw new Error(`Invalid direction ${direction}`);
   }
   // bot.baseInfo(pluginName, `Look at ${direction} (${yaw}, ${pitch})`);
-  bot.look2(yaw, pitch, true);
+  return bot.look2(yaw, pitch, true);
 }
 
 function setLookPosition(bot: mineflayer.Bot, position: string) {
@@ -323,7 +322,7 @@ export default async function inject(bot: mineflayer.Bot) {
 declare module 'mineflayer' {
   interface Bot {
     _actionVar: typeof defaultActionVar;
-    setDirection(direction: string): void;
+    setDirection(direction: string): Promise<void>;
     findNearestPlayer(minDistance?: number): Player | null;
   }
 }

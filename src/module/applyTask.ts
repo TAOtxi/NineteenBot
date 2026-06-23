@@ -17,9 +17,11 @@ function fishTask(bot: mineflayer.Bot) {
     bot.chat('/stp survival2');
 
     bot.createOnceTimeTask("doFish", () => {
+      bot.chat('/home fish');
       bot.startFishing();
       bot.enableAutoDrop();
       bot.startAutoReplace();
+      bot.startAutoRepair();
     }, 20 * 10);
   })
 }
@@ -29,9 +31,11 @@ function fishTask1(bot: mineflayer.Bot) {
     bot.chat('/stp survival');
 
     bot.createOnceTimeTask("doFish", () => {
+      bot.chat('/home fish');
       bot.startFishing();
       bot.enableAutoDrop();
       bot.startAutoReplace();
+      bot.startAutoRepair();
     }, 20 * 10);
   })
 }
@@ -88,8 +92,9 @@ async function signIn(bot: mineflayer.Bot) {
 }
 
 async function water(bot: mineflayer.Bot) {
-  const isFishing = bot._isFishing;
-  bot.disableAutoDrop();
+  if (bot._initTask.includes('fish') || bot._initTask.includes('fish1')) {
+    bot.disableAutoDrop();
+  }
 
   if (bot.currentWindow !== null) {
     bot.closeWindow(bot.currentWindow);
@@ -115,22 +120,26 @@ async function water(bot: mineflayer.Bot) {
   taskQueue
     .addTask(async () => {
       bot.chat("/guilds open");
-      await awaitEvent(bot, 'windowOpen');
+      // await awaitEvent(bot, 'windowOpen');
     })
     .addTask(async () => {
-      bot.clickWindow(14, 0, 0);
-      await awaitEvent(bot, 'windowOpen');
+      await bot.clickWindow(14, 0, 0);
+      // await awaitEvent(bot, 'windowOpen');
     })
-    .addTask(() => bot.clickWindow(38, 0, 0), 5)
-    .addTask(() => bot.clickWindow(38, 0, 0), 5)
-    .addTask(() => bot.clickWindow(38, 0, 0), 5)
-    .addTask(() => bot.clickWindow(40, 0, 0), 5)
-    .addTask(() => bot.clickWindow(40, 0, 0), 5)
-    .addTask(() => bot.clickWindow(41, 0, 0), 5)
-    .addTask(() => bot.clickWindow(42, 0, 0), 5)
-    .addTask(() => bot.clickWindow(29, 0, 0), 5)
+    .addTask(async () => await bot.clickWindow(38, 0, 0))
+    .addTask(async () => await bot.clickWindow(38, 0, 0))
+    .addTask(async () => await bot.clickWindow(38, 0, 0))
+    .addTask(async () => await bot.clickWindow(40, 0, 0))
+    .addTask(async () => await bot.clickWindow(40, 0, 0))
+    .addTask(async () => await bot.clickWindow(41, 0, 0))
+    .addTask(async () => await bot.clickWindow(42, 0, 0))
+    .addTask(async () => await bot.clickWindow(29, 0, 0))
     .addTask(() => bot.closeContainer())
-    .addTask(() => bot.enableAutoDrop())
+    .addTask(() => {
+      if (bot._initTask.includes('fish') || bot._initTask.includes('fish1')) {
+        bot.enableAutoDrop();
+      }
+    })
   
   try {
     await taskQueue.buid();

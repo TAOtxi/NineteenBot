@@ -103,6 +103,10 @@ export default function registCmd(bot: mineflayer.Bot) {
       .execute(bot => {
         bot.tryExecute('info inv -c -d -e');
       }))
+    .then(CM.command('cont')
+      .execute(bot => {
+        bot.tryExecute('info cont -c -d -e');
+      }))
     .then(CM.command(['h', 'harvest'])
       .execute(bot => {
         bot.tryExecute('all "info show matchItems TAOtxi"');
