@@ -18,6 +18,9 @@ const pluginName = 'autorepair';
 const INTERACT_RADIUS = 4.0;
 const AUTO_REPAIR_COMBINE = 'autoRepairCombine';
 const AUTO_REPAIR_TICK = 'autoRepairTick';
+const AUTO_REPAIR_TIME_OUT_CHECK = 'autoRepairTimeOutCheck';
+const AUTO_REPAIR_TIME_OUT = 20 * 15;
+const AUTO_REPAIR_CHECK_INTERVAL = 20 * 10;
 
 const containerBlocks = [
   'hopper',
@@ -112,6 +115,11 @@ async function tryToGetMendingBookFromContainer(bot: mineflayer.Bot, count: numb
     if (!item) continue;
     if (isMendingBook(item)) {
       count--;
+
+      if (window.selectedItem) {
+        await putDownCarryItem(bot);
+      }
+
       await moveSlot(bot, i);
     }
     if (count <= 0) break;
@@ -195,12 +203,19 @@ async function tick(bot: mineflayer.Bot) {
   });
 }
 
-function resetState(bot: mineflayer.Bot) {
+async function resetState(bot: mineflayer.Bot) {
   bot._isRepairing = false;
   bot._isGettingMendingBook = false;
   bot._isCombining = false;
   bot.removeTimeTask(AUTO_REPAIR_COMBINE);
-  if (bot.currentWindow) {
+  bot.removeTimeTask(AUTO_REPAIR_TIME_OUT_CHECK);
+
+  const window = bot.currentWindow ?? bot.inventory;
+  if (window.selectedItem) {
+    await putDownCarryItem(bot);
+  }
+
+  if (bot.currentWindow !== null) {
     bot.closeWindow(bot.currentWindow);
   }
 }
@@ -208,6 +223,15 @@ function resetState(bot: mineflayer.Bot) {
 
 async function tryRepair(bot: mineflayer.Bot) {
   bot._isRepairing = true;
+  if (bot.hasTimeTask(AUTO_REPAIR_TIME_OUT_CHECK)) {
+    bot.restartTimeTask(AUTO_REPAIR_TIME_OUT_CHECK);
+  } else {
+    bot.createOnceTimeTask(AUTO_REPAIR_TIME_OUT_CHECK, () => {
+      bot.baseInfo(pluginName, 'Repair timeout. Reset state.');
+      resetState(bot);
+    }, AUTO_REPAIR_TIME_OUT);
+  }
+
   if (bot.currentWindow?.type !== 'minecraft:anvil') {
     if (bot.currentWindow !== null) {
       resetState(bot);
@@ -227,6 +251,7 @@ async function tryRepair(bot: mineflayer.Bot) {
       throw new Error('Current window is not anvil window.');
     }
   }
+  bot.restartTimeTask(AUTO_REPAIR_TIME_OUT_CHECK);
   bot.createTimeTask(AUTO_REPAIR_COMBINE, combineTask, 1, true);
 }
 
@@ -318,7 +343,7 @@ export default async function inject(bot: mineflayer.Bot) {
     bot._isCombining = false;
     bot.baseInfo(pluginName, 'Enable AutoRepair.');
     if (!bot.hasTimeTask(AUTO_REPAIR_TICK)) {
-      bot.createTimeTask(AUTO_REPAIR_TICK, tick, 20 * 2);
+      bot.createTimeTask(AUTO_REPAIR_TICK, tick, AUTO_REPAIR_CHECK_INTERVAL);
     }
   }
 

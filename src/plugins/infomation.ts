@@ -4,6 +4,7 @@ import prismEntity from 'prismarine-entity';
 import ChatMessageLoader from "prismarine-chat";
 import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 import TranslateUtil from '../utils/TranslateUtil.js';
+import { getEmptySlotCountInRange } from '../utils/InventoryUtil.js';
 
 const pluginName = 'infomation';
 
@@ -178,7 +179,7 @@ function padZero(num: number, length: number = 2) {
 
 function showInventory(bot: mineflayer.Bot, start: number, end: number, args: Record<string, string>) {
   const currentWindow = bot.currentWindow ?? bot.inventory;
-  const emptySlotCount = currentWindow.emptySlotCount();
+  const emptySlotCount = getEmptySlotCountInRange(currentWindow, start, end);
   const totalSlotCount = currentWindow.inventoryEnd - currentWindow.inventoryStart;
 
   start = Math.max(start, 0);

@@ -1,6 +1,7 @@
 import mineflayer from 'mineflayer';
 import { getTaskMap } from './applyTask.js';
 import { addTask, removeTask, getBotMap } from './botManager.js';
+import { getInventoryEmptySlotCount } from '../utils/InventoryUtil.js';
 
 export default function registCmd(bot: mineflayer.Bot) {
   const CM = bot.getCommandManager();
@@ -152,7 +153,28 @@ export default function registCmd(bot: mineflayer.Bot) {
       .execute(bot => {
         bot.tryExecute('all "task apply water"');
       }))
-  )
+    .then(CM.command('usage')
+      .execute(bot => {
+        const botMap = getBotMap();
+        for (const bot of Object.values(botMap)) {
+          const window = bot.currentWindow ?? bot.inventory;
+          const totalSlot = window.inventoryEnd - window.inventoryStart;
+          const emptySlot = getInventoryEmptySlotCount(window);
+          bot.chat(`/w TAOtxi Usage: ${totalSlot - emptySlot} / ${totalSlot}`);
+        }
+      }))
+    .then(CM.command('next')
+      .execute(bot => {
+        const botMap = getBotMap();
+        const botIds = Object.keys(botMap);
+        if (botIds.length < 2) return;
+
+        const index = botIds.indexOf(bot.identifier);
+        const next = (index + 1) % botIds.length;
+
+        bot.tryExecute(`bot change ${botIds[next]}`);
+      }))
+  );
 }
 
 
