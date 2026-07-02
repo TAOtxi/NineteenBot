@@ -5,6 +5,11 @@ function once(emitter: any, event: string) {
   });
 }
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export {
   once,
+  sleep,
 }

@@ -65,23 +65,23 @@ function setDirection(bot: mineflayer.Bot, direction: string) {
 }
 
 function setLookPosition(bot: mineflayer.Bot, position: string) {
-  const pos = StringUtil.stringToList(position, ',', parseFloat);
+  const pos = StringUtil.parseFloatPos(position);
   if (pos.length !== 3) {
     bot.baseError(pluginName, `Invalid position ${position}`);
     return;
   }
   // bot.baseInfo(pluginName, `Look at ${position}`);
-  bot.lookAt(new Vec3(pos[0], pos[1], pos[2]), true);
+  bot.lookAt(new Vec3(pos[0]!, pos[1]!, pos[2]!), true);
 }
 
 function setRotation(bot: mineflayer.Bot, rotation: string) {
-  const pos = StringUtil.stringToList(rotation, ',', parseFloat);
+  const pos = StringUtil.parseFloatPos(rotation);
   if (pos.length !== 2) {
     bot.baseError(pluginName, `Invalid rotation ${rotation}`);
     return;
   }
   // bot.baseInfo(pluginName, `Look at (${pos[0]}, ${pos[1]})`);
-  bot.look2(pos[0], pos[1], true);
+  bot.look2(pos[0]!, pos[1]!, true);
 }
 
 function setLookPlayer(bot: mineflayer.Bot, player: string) {

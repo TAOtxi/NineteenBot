@@ -21,10 +21,35 @@ function stringToList(str: string, sep: string = ',', mapper: (item: string) => 
   return str.split(sep).map(mapper);
 }
 
+function parsePos(str: string, pattern: RegExp, mapper: (item: string) => number = Number) {
+  const result: number[] = [];
+  const matcher = str.matchAll(pattern);
+  let index = 0;
+  for (const match of matcher) {
+    if (!match[1]) {
+      throw new Error(`Invalid position format ${str}`);
+    }
+    result[index++] = mapper(match[1]);
+  }
+  return result;
+}
+
+function parseIntPos(str: string) {
+  const pattern = /(?:,\s*)?(-?\d+)/g;
+  return parsePos(str, pattern, parseInt);
+}
+
+function parseFloatPos(str: string) {
+  const pattern = /(?:,\s*)?(-?\d+(?:\.\d+)?)/g;
+  return parsePos(str, pattern, parseFloat);
+}
+
 
 export default {
   isReg,
   handleRegMatch,
   regMatchOrEqual,
   stringToList,
+  parseIntPos,
+  parseFloatPos,
 }

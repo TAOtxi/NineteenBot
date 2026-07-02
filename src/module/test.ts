@@ -10,6 +10,14 @@ function padZero(num: number, length: number = 2) {
 
 
 function testCmd(bot: mineflayer.Bot) {
+  // setTimeout(() => {
+  //   setInterval(() => {
+  //     console.log('test', bot.time?.age);
+  //     console.log('test', bot.time?.time);
+  //     console.log();
+  //   }, 1000)
+  // }, 20000)
+
   const CommandManager = bot.getCommandManager();
   bot.registerCmd(CommandManager.command('test')
     .then(CommandManager.command('openBlock')

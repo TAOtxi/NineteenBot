@@ -32,20 +32,22 @@ function createTimeTask(
   bot: mineflayer.Bot, 
   id: string, 
   task: RunableTask, 
-  interval: number, 
+  interval: number | IntervalGetter, 
   runImmediately = false
 ) {
   if (bot.timeTaskList.some(task => task.id === id)) {
     throw new Error(`Task ${id} already exists`);
   }
-  if (interval < 0) {
-    throw new Error(`Interval ${interval} is not valid`);
+  const intervalGetter = typeof interval === 'number' ? () => interval : interval;
+  if (intervalGetter(bot) <= 0) {
+    throw new Error(`Interval ${intervalGetter(bot)} is not valid`);
   }
+
   bot.timeTaskList.push({
     id,
     task,
-    interval: interval,
-    nextRunTick: bot.ticker + interval,
+    intervalGetter,
+    nextRunTick: bot.ticker + intervalGetter(bot),
   })
   runImmediately && task(bot);
 }
@@ -84,7 +86,7 @@ function removeTimeTask(bot: mineflayer.Bot, id: string) {
 function updateTimeTask(
   bot: mineflayer.Bot,
   id: string,
-  interval: number,
+  interval: number | IntervalGetter,
   task?: RunableTask
 ) {
   const taskData = bot.timeTaskList.find(t => t.id === id);
@@ -92,7 +94,7 @@ function updateTimeTask(
     throw new Error(`Task ${id} not found`);
   }
   taskData.task = task || taskData.task;
-  taskData.interval = interval;
+  taskData.intervalGetter = typeof interval === 'number' ? (bot: mineflayer.Bot) => interval : interval;
 }
 
 function restartTimeTask(bot: mineflayer.Bot, id: string) {
@@ -100,7 +102,7 @@ function restartTimeTask(bot: mineflayer.Bot, id: string) {
   if (taskData === undefined) {
     throw new Error(`Task ${id} not found`);
   }
-  taskData.nextRunTick = bot.ticker + taskData.interval;
+  taskData.nextRunTick = bot.ticker + taskData.intervalGetter(bot);
 }
 
 function createTickTask(
@@ -189,7 +191,7 @@ export default function inject(bot: mineflayer.Bot) {
 
       if (bot.ticker >= task.nextRunTick) {
         task.task(bot);
-        task.nextRunTick = bot.ticker + task.interval;
+        task.nextRunTick = bot.ticker + task.intervalGetter(bot);
       }
     }
   })
@@ -205,7 +207,7 @@ interface TickTask {
 interface TimeTask {
   id: string,
   task: RunableTask,
-  interval: number,
+  intervalGetter: IntervalGetter,
   nextRunTick: number,
 }
 
@@ -215,6 +217,7 @@ interface ThrottleTaskInfo {
 }
 
 type RunableTask = (bot: mineflayer.Bot) => void;
+type IntervalGetter = (bot: mineflayer.Bot) => number;
 
 declare module 'mineflayer' {
   interface Bot {
@@ -223,8 +226,8 @@ declare module 'mineflayer' {
     tickTaskList: Record<string, TickTask>;
     _throttleVar: Record<string, ThrottleTaskInfo>;
     createOnceTimeTask(id: string, task: RunableTask, runAfterTick: number): Promise<void>;
-    createTimeTask(id: string, task: RunableTask, interval: number, runImmediately?: boolean): void;
-    updateTimeTask(id: string, interval: number, task?: RunableTask): void;
+    createTimeTask(id: string, task: RunableTask, interval: number | IntervalGetter, runImmediately?: boolean): void;
+    updateTimeTask(id: string, interval: number | IntervalGetter, task?: RunableTask): void;
     restartTimeTask(id: string): void;
     removeTimeTask(id: string): void;
     throttle(id: string, interval: number, task: RunableTask): void;

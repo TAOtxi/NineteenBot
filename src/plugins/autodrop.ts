@@ -151,11 +151,11 @@ function isMatch(item: prisItem.Item, checkItems: Config['items']) {
       }
     }
 
-    if (!checker.enchants || checker.enchants.length === 0) {
-      return true;
-    }
-    
-    if (checker.minEntCounts === 0) {
+    if (
+      !checker.enchants || 
+      checker.enchants.length === 0 ||
+      checker.minEntCounts === 0
+    ) {
       return true;
     }
 

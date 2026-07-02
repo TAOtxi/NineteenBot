@@ -20,6 +20,9 @@ import controlPlugin from "../plugins/control.js";
 import autoRepairPlugin from "../plugins/autorepair.js";
 import autoReplacePlugin from "../plugins/autoreplace.js";
 import anvilPlugin from "../plugins/anvil.js";
+import tpsPlugin from "../plugins/tps.js";
+import autoAttackPlugin from "../plugins/autoattack.js";
+import safeAFKPlugin from "../plugins/safeAFK.js";
 import { getTaskMap } from "./applyTask.js";
 import onMessage from "./onMessage.js";
 
@@ -327,7 +330,8 @@ async function loadPlugins(bot: mineflayer.Bot) {
       loggerPlugin, makeConfigPlugin, AutoDropPlugin, CommandPlugin, 
       helperPlugin, taskPlugin, infomationPlugin, actionPlugin, 
       fishmanPlugin, menuClickPlugin, controlPlugin, autoRepairPlugin, 
-      autoReplacePlugin, anvilPlugin,
+      autoReplacePlugin, anvilPlugin, tpsPlugin, autoAttackPlugin,
+      safeAFKPlugin,
   ]);
   return waitPluginLoads(bot, ['logger', 'helper', 'task']);
 }

@@ -65,7 +65,7 @@ export default function registCmd(bot: mineflayer.Bot) {
       .execute(bot => {
         bot.baseInfo('task', `Task List: (Current Tick: ${bot.ticker})`);
         for (const task of bot.timeTaskList) {
-          bot.baseInfo('task', `[${task.id}]:\tNext Run Tick: ${task.nextRunTick}.\tInterval: ${task.interval}.`);
+          bot.baseInfo('task', `[${task.id}]:\tNext Run Tick: ${task.nextRunTick}.\tInterval: ${task.intervalGetter}.`);
         }
         bot.withoutLogTitle().baseInfo('task', '');
       }))
