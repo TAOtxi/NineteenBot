@@ -4,7 +4,26 @@ import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js'
 
 const defaultConfig = {
   tpsThreshold: 10,
-  triggerCommand: '/spawn'
+  greenThreshold: 17,
+  triggerCommand: '/spawn',
+  greenTriggerCommand: '/back',
+}
+
+function greenCheck(bot: mineflayer.Bot) {
+  if (bot.getTps() < bot.getConfig(pluginName, 'greenThreshold')) {
+    return;
+  }
+  const command = bot.getConfig(pluginName, 'greenTriggerCommand');
+  if (!command) {
+    throw new Error('greenTriggerCommand not set');
+  }
+  bot.chat(command);
+  bot.baseInfo(pluginName, `TPS increased to ${bot.getTps()}`);
+  bot.removeTimeTask(GREEN_CHECK);
+
+  bot.createOnceTimeTask(OPEN_CHECK, () => {
+    bot.enableTpsCheck();
+  }, 20 * 5);
 }
 
 function checkTps(bot: mineflayer.Bot) {
@@ -14,36 +33,47 @@ function checkTps(bot: mineflayer.Bot) {
     if (command) {
       bot.chat(command);
     }
-    bot.disableSafeAFK();
+    bot.disableTpsCheck();
+
+    const greenTriggerCommand = bot.getConfig(pluginName, 'greenTriggerCommand');
+    if (!greenTriggerCommand) {
+      return;
+    }
+    bot.createTimeTask(GREEN_CHECK, greenCheck, 20);
   }
 }
 
-const pluginName = 'safeAFK';
+const pluginName = 'tpsChecker';
 const CHECK_TASK = `${pluginName}_check`;
+const GREEN_CHECK = `${pluginName}_green_check`;
+const OPEN_CHECK = `${pluginName}_open_check`;
+
+
 export default async function inject(bot: mineflayer.Bot) {
   await waitPluginLoads(bot, ['tps', 'makeConfig', 'command']);
   bot.loadConfig(pluginName, defaultConfig);
 
-  bot.enableSafeAFK = () => {
+  bot.enableTpsCheck = () => {
     if (!bot.hasTimeTask(CHECK_TASK)) {
       bot.createTimeTask(CHECK_TASK, checkTps, 20);
     }
-    bot.baseInfo(pluginName, 'SafeAFK enabled');
+    bot.removeTimeTask(GREEN_CHECK);
+    bot.baseInfo(pluginName, 'TpsChecker enabled');
   }
-  bot.disableSafeAFK = () => {
+  bot.disableTpsCheck = () => {
     bot.removeTimeTask(CHECK_TASK);
-    bot.baseInfo(pluginName, 'SafeAFK disabled');
+    bot.baseInfo(pluginName, 'TpsChecker disabled');
   }
 
   const CommandManager = bot.getCommandManager();
   bot.registerCmd(CommandManager.command(pluginName)
     .then(CommandManager.command('enable')
       .execute(bot => {
-        bot.enableSafeAFK();
+        bot.enableTpsCheck();
       }))
     .then(CommandManager.command('disable')
       .execute(bot => {
-        bot.disableSafeAFK();
+        bot.disableTpsCheck();
       }))
     .then(CommandManager.command('threshold')
       .then(CommandManager.value('<threshold>')
@@ -58,7 +88,7 @@ export default async function inject(bot: mineflayer.Bot) {
 
 declare module 'mineflayer' {
   interface Bot {
-    enableSafeAFK(): void;
-    disableSafeAFK(): void;
+    enableTpsCheck(): void;
+    disableTpsCheck(): void;
   }
 }

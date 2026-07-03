@@ -81,14 +81,13 @@ function witherSkullTask(bot: mineflayer.Bot) {
             bot.removeTimeTask('waitingForLogining');
             witherSkullTaskReady.length = 0;
             bot.startAutoAttack();
-            bot.enableSafeAFK();
           }
         }, 20, true);
 
       }
 
       await sleep(5 * 1000);
-      bot.enableSafeAFK();
+      bot.enableTpsCheck();
     }, 20 * 5);
   })
 }

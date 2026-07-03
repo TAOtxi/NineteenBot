@@ -19,7 +19,7 @@ function onSetTime(bot: mineflayer.Bot, gameTick: number) {
   bot._lastTick = gameTick;
 
   const instantMsTps = deltaTime / deltaTick;  
-  bot._msTps = 0.7 * bot._msTps + 0.3 * instantMsTps;
+  bot._msTps = 0.8 * bot._msTps + 0.2 * instantMsTps;
 }
 
 function resetTime(bot: mineflayer.Bot) {
