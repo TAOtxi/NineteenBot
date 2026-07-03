@@ -21,7 +21,7 @@ function attack(bot: mineflayer.Bot) {
   }
 
   const entity = bot.entityAtCursor();
-  if (!entity?.name) return;
+  if (!entity?.name || !entity.isValid) return;
   
   const attackList = bot.getConfig(pluginName, 'attackList') as Config['attackList'];
   const attackMode = bot.getConfig(pluginName, 'attackMode') as Config['attackMode'];
