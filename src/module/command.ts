@@ -99,6 +99,10 @@ export default function registCmd(bot: mineflayer.Bot) {
     .execute(displayOnlinePlayers)
   );
 
+  bot.registerCmd(CM.command('tps')
+    .execute(bot => bot.baseInfo('tps', `Current TPS: ${bot.getTps()}`))
+  );
+
   bot.registerCmd(CM.command('q')
     .then(CM.command('inv')
       .execute(bot => {
