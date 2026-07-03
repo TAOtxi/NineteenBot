@@ -42,6 +42,12 @@ function fishTask1(bot: mineflayer.Bot) {
   })
 }
 
+// function toIndusty(bot: mineflayer.Bot) {
+//   bot.createTimeTask('toIndustry', () => {
+
+//   }, 20 * 10);
+// }
+
 const witherSkullTaskReady: string[] = [];
 function witherSkullTask(bot: mineflayer.Bot) {
   bot.once('spawn', async () => {

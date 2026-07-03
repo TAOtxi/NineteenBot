@@ -20,8 +20,8 @@ function attack(bot: mineflayer.Bot) {
     }
   }
 
-  const entity = bot.entityAtCursor();
-  if (!entity?.name || !entity.isValid) return;
+  const entity = bot.entityAtCursor();  
+  if (!entity?.name || !entity.isValid || entity.name === 'item') return;
   
   const attackList = bot.getConfig(pluginName, 'attackList') as Config['attackList'];
   const attackMode = bot.getConfig(pluginName, 'attackMode') as Config['attackMode'];
