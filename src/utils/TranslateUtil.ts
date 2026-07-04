@@ -59,9 +59,9 @@ export default class TranslateUtil {
   }
 
   static translate(key: string, lang: string = defaultLang) {
-    return this.tryTranslate(itemKeyPrefix + key, lang) ?? 
-          this.tryTranslate(blockKeyPrefix + key, lang) ?? 
-          this.tryTranslate(entityKeyPrefix + key, lang) ?? null;
+    return TranslateUtil.item(key, lang) ?? 
+          TranslateUtil.block(key, lang) ?? 
+          TranslateUtil.entity(key, lang) ?? key;
   }
 
   static item(key: string, lang: string = defaultLang) {

@@ -261,6 +261,20 @@ function showMatchItems(bot: mineflayer.Bot, toPlayer: string) {
   }
 }
 
+function showEntityList(bot: mineflayer.Bot) {
+  const countMap: Record<string, number> = {};
+  for (const entity of Object.values(bot.entities)) {
+    countMap[entity.name ?? entity.type] = (countMap[entity.name ?? entity.type] ?? 0) + 1;
+  }
+
+  const sortedMap = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
+
+  for (const [type, count] of sortedMap) {
+    bot.withoutLogTitle().baseInfo(pluginName, `${TranslateUtil.translate(type)}: ${count}`);
+  }
+  bot.withoutLogTitle().baseInfo(pluginName, `Total ${Object.values(bot.entities).length} entities`);
+  bot.withoutLogTitle().baseInfo(pluginName, '');
+}
 
 function registCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
@@ -320,6 +334,8 @@ function registCmd(bot: mineflayer.Bot) {
           .suggests(() => Object.keys(bot.players))
           .execute(showMatchItems)))
     )
+    .then(CommandManager.command('entityList')
+      .execute(showEntityList))
   );
 }
 
