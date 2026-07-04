@@ -316,7 +316,7 @@ export default async function inject(bot: mineflayer.Bot) {
 
   registCmd(bot);
 
-  bot.on('cleanup', cleanup);
+  bot.once('cleanup', cleanup);
 
   pluginReady(bot, pluginName);
 }

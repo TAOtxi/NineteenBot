@@ -37,6 +37,12 @@ const map = [
   ['index.d.ts', './node_modules/mineflayer/index.d.ts'],
 
   /**
+   * @desc: 修复内存泄漏问题
+   * @see: https://github.com/PrismarineJS/mineflayer/pull/3937
+   */
+  ['plugins/entities.js', './node_modules/mineflayer/lib/plugins/entities.js'],
+  
+  /**
    * @desc: enchant for 1.20.5+，适配 component
    * @see: https://github.com/PrismarineJS/prismarine-item/pull/176
    */

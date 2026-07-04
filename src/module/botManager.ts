@@ -344,7 +344,7 @@ const DELAY = 20000;
 function recreateBot(identifier: string) {
   timerMap[identifier] && clearTimeout(timerMap[identifier]);
   timerMap[identifier] = setTimeout(async () => {
-    timerMap[identifier] = null;
+    delete timerMap[identifier];
     const bot = botMap[identifier];
     if (!bot) {
       console.error('Bot is not exist');
