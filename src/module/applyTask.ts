@@ -60,9 +60,9 @@ function witherSkullTask(bot: mineflayer.Bot) {
       } else if (bot.username === 'Suki_xi') {
         bot.chat('/spawn');
         witherSkullTaskReady.push(bot.username);
-      } else if (bot.username === 'TAOtxi') {
-        bot.chat('/spawn');
-        witherSkullTaskReady.push(bot.username);
+      // } else if (bot.username === 'TAOtxi') {
+      //   bot.chat('/spawn');
+      //   witherSkullTaskReady.push(bot.username);
       } else if (bot.username === 'Mar1mo_') {
         bot.chat('/home wtt');
 
@@ -86,12 +86,12 @@ function witherSkullTask(bot: mineflayer.Bot) {
           bot.baseInfo('witherSkullTask', 'Waiting for Other Player login in...');
           if (
             witherSkullTaskReady.includes('Amumu_l') && 
-            witherSkullTaskReady.includes('Suki_xi') && 
-            witherSkullTaskReady.includes('TAOtxi')
+            // witherSkullTaskReady.includes('TAOtxi') &&
+            witherSkullTaskReady.includes('Suki_xi')
           ) {
             bot.chat('/w Amumu_l /home wt1');
             bot.chat('/w Suki_xi /home wt2');
-            bot.chat('/w TAOtxi /home wt3');
+            // bot.chat('/w TAOtxi /home wt3');
             bot.removeTimeTask('waitingForLogining');
             witherSkullTaskReady.length = 0;
             bot.startAutoAttack();
