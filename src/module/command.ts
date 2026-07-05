@@ -178,6 +178,10 @@ export default function registCmd(bot: mineflayer.Bot) {
 
         bot.tryExecute(`bot change ${botIds[next]}`);
       }))
+    .then(CM.command('select')
+      .execute(bot => {
+        bot.tryExecute(`bot change ${bot.identifier}`);
+      }))
   );
 }
 

@@ -1,5 +1,6 @@
 import mineflayer from 'mineflayer'
 import prismEntity from 'prismarine-entity';
+import { killTask, afkTask, WITHER_SKULL_AFK_TASK, WITHER_SKULL_KILL_TASK } from '../task/witherSkull.js';
 import { sleep } from '../utils/PromiseUtil.js';
 
 function getTaskMap(): Record<string, Runable> {
@@ -8,7 +9,8 @@ function getTaskMap(): Record<string, Runable> {
     fish1: fishTask1,
     signIn: signIn,
     water: water,
-    witherSkull: witherSkullTask,
+    [WITHER_SKULL_AFK_TASK]: afkTask,
+    [WITHER_SKULL_KILL_TASK]: killTask,
     empty: () => {}
   }
 }
@@ -47,64 +49,6 @@ function fishTask1(bot: mineflayer.Bot) {
 
 //   }, 20 * 10);
 // }
-
-const witherSkullTaskReady: string[] = [];
-function witherSkullTask(bot: mineflayer.Bot) {
-  bot.once('spawn', async () => {
-    bot.chat('/stp industry');
-
-    bot.createOnceTimeTask('toDes', async () => {
-      if (bot.username === 'Amumu_l') {
-        bot.chat('/spawn');
-        witherSkullTaskReady.push(bot.username);
-      } else if (bot.username === 'Suki_xi') {
-        bot.chat('/spawn');
-        witherSkullTaskReady.push(bot.username);
-      // } else if (bot.username === 'TAOtxi') {
-      //   bot.chat('/spawn');
-      //   witherSkullTaskReady.push(bot.username);
-      } else if (bot.username === 'Mar1mo_') {
-        bot.chat('/home wtt');
-
-        await sleep(2000);
-        const window  = bot.currentWindow ?? bot.inventory;
-        for (let i=window.inventoryStart; i<window.inventoryEnd; i++) {
-          const item = window.slots[i];
-          if (!item) continue;
-          if (item.enchants?.length === 0) continue;
-          
-          if (item.enchants?.some(enchant => enchant.name === 'looting' && enchant.lvl >= 5)) {
-            await bot.equip(item, 'hand');
-            break;
-          }
-        }
-
-        bot.once('cleanup', () => {
-          bot.removeTimeTask('waitingForLogining');
-        })
-        bot.createTimeTask('waitingForLogining', () => {
-          bot.baseInfo('witherSkullTask', 'Waiting for Other Player login in...');
-          if (
-            witherSkullTaskReady.includes('Amumu_l') && 
-            // witherSkullTaskReady.includes('TAOtxi') &&
-            witherSkullTaskReady.includes('Suki_xi')
-          ) {
-            bot.chat('/w Amumu_l /home wt1');
-            bot.chat('/w Suki_xi /home wt2');
-            // bot.chat('/w TAOtxi /home wt3');
-            bot.removeTimeTask('waitingForLogining');
-            witherSkullTaskReady.length = 0;
-            bot.startAutoAttack();
-          }
-        }, 20, true);
-
-      }
-
-      await sleep(5 * 1000);
-      bot.enableTpsCheck();
-    }, 20 * 5);
-  })
-}
 
 function awaitEvent(bot: mineflayer.Bot, event: string, timeout: number = 20000): Promise<void> {
   return new Promise((resolve, reject) => {
