@@ -1,16 +1,18 @@
 import mineflayer from 'mineflayer';
 
 export default function onMessage(bot: mineflayer.Bot) {
-  // bot.addChatPattern(
-  //   'onQQMessage', 
-  //   /^\[!\]\[拾玖世界同好会.*?\(1321075268\)>&(\/.*)$/, 
-  //   { parse: true, repeat: true }
-  // );
+  bot.addChatPattern(
+    'onQQMessage', 
+    /^\[!\]\[拾玖世界同好会.*?\(1321075268\)>&quit (\w+)$/, 
+    { parse: true, repeat: true }
+  );
 
-  // bot.on('chat:onQQMessage', (match: string[]) => {
-  //   const message = match[0]!;
-  //   bot.chat(message);
-  // })
+  bot.on('chat:onQQMessage', (match: string[]) => {
+    const user = match[0]![0]!;
+    if (user === bot.username && bot.identifier.includes('拾玖世界')) {
+      bot.tryExecute('quit');
+    }
+  })
 
   bot.addChatPattern(
     'onReward', 

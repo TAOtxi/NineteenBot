@@ -129,7 +129,7 @@ function registCmd(bot: mineflayer.Bot) {
       const bots = Object.keys(botMap);
       if (bots.length === 0) {
         process.exit(0);
-      } else {
+      } else if (currentBot === bot.identifier) {
         currentBot = null;
         changeBot(bots[0]!);
       }
