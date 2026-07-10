@@ -72,6 +72,7 @@ function registEvent(bot: mineflayer.Bot) {
   bot._client.on('set_slot', (packet) => {
     // 传的 windowId 不为0，但客户端上的 currentWindow 为 null
     if (packet.windowId !== 0 && bot.currentWindow === null) {
+      bot.baseInfo('FIX', `Invalid windowId: ${packet.windowId}, close it.`);
       bot._client.write('close_window', { windowId: packet.windowId })
     }
   })

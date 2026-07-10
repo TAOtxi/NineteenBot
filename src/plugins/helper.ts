@@ -437,6 +437,7 @@ async function getInput(bot: mineflayer.Bot, signal: AbortSignal) {
     }
   }, signal);
 }
+const pluginName = 'helper';
 
 // TODO: 优化：等待输入的过程会刷新掉日志输出
 export default async function inject(bot: mineflayer.Bot) {
@@ -469,7 +470,7 @@ export default async function inject(bot: mineflayer.Bot) {
         if (error instanceof AbortPromptError) {
           break;
         }
-        bot.baseError('helper', error as string);
+        bot.baseError(pluginName, error as string);
         console.trace(error);
       }
     }

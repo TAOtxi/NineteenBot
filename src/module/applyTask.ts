@@ -2,6 +2,10 @@ import mineflayer from 'mineflayer'
 import prismEntity from 'prismarine-entity';
 import { killTask, afkTask, WITHER_SKULL_AFK_TASK, WITHER_SKULL_KILL_TASK } from '../task/witherSkull.js';
 import { sleep } from '../utils/PromiseUtil.js';
+import water from '../task/waterTree.js';
+import TaskQueue from '../utils/TaskQueue.js';
+
+type Runable = (bot: mineflayer.Bot) => void
 
 function getTaskMap(): Record<string, Runable> {
   return {
@@ -101,127 +105,6 @@ async function signIn(bot: mineflayer.Bot) {
   }
 }
 
-async function water(bot: mineflayer.Bot) {
-  if (bot._initTask.includes('fish') || bot._initTask.includes('fish1')) {
-    bot.disableAutoDrop();
-  }
-
-  if (bot.currentWindow !== null) {
-    bot.closeWindow(bot.currentWindow);
-  }
-
-  const diamondId = bot.registry.itemsByName['diamond']?.id;
-
-  // 捡到钻石就开始神树浇水
-  await new Promise(async resolve => {
-    function onPickDiamond(player: prismEntity.Entity, item: prismEntity.Entity) {
-      if (player.username !== bot.username) return;
-      // @ts-ignore
-      const itemId = item.metadata[8]?.itemId;
-      if (!itemId || itemId !== diamondId) return;
-      bot.off('playerCollect', onPickDiamond);
-      resolve(1);
-    }
-
-    bot.on('playerCollect', onPickDiamond);
-  })
-
-  const taskQueue = TaskQueue.createTaskQueue(bot, 'water');
-  taskQueue
-    .addTask(async () => {
-      bot.chat("/guilds open");
-      // await awaitEvent(bot, 'windowOpen');
-    })
-    .addTask(async () => {
-      await bot.clickWindow(14, 0, 0);
-      // await awaitEvent(bot, 'windowOpen');
-    })
-    .addTask(async () => await bot.clickWindow(38, 0, 0))
-    .addTask(async () => await bot.clickWindow(38, 0, 0))
-    .addTask(async () => await bot.clickWindow(38, 0, 0))
-    .addTask(async () => await bot.clickWindow(40, 0, 0))
-    .addTask(async () => await bot.clickWindow(40, 0, 0))
-    .addTask(async () => await bot.clickWindow(41, 0, 0))
-    .addTask(async () => await bot.clickWindow(42, 0, 0))
-    .addTask(async () => await bot.clickWindow(29, 0, 0))
-    .addTask(() => bot.closeContainer())
-    .addTask(() => {
-      if (bot._initTask.includes('fish') || bot._initTask.includes('fish1')) {
-        bot.enableAutoDrop();
-      }
-    })
-  
-  try {
-    await taskQueue.buid();
-  } catch (error) {
-    bot.baseError('WaterTask', error as string);
-  }
-}
-
-
-type Runable = (bot: mineflayer.Bot) => void
-type RunableTask = () => Promise<void> | void
-
-class Task {
-  public task: RunableTask;
-  public minDelay: number;
-
-  constructor(task: RunableTask, delay: number = -1) {
-    this.task = task;
-    this.minDelay = delay;
-  }
-
-  run() {
-    return this.task();
-  }
-}
-
-class TaskQueue {
-  private id: string;
-  private taskList: Task[];
-  private bot: mineflayer.Bot;
-
-  constructor(bot: mineflayer.Bot, id: string) {
-    this.id = id;
-    this.taskList = [];
-    this.bot = bot;
-  }
-
-  static createTaskQueue(bot: mineflayer.Bot, id: string) {
-    return new TaskQueue(bot, id);
-  }
-
-  addTask(task: RunableTask, minDelay: number = 0) {
-    if (this.taskList.at(-1) !== undefined && this.taskList.at(-1)!.minDelay < 0) {
-      throw new Error('Task delay must be greater than 0');
-    }
-    this.taskList.push(new Task(task, minDelay))
-    return this;
-  }
-
-  async buid() {
-    if (this.taskList.length === 0) {
-      throw new Error(`TaskQueue ${this.id} is empty`);
-    }
-    
-    for (let i = 0; i < this.taskList.length; i++) {
-      const lastRunTick = this.bot.ticker;
-      const task = this.taskList[i];
-      if (!task) {
-        throw new Error(`TaskQueue ${this.id} task ${i} is undefined`);
-      }
-      await task.run();
-      
-      const delta = task.minDelay - (this.bot.ticker - lastRunTick);
-      if (delta > 0) {
-        await this.bot.createOnceTimeTask(
-          `waiting_${this.id}_${i}`, 
-          () => {}, delta
-        );
-      }
-    }
-  }
-}
 
 export {
   getTaskMap,

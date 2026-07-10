@@ -3,7 +3,7 @@ import mineflayer from 'mineflayer';
 export default function onMessage(bot: mineflayer.Bot) {
   bot.addChatPattern(
     'onQQMessage', 
-    /^\[!\]\[拾玖世界同好会.*?\(1321075268\)>&quit (\w+)$/, 
+    /^\[!\]\[拾玖世界同好会.*?\(1321075268\)>&quit\s+(\w+)$/, 
     { parse: true, repeat: true }
   );
 

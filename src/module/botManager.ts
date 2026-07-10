@@ -2,7 +2,6 @@ import mineflayer from "mineflayer";
 import fs from "fs";
 import { checkbox, select } from '@inquirer/prompts';
 import { waitPluginLoads } from "../utils/pluginWaiter.js";
-import testCmd from "./test.js";
 import registCommonCmd from "./command.js";
 import registEvent from "./registerEvent.js";
 
@@ -25,6 +24,7 @@ import autoAttackPlugin from "../plugins/autoattack.js";
 import tpsCheckerPlugin from "../plugins/tpsChecker.js";
 import { getTaskMap } from "./applyTask.js";
 import onMessage from "./onMessage.js";
+import test from "../test/test.js";
 
 // { `${username}@${servername}` : Bot }
 const botMap: Record<string, mineflayer.Bot> = {};
@@ -160,7 +160,7 @@ function registCmd(bot: mineflayer.Bot) {
     }));
 
   registCommonCmd(bot);
-  testCmd(bot);
+  test(bot);
 }
 
 function changeBot(identifier: string) {
@@ -173,7 +173,7 @@ function changeBot(identifier: string) {
     return;
   }
 
-  if (currentBot) {
+  if (currentBot && isBotExsit(currentBot)) {
     botMap[currentBot]!.emit('hidden');
   }
   const toShowBot = botMap[identifier]!;
