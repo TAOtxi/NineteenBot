@@ -30,7 +30,7 @@ function killTask(bot: mineflayer.Bot) {
     const window  = bot.currentWindow ?? bot.inventory;
 
     let isEquip = false;
-    for (let i=window.inventoryStart; i<window.inventoryEnd; i++) {
+    for (let i=window.inventoryStart; i<window.inventoryEnd + 1; i++) {
       const item = window.slots[i];
       if (!item) continue;
       if (item.enchants?.length === 0) continue;
