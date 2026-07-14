@@ -23,6 +23,17 @@ export default function onMessage(bot: mineflayer.Bot) {
   bot.on('chat:onReward', (match: string[]) => {
     bot.chat('');
   })
+
+  bot.addChatPattern(
+    'onTpa', 
+    /^(\w+) 请求传送到你这里/, 
+    { parse: true, repeat: true }
+  );
+
+  bot.on('chat:onTpa', (match: string[]) => {
+    const user = match[0]![0]!;
+    bot.whisper(user, '挂机中，有事QQ艾特 TAOtxi~');
+  })
 }
 
 
@@ -32,5 +43,6 @@ declare module 'mineflayer' {
   interface BotEvents {
     'chat:onQQMessage': MatcherCallback,
     'chat:onReward': MatcherCallback,
+    'chat:onTpa': MatcherCallback,
   }
 }
