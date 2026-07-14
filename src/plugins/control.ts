@@ -3,6 +3,7 @@ import { Vec3 } from 'vec3';
 import { type Block } from 'prismarine-block'
 import ChatMessageLoader from "prismarine-chat";
 import { waitPluginLoads } from '../utils/pluginWaiter.js';
+import { putDownCarryItem } from '../utils/InventoryUtil.js';
 
 const pluginName = 'control';
 
@@ -157,6 +158,7 @@ function registerCmd(bot: mineflayer.Bot) {
             return;
           }
           bot.moveSlotItem(sourceSlot, destSlot);
+          putDownCarryItem(bot);
         }))
     
 

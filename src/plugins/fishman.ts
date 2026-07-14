@@ -146,7 +146,7 @@ function registCmd(bot: mineflayer.Bot) {
 
         bot.createOnceTimeTask('cleanBagAndTurnBack', () => {
           const l = bot.inventory.inventoryStart;
-          const r = bot.inventory.inventoryEnd;
+          const r = bot.inventory.inventoryEnd + 1; // offhand
           for (let i = l; i < r; i++) {
             const item = bot.inventory.slots[i];
             if (item && item.name !== 'fishing_rod' && bot.isItemMatch(item)) {
