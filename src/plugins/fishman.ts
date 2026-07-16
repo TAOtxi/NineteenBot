@@ -15,6 +15,7 @@ const defaultConfig: FishmanConfig = {
   ]
 }
 
+const offhandSlot = 45;
 
 function heldFishRod(bot: mineflayer.Bot) {
   if (bot.heldItem?.name === 'fishing_rod') {
@@ -26,6 +27,21 @@ function heldFishRod(bot: mineflayer.Bot) {
 
 function isBobberExist(bot: mineflayer.Bot) {
   return bot.bobber !== null && bot.bobber.isValid;
+}
+
+function isHoldingRod(bot: mineflayer.Bot) {
+  const holdingItem = getHoldingItem(bot);
+  return holdingItem?.name === 'fishing_rod';
+}
+
+function getHoldingItem(bot: mineflayer.Bot) {
+  if (bot.heldItem?.name === 'fishing_rod') {
+    return bot.heldItem;
+  }
+  if (bot.currentWindow === null && bot.inventory.slots[offhandSlot]) {
+    return bot.inventory.slots[offhandSlot];
+  }
+  return null;
 }
 
 function shouldThrowAgain(bot: mineflayer.Bot) {
@@ -55,7 +71,8 @@ function shouldThrowAgain(bot: mineflayer.Bot) {
 }
 
 async function fishingIntervalCheck(bot: mineflayer.Bot) {
-  if (bot.heldItem?.name !== 'fishing_rod') {
+  const fishingRod = getHoldingItem(bot);
+  if (fishingRod?.name !== 'fishing_rod') {
     bot.baseError(pluginName, 'Not holding fishing rod');
     bot.stopFishing();
     return;
@@ -71,7 +88,7 @@ async function fishingIntervalCheck(bot: mineflayer.Bot) {
   // 检查是否需要重新抛钩
   if (shouldThrowAgain(bot)) {
     bot.bobber = null;
-    bot.activateItem();
+    bot.activateItem(fishingRod.slot === offhandSlot);
     throwFishingRodAgain(bot);
   }
 }
@@ -83,7 +100,11 @@ function registCmd(bot: mineflayer.Bot) {
     .then(CommandManager.command('activate')
       .execute(async bot => {
         await bot.heldFishRod();
-        bot.activateItem();
+        const holdingItem = getHoldingItem(bot);
+        if (!holdingItem) {
+          throw new Error('Something wrong wrong~');
+        }
+        bot.activateItem(holdingItem.slot === offhandSlot);
       }))
     .then(CommandManager.command('on').execute(bot => bot.startFishing()))
     .then(CommandManager.command('off').execute(bot => bot.stopFishing()))
@@ -166,14 +187,15 @@ function registCmd(bot: mineflayer.Bot) {
 }
 
 function throwFishingRodAgain(bot: mineflayer.Bot) {
-  if (bot.heldItem?.name !== 'fishing_rod') {
+  const fishingRod = getHoldingItem(bot);
+  if (fishingRod?.name !== 'fishing_rod') {
     bot.baseError(pluginName, 'Not holding fishing rod.');
     bot.stopFishing();
     return;
   }
 
   if (bot.getConfig(pluginName, 'fishingRodProtect') &&
-    bot.heldItem.maxDurability - bot.heldItem.durabilityUsed <= 5
+    fishingRod.maxDurability - fishingRod.durabilityUsed <= 5
   ) {
     bot.baseError(pluginName, 'Fishing rod is almost broken.');
     bot.stopFishing();
@@ -184,8 +206,8 @@ function throwFishingRodAgain(bot: mineflayer.Bot) {
     return;
   }
   bot.createOnceTimeTask('throwFishingRodAgain', () => {
-    if (!bot.usingHeldItem || !bot.isBobberExist()) {
-      bot.activateItem();
+    if (!bot.isBobberExist()) {
+      bot.activateItem(fishingRod.slot === offhandSlot);
 
       if (bot.getConfig(pluginName, 'enableRotation')) {
         rotationBot(bot);
@@ -226,27 +248,32 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.startFishing = async () => {
     if (bot._isFishing) return;
     bot.baseInfo(pluginName, 'startFishing');
-    try {
-      await heldFishRod(bot);
-    } catch (err) {
-      bot.baseError(pluginName, String(err));
-      return;
+
+    let fishingRod = getHoldingItem(bot);
+    if (fishingRod?.name !== 'fishing_rod') {
+      try {
+        await heldFishRod(bot);
+      } catch (err) {
+        bot.baseError(pluginName, String(err));
+        return;
+      }
     }
 
-    if (bot.heldItem?.name !== 'fishing_rod') {
+    fishingRod = getHoldingItem(bot);
+    if (fishingRod?.name !== 'fishing_rod') {
       bot.baseError(pluginName, 'Not holding fishing rod.');
       return;
     }
 
     if (bot.getConfig(pluginName, 'fishingRodProtect') &&
-      bot.heldItem.maxDurability - bot.heldItem.durabilityUsed <= 5
+      fishingRod.maxDurability - fishingRod.durabilityUsed <= 5
     ) {
       bot.baseError(pluginName, 'Fishing rod is almost broken. Stop fishing.');
       return;
     }
     cleanup();
 
-    bot.activateItem();
+    bot.activateItem(fishingRod.slot === offhandSlot);
 
     bot.on('entitySpawn', onBobberSpawn);
     bot.on('entityUpdate', onCatchFish);
@@ -270,10 +297,9 @@ export default async function inject(bot: mineflayer.Bot) {
     bot._bobberNotInWaterTick = 0;
     bot._isFishing = false;
 
-    if (bot.heldItem?.name === 'fishing_rod' &&
-      bot.isBobberExist()
-    ) {
-      bot.activateItem();
+    const holdingItem = getHoldingItem(bot);
+    if (holdingItem && bot.isBobberExist()) {
+      bot.activateItem(holdingItem.slot === offhandSlot);
     }
     bot.bobber = null;
   }
@@ -308,7 +334,12 @@ export default async function inject(bot: mineflayer.Bot) {
     // See https://minecraft.wiki/w/Java_Edition_protocol/Entity_metadata#Fishing_Bobber
     if (bot.bobber.metadata[9]) {
       bot.bobber = null;
-      bot.activateItem();
+      const holdingItem = getHoldingItem(bot);
+      if (!holdingItem) {
+        throw new Error('Something wrong wrong~');
+      }
+
+      bot.activateItem(holdingItem.slot === offhandSlot);
       throwFishingRodAgain(bot);
       bot.emit('fish');
     }
