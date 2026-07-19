@@ -16,23 +16,6 @@ function getAnsi(message: string | Object) {
 function registEvent(bot: mineflayer.Bot) {
   // @ts-ignore
   ChatMessageClass = ChatMessageLoader(bot.registry);
-  bot.on('whisper', (username: string, message: string) => {
-    if (!bot.admins.includes(username)) return;
-
-    message = message.trim();
-    if (message.startsWith('/')) {
-      bot.chat(message);
-    } else if (message.match(/^c |^chat /)) {
-      bot.chat(message.replace(/^c |^chat /, ''));
-    } else {
-      bot.tryExecute(message);
-    }
-  });
-
-  bot.on("message", (msg: ChatMessage) => {
-    // bot.withoutLogTitle().baseInfo('chat', JSON.stringify(msg, null, 2));
-    bot.baseInfo('chat', msg.toAnsi());
-  });
 
   bot.once("login", () => {
     bot.baseInfo('login', `Login as ${bot.username}`);

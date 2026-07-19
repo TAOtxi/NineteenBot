@@ -1,6 +1,5 @@
 import mineflayer from 'mineflayer';
-import { getTaskMap } from './applyTask.js';
-import { addTask, removeTask, getBotMap } from './botManager.js';
+import { getBotMap } from './botManager.js';
 import { getInventoryEmptySlotCount } from '../utils/InventoryUtil.js';
 
 export default function registCmd(bot: mineflayer.Bot) {
@@ -58,41 +57,6 @@ export default function registCmd(bot: mineflayer.Bot) {
 
   bot.registerCmd(CM.command('who')
     .execute(bot => bot.baseInfo('BOT', bot.identifier))
-  );
-
-  bot.registerCmd(CM.command('task')
-    .then(CM.command('list')
-      .execute(bot => {
-        bot.baseInfo('task', `Task List: (Current Tick: ${bot.ticker})`);
-        for (const task of bot.timeTaskList) {
-          bot.baseInfo('task', `[${task.id}]:\tNext Run Tick: ${task.nextRunTick}.\tInterval: ${task.intervalGetter}.`);
-        }
-        bot.withoutLogTitle().baseInfo('task', '');
-      }))
-    .then(CM.command('apply')
-      .then(CM.value('<task>')
-        .suggests(() => Object.keys(getTaskMap()))
-        .execute((bot, task) => {
-          const taskMap = getTaskMap();
-          // addTask(bot, task);
-          // @ts-ignore
-          taskMap[task](bot);
-          bot.baseInfo('task', `Apply Task: ${task}`);
-        })))
-    .then(CM.command('add')
-      .then(CM.value('<task>')
-        .suggests(() => Object.keys(getTaskMap()))
-        .execute((bot, task) => {
-          addTask(bot, task);
-          bot.baseInfo('task', `Add Task: ${task}`);
-        })))
-    .then(CM.command('remove')
-      .then(CM.value('<task>')
-        .suggests(() => Object.keys(getTaskMap()))
-        .execute((bot, task) => {
-          removeTask(bot, task);
-          bot.baseInfo('task', `Remove Task: ${task}`);
-        })))
   );
 
   bot.registerCmd(CM.command('list')

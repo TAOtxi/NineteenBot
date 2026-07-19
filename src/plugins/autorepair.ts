@@ -11,6 +11,12 @@ const defaultConfig: Config = {
     x: 0,
     y: 0,
     z: 0
+  },
+  canGetEquipmentFromContainer: false,
+  equipmentContainerPos: {
+    x: 0,
+    y: 0,
+    z: 0
   }
 };
 
@@ -19,6 +25,7 @@ const INTERACT_RADIUS = 4.0;
 const AUTO_REPAIR_COMBINE = 'autoRepairCombine';
 const AUTO_REPAIR_TICK = 'autoRepairTick';
 const AUTO_REPAIR_TIME_OUT_CHECK = 'autoRepairTimeOutCheck';
+const AUTO_REPAIR_OPEN_TIME_OUT = 'autoRepairOpenTimeOut';
 const AUTO_REPAIR_TIME_OUT = 20 * 15;
 const AUTO_REPAIR_CHECK_INTERVAL = 20 * 10;
 
@@ -31,14 +38,18 @@ const containerBlocks = [
   /_?shulker_box$/
 ]
 
-function shouldEnchantMendingBook(bot: mineflayer.Bot, item: prisItem.Item) {
+function shouldEnchantMendingBook(item: prisItem.Item) {
   if (item.maxDurability === undefined || item.durabilityUsed === 0) return false;
   if (item.stackSize !== 1) return false;
 
   if (item.enchants.some(enchant => enchant.name === 'mending')) return false;
-  if (!bot.registry.itemsByName[item.name]?.enchantCategories?.includes('durability')) {
-    return false;
-  }
+
+  return /^netherite_/.test(item.name);
+}
+
+function isNetheriteEquipment(item: prisItem.Item) {
+  if (item.maxDurability === undefined) return false;
+  if (item.stackSize !== 1) return false;
 
   return /^netherite_/.test(item.name);
 }
@@ -82,27 +93,45 @@ function getContainerSlotRange(window: Window): { startSlot: number, endSlot: nu
   return null;
 }
 
-async function tryToGetMendingBookFromContainer(bot: mineflayer.Bot, count: number) {
-  if (count === 0) return;
+function getEquipmentCount(bot: mineflayer.Bot) {
+  const l = bot.inventory.inventoryStart;
+  const r = bot.inventory.inventoryEnd;
 
-  const beforeCount = count;
-  const pos = bot.getConfig(pluginName, 'mendingBookContainerPos') as Config['mendingBookContainerPos'];
-  
-  const vec3 = new Vec3(pos.x, pos.y, pos.z);
-  if (vec3.distanceSquared(bot.entity.position) > INTERACT_RADIUS * INTERACT_RADIUS) {
+  let equipmentCount = 0;
+  for (let i = l; i < r; i++) {
+    const item = bot.inventory.slots[i];
+    if (item && isNetheriteEquipment(item)) {
+      equipmentCount++;
+    }
+  }
+  return equipmentCount;
+}
+
+async function getItemFromContainer(
+  bot: mineflayer.Bot, 
+  pos: Vec3, 
+  test: (item: prisItem.Item) => boolean, 
+  count: number
+) {
+  if (count <= 0) return;
+
+  if (pos.distanceSquared(bot.entity.position) > INTERACT_RADIUS * INTERACT_RADIUS) {
     return;
   }
 
-  const block = bot.blockAt(vec3);
-
+  const block = bot.blockAt(pos);
   if (!block || !isContainerBlock(bot, block.position)) {
     bot.stopAutoRepair();
-    bot.baseError(pluginName, `Position ${vec3.toString()} is not a container block. Stop autorepair.`);
+    bot.baseError(pluginName, `Position ${pos.toString()} is not a container block. Stop autorepair.`);
     return;
   }
 
-  bot._isGettingMendingBook = true;
+  bot.createOnceTimeTask(AUTO_REPAIR_OPEN_TIME_OUT, () => {
+    resetState(bot);
+  }, AUTO_REPAIR_TIME_OUT);
   const window = await bot.openContainer(block);
+  bot.removeTimeTask(AUTO_REPAIR_OPEN_TIME_OUT);
+
   const slotRange = getContainerSlotRange(window);
   if (!slotRange) {
     bot.stopAutoRepair();
@@ -110,10 +139,11 @@ async function tryToGetMendingBookFromContainer(bot: mineflayer.Bot, count: numb
     return;
   }
 
+  const beforeCount = count;
   for (let i = slotRange.startSlot; i <= slotRange.endSlot; i++) {
     const item = window.slots[i];
     if (!item) continue;
-    if (isMendingBook(item)) {
+    if (test(item)) {
       count--;
 
       if (window.selectedItem) {
@@ -124,26 +154,15 @@ async function tryToGetMendingBookFromContainer(bot: mineflayer.Bot, count: numb
     }
     if (count <= 0) break;
   }
-  bot._isGettingMendingBook = false;
   bot.closeWindow(window);
-
   if (count === beforeCount) {
-    bot.baseInfo(pluginName, `Container has no mending books. Stop autorepair.`);
     bot.stopAutoRepair();
-   }
+    bot.baseError(pluginName, `Container in ${pos.toString()} does not contain any match item. Stop autorepair.`);
+  }
 }
 
-
 async function tick(bot: mineflayer.Bot) {
-  // if (
-  //   bot.currentWindow === null &&
-  //   (bot._isRepairing || bot._isGettingMendingBook)
-  // ) {
-  //   bot.baseInfo(pluginName, 'Window closed. Reset state.');
-  //   resetState(bot);
-  //   return;
-  // }
-
+  if (bot._isGettingEquipment) return;
   if (bot._isGettingMendingBook) return;
   if (bot._isRepairing) return;
 
@@ -152,15 +171,41 @@ async function tick(bot: mineflayer.Bot) {
     return;
   }
 
+  if (bot.currentWindow !== null) {
+    bot.closeWindow(bot.currentWindow);
+  }
+
+  const equipmentCount = getEquipmentCount(bot);
+  let emptySlotCount = bot.inventory.emptySlotCount();
+
+  const canGetEquipmentFromContainer = bot.getConfig(pluginName, 'canGetEquipmentFromContainer') as Config['canGetEquipmentFromContainer'];
+  if (equipmentCount === 0 && canGetEquipmentFromContainer) {
+    const pos = bot.getConfig(pluginName, 'equipmentContainerPos') as Config['equipmentContainerPos'];
+    const vec3 = new Vec3(pos.x, pos.y, pos.z);
+
+    bot._isGettingEquipment = true;
+    getItemFromContainer(
+      bot, 
+      vec3, 
+      shouldEnchantMendingBook, 
+      Math.min(25, emptySlotCount)
+    ).catch(e => {
+      bot.baseError(pluginName, `Get equipment failed: ${e.message}`);
+      resetState(bot);
+    });
+    bot._isGettingEquipment = false;
+    return;
+  }
+
   const l = bot.inventory.inventoryStart;
   const r = bot.inventory.inventoryEnd;
-  
+
   let repairCount = 0;
   let mendingBookCount = 0;
   for (let i = l; i < r; i++) {
     const item = bot.inventory.slots[i];
     if (!item) continue;
-    if (shouldEnchantMendingBook(bot, item)) {
+    if (shouldEnchantMendingBook(item)) {
       repairCount++;
     }
     if (isMendingBook(item)) {
@@ -170,16 +215,21 @@ async function tick(bot: mineflayer.Bot) {
   if (repairCount === 0) return;
 
   if (mendingBookCount === 0) {
-    const window = bot.currentWindow ?? bot.inventory;
-    const emptySlotCount = window.emptySlotCount();
+    emptySlotCount = bot.inventory.emptySlotCount();
+    const pos = bot.getConfig(pluginName, 'mendingBookContainerPos') as Config['mendingBookContainerPos'];
+    const vec3 = new Vec3(pos.x, pos.y, pos.z);
 
-    tryToGetMendingBookFromContainer(
+    bot._isGettingMendingBook = true;
+    getItemFromContainer(
       bot, 
+      vec3,
+      isMendingBook,
       Math.min(repairCount, emptySlotCount, Math.floor(level / 2))
     ).catch(e => {
       bot.baseError(pluginName, `Get mending book failed: ${e.message}`);
       resetState(bot);
     });
+    bot._isGettingMendingBook = false;
     return;
   }
 
@@ -204,10 +254,12 @@ async function tick(bot: mineflayer.Bot) {
 }
 
 async function resetState(bot: mineflayer.Bot) {
+  bot._isGettingEquipment = false;
   bot._isRepairing = false;
   bot._isGettingMendingBook = false;
   bot._isCombining = false;
   bot.removeTimeTask(AUTO_REPAIR_COMBINE);
+  bot.removeTimeTask(AUTO_REPAIR_OPEN_TIME_OUT);
   bot.removeTimeTask(AUTO_REPAIR_TIME_OUT_CHECK);
 
   const window = bot.currentWindow ?? bot.inventory;
@@ -255,6 +307,10 @@ async function tryRepair(bot: mineflayer.Bot) {
   bot.createTimeTask(AUTO_REPAIR_COMBINE, combineTask, 1, true);
 }
 
+function setCanGetEquipmentFromContainer(bot: mineflayer.Bot, flag: boolean) {
+  bot.setConfig(pluginName, 'canGetEquipmentFromContainer', flag);
+}
+
 async function combineTask(bot: mineflayer.Bot) {
   if (bot._isCombining) return;
   bot._isCombining = true;
@@ -267,7 +323,7 @@ async function combineTask(bot: mineflayer.Bot) {
   let needToRepairItem = null;
   let mendingBookItem = null;
 
-  if (window.slots[0] && shouldEnchantMendingBook(bot, window.slots[0])) {
+  if (window.slots[0] && shouldEnchantMendingBook(window.slots[0])) {
     needToRepairItem = window.slots[0];
   }
   if (window.slots[1] && isMendingBook(window.slots[1])) {
@@ -282,7 +338,7 @@ async function combineTask(bot: mineflayer.Bot) {
     const item = window.slots[i];
     if (!item) continue;
 
-    if (!needToRepairItem && shouldEnchantMendingBook(bot, item)) {
+    if (!needToRepairItem && shouldEnchantMendingBook(item)) {
       needToRepairItem = item;
     }
     
@@ -312,6 +368,11 @@ function registCmd(bot: mineflayer.Bot) {
         bot.baseInfo(pluginName, `isRepairing:          ${bot._isRepairing}`);
         bot.baseInfo(pluginName, `isCombining:          ${bot._isCombining}`);
       }))
+    .then(CM.command('canGetEquipmentFromContainer')
+      .then(CM.command('on')
+        .execute(bot => setCanGetEquipmentFromContainer(bot, true)))
+      .then(CM.command('off')
+        .execute(bot => setCanGetEquipmentFromContainer(bot, false))))
     .then(CM.command('mendingBookPos')
       .then(CM.value('<x, y, z>')
         .execute((bot, pos) => {
@@ -336,14 +397,13 @@ export default async function inject(bot: mineflayer.Bot) {
   bot._isGettingMendingBook = false;
   bot._isRepairing = false;
   bot._isCombining = false;
+  bot._isGettingEquipment = false;
 
   bot.startAutoRepair = () => {
-    bot._isRepairing = false;
-    bot._isGettingMendingBook = false;
-    bot._isCombining = false;
+    resetState(bot);
     bot.baseInfo(pluginName, 'Enable AutoRepair.');
     if (!bot.hasTimeTask(AUTO_REPAIR_TICK)) {
-      bot.createTimeTask(AUTO_REPAIR_TICK, tick, AUTO_REPAIR_CHECK_INTERVAL);
+      bot.createTimeTask(AUTO_REPAIR_TICK, tick, AUTO_REPAIR_CHECK_INTERVAL, true);
     }
   }
 
@@ -368,6 +428,7 @@ declare module 'mineflayer' {
     _isGettingMendingBook: boolean;
     _isRepairing: boolean;
     _isCombining: boolean;
+    _isGettingEquipment: boolean;
     startAutoRepair: () => void;
     stopAutoRepair:  () => void;
   }
@@ -382,4 +443,6 @@ type Pos = {
 interface Config {
   minExpRequired: number;
   mendingBookContainerPos: Pos;
+  canGetEquipmentFromContainer: boolean;
+  equipmentContainerPos: Pos;
 }

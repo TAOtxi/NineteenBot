@@ -4,7 +4,7 @@ import TaskQueue from '../utils/TaskQueue.js';
 
 
 export default async function water(bot: mineflayer.Bot) {
-  const hasFishTask = bot._initTask.includes('fish') || bot._initTask.includes('fish1');
+  const hasFishTask = bot.hasTask('fish') || bot.hasTask('fish1');
   if (hasFishTask) {
     bot.disableAutoDrop();
   }
