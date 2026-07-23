@@ -26,24 +26,24 @@ function getTimeStr(dateSep: string = '-', timeSep: string = ':') {
   return time;
 }
 
-function saveLog(bot: mineflayer.Bot, msg: string) {
+function saveLog(msg: string, option: { logDir: string, logFile: string, maxLogSize: number }) {
   msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
 
-  const latestLogFile = getLatestLogFile(bot.logDir, bot.logFile, bot.maxLogSize);
+  const latestLogFile = getLatestLogFile(option.logDir, option.logFile, option.maxLogSize);
   const date = parseTimeStr(latestLogFile.replace('.log', ''));
   const currentDate = new Date();
   if (date.day !== currentDate.getDate() ||
     date.month !== currentDate.getMonth() + 1 ||
     date.year !== currentDate.getFullYear()) {
-    bot.logFile = `${getTimeStr('-', '-')}.log`;
-    fs.writeFile(`${bot.logDir}/${bot.logFile}`, msg + '\n', (err) => {
-      err && console.error('Write log error:', err, `[${bot.logDir}/${bot.logFile}]`);
+    option.logFile = `${getTimeStr('-', '-')}.log`;
+    fs.writeFile(`${option.logDir}/${option.logFile}`, msg + '\n', (err) => {
+      err && console.error('Write log error:', err, `[${option.logDir}/${option.logFile}]`);
     });
     return;
   }
   
-  fs.appendFile(`${bot.logDir}/${bot.logFile}`, msg + '\n', (err) => {
-    err && console.error('Write log error:', err, `[${bot.logDir}/${bot.logFile}]`);
+  fs.appendFile(`${option.logDir}/${option.logFile}`, msg + '\n', (err) => {
+    err && console.error('Write log error:', err, `[${option.logDir}/${option.logFile}]`);
   });
 }
 
@@ -81,58 +81,56 @@ function getLatestLogFile(logDir: string, preLogFile: string, maxLogSize: number
   return currentLogFile;
 }
 
-function base(bot: mineflayer.Bot, prefix: string, msg: string, type: string) {
-  let logData: string = '';
-  if (bot._withLogTitle) {
-    const title = `${getTimeStr()} ${prefix? `[${prefix}][${type}] ` : `[${type}] `}`;
-    logData = `${title}${msg}`;
-  } else {
-    logData = msg;
-  }
-  
-  bot.canLog && console.log('\r' + logData);
-  bot.canSaveLog && saveLog(bot, logData);
-  bot._withLogTitle = true;
+function timestamp() {
+  return new Date().toTimeString().slice(0, 8);
 }
 
-function notSaveLog(bot: mineflayer.Bot, prefix: string, msg: string, type: string) {
-  if (!bot.canLog) return;
-
-  let logData = '';
-  if (bot._withLogTitle) {
-    const title = `${getTimeStr()} ${prefix? `[${prefix}][${type}] ` : `[${type}] `}`;
-    logData = `${title}${msg}`;
-  } else {
-    logData = msg;
-  }
-  
-  console.log('\r' + logData);
-  bot._withLogTitle = true;
+function makeArrayStr(...arr: string[]) {
+  return `[${arr.join('][')}] `;  // end with space
 }
 
-const LOG_TO_FILE = CmdUtil.getValueByArgName(process.argv, 'log') === 'true';
+function baseLog(
+  bot: mineflayer.Bot, 
+  msg: string| number, 
+  option: { title: string, type: string } = { type: 'INFO', title: '' }) {
+  
+  const title = option.title ? makeArrayStr(timestamp(), option.title, option.type) : '';
+  
+  if (bot.canLog) {
+    console.log(`${title}${msg}`);
+  }
+  saveLog(msg.toString(), { logDir: bot.logDir, logFile: bot.logFile, maxLogSize: bot.maxLogSize });
+}
+
+function chatLog(bot: mineflayer.Bot, msg: string | number) {
+  const data = `${makeArrayStr(timestamp())}${msg}`;
+  if (bot.canLog) {
+    console.chat(data);
+  }
+  saveLog(data, { logDir: bot.logDir, logFile: bot.logFile, maxLogSize: bot.maxLogSize });
+}
 
 export default async function inject(bot: mineflayer.Bot) {
-  // TODO: 更优雅地方式
-  // await new Promise(resolve => bot.once('login', () => resolve(1)));
-  
   bot.canLog = false;
-  bot.canSaveLog = LOG_TO_FILE;
   bot.maxLogSize = 1024 * 1024 * 10; // 10MB
   bot.logDir = `./log/${bot.username}`;
   bot.logFile = getLatestLogFile(bot.logDir, '', bot.maxLogSize);
-  bot._withLogTitle = true;
-  bot.baseInfo = (prefix: string, msg: string) => base(bot, prefix, msg, 'INFO');
-  bot.baseWarn = (prefix: string, msg: string) => base(bot, prefix, msg, 'WARN');
-  bot.baseError = (prefix: string, msg: string) => base(bot, prefix, msg, 'ERROR');
-  bot.notSaveLog = (prefix: string, msg: string) => notSaveLog(bot, prefix, msg, 'INFO');
-  bot.withoutLogTitle = () => {
-    bot._withLogTitle = false;
-    return bot;
-  }
-
+  bot.chatLog = (msg) => chatLog(bot, msg);
   bot.on('hidden', () => bot.canLog = false);
   bot.on('display', () => bot.canLog = true);
+
+  const makeLevelLog = (level: string) =>
+    (titleOrMessage: string | number, msg?: string | number) => {
+      if (msg === undefined) {
+        baseLog(bot, titleOrMessage, { type: level, title: '' });
+      } else {
+        baseLog(bot, msg, { type: level, title: titleOrMessage.toString() });
+      }
+    };
+
+  bot.baseInfo = makeLevelLog('INFO');
+  bot.baseWarn = makeLevelLog('WARN');
+  bot.baseError = makeLevelLog('ERROR');
 
   pluginReady(bot, 'logger');
 }
@@ -141,15 +139,15 @@ export default async function inject(bot: mineflayer.Bot) {
 declare module 'mineflayer' {
   interface Bot {
     canLog: boolean;
-    canSaveLog: boolean;
-    _withLogTitle: boolean;
     logDir: string;
     logFile: string;
     maxLogSize: number;
-    withoutLogTitle(): Bot;
-    baseInfo(prefix: string, msg: string): void;
-    baseWarn(prefix: string, msg: string): void;
-    baseError(prefix: string, msg: string): void;
-    notSaveLog(prefix: string, msg: string): void;
+    chatLog(msg: string | number): void;
+    baseInfo(msg: string | number): void;
+    baseInfo(title: string, msg: string | number): void;
+    baseWarn(msg: string | number): void;
+    baseWarn(title: string, msg: string | number): void;
+    baseError(msg: string | number): void;
+    baseError(title: string, msg: string | number): void;
   }
 }

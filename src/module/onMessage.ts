@@ -61,7 +61,7 @@ export default function onMessage(bot: mineflayer.Bot) {
   setChatPattern(bot);
   
   bot.on('whisper', (username: string, message: string) => {
-    if (!bot.admins.includes(username)) {
+    if (!bot.admins.includes(username) && username !== 'Server') {
       bot.whisper(username, '[自动回复] 挂机中，有事 QQ 联系 TAOtxi');
       return;
     }

@@ -296,6 +296,7 @@ function createBot(username: string, servername: string) {
   return bot;
 }
 
+
 async function initBot(bot: mineflayer.Bot) {
   await loadPlugins(bot);
 
@@ -303,6 +304,7 @@ async function initBot(bot: mineflayer.Bot) {
   registCmd(bot);
   registEvent(bot);
   onMessage(bot);
+
 
   bot.once('login', () => {
     if (currentBot === null) {
@@ -383,6 +385,8 @@ declare module 'mineflayer' {
     servername: string;
     identifier: string;
     admins: string[];
+    chatLog(message: string | number): void;
+    log(pluginNameOrMessage: string, message?: string): void;
   }
 
   interface BotEvents {
