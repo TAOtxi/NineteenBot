@@ -109,7 +109,7 @@ function baseLog(
   msg: string| number, 
   option: { title: string, type: string } = { type: 'INFO', title: '' }) {
   
-  const title = option.title ? makeArrayStr(timestamp(), option.title, option.type) : '';
+  const title = option.title ? makeArrayStr(timestamp(), option.type, option.title) : '';
   const data = `${title}${msg}`;
   
   if (bot.canLog) {
