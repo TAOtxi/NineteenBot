@@ -194,10 +194,9 @@ module.exports = function (client, options) {
 
   client.on('player_chat', (packet) => {
     if (mcData.supportFeature('useChatSessions')) {
-      if (!packet.signature) return
       const tsDelta = BigInt(Date.now()) - packet.timestamp
       const expired = !packet.timestamp || tsDelta > messageExpireTime || tsDelta < 0
-      const verified = !packet.unsignedChatContent && updateAndValidateSession(packet.senderUuid, packet.plainMessage, packet.signature, packet.index, packet.previousMessages, packet.salt, packet.timestamp) && !expired
+      const verified = !packet.signature && !packet.unsignedChatContent && updateAndValidateSession(packet.senderUuid, packet.plainMessage, packet.signature, packet.index, packet.previousMessages, packet.salt, packet.timestamp) && !expired
       if (verified) client._signatureCache.push(packet.signature)
       client.emit('playerChat', {
         globalIndex: packet.globalIndex,

@@ -70,9 +70,9 @@ function registerCmd(bot: mineflayer.Bot) {
       .execute(bot => {
         bot.baseInfo('task', `Task List: (Current Tick: ${bot.ticker})`);
         for (const task of bot.timeTaskList) {
-          bot.withoutLogTitle().baseInfo('task', `[${task.id}]:\tNext Run Tick: ${task.nextRunTick}.\tInterval: ${task.intervalGetter}.`);
+          bot.baseInfo('task', `[${task.id}]:\tNext Run Tick: ${task.nextRunTick}.\tInterval: ${task.intervalGetter}.`);
         }
-        bot.withoutLogTitle().baseInfo('task', '');
+        bot.baseInfo('task', '');
       }))
     .then(CM.command('apply')
       .then(CM.value('<task>')

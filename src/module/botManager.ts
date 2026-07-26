@@ -1,35 +1,32 @@
 import mineflayer from "mineflayer";
-import fs from "fs";
-import { checkbox, select } from '@inquirer/prompts';
-import { waitPluginLoads } from "../utils/pluginWaiter.js";
-import registCommonCmd from "./command.js";
-import registEvent from "./registerEvent.js";
-import initializeTask from "../task/main.js"
-import CommandPlugin from "../plugins/command.js";
-import AutoDropPlugin from "../plugins/autodrop.js";
-import makeConfigPlugin from "../plugins/makeConfig.js";
-import loggerPlugin from "../plugins/logger.js";
-import helperPlugin from "../plugins/helper.js";
-import taskPlugin from "../plugins/task.js";
-import infomationPlugin from "../plugins/infomation.js";
-import actionPlugin from "../plugins/action.js";
-import fishmanPlugin from "../plugins/fishman.js";
-import menuClickPlugin from "../plugins/menuClick.js";
-import controlPlugin from "../plugins/control.js";
-import autoRepairPlugin from "../plugins/autorepair.js";
-import autoReplacePlugin from "../plugins/autoreplace.js";
-import anvilPlugin from "../plugins/anvil.js";
-import tpsPlugin from "../plugins/tps.js";
-import autoAttackPlugin from "../plugins/autoattack.js";
-import tpsCheckerPlugin from "../plugins/tpsChecker.js";
-import initTaskPlugin, { getTaskList } from "../plugins/initTask.js";
-import onMessage from "./onMessage.js";
-import test from "../test/test.js";
+import { getAccountInfo, getServerInfo, getAdmins } from "@/Config/loadConfig.js";
+import { waitPluginLoads } from "@/utils/pluginWaiter.js";
+import registCommonCmd from "@/module/command.js";
+import registEvent from "@/module/registerEvent.js";
+import CommandPlugin from "@/plugins/command.js";
+import AutoDropPlugin from "@/plugins/autodrop.js";
+import MakeConfigPlugin from "@/plugins/makeConfig.js";
+import LoggerPlugin from "@/plugins/logger.js";
+import TaskPlugin from "@/plugins/task.js";
+import InfomationPlugin from "@/plugins/infomation.js";
+import ActionPlugin from "@/plugins/action.js";
+import FishmanPlugin from "@/plugins/fishman.js";
+import MenuClickPlugin from "@/plugins/menuClick.js";
+import ControlPlugin from "@/plugins/control.js";
+import AutoRepairPlugin from "@/plugins/autorepair.js";
+import AutoReplacePlugin from "@/plugins/autoreplace.js";
+import AnvilPlugin from "@/plugins/anvil.js";
+import TpsPlugin from "@/plugins/tps.js";
+import AutoAttackPlugin from "@/plugins/autoattack.js";
+import TpsCheckerPlugin from "@/plugins/tpsChecker.js"; 
+import InitTaskPlugin from "@/plugins/initTask.js";
+import onMessage from "@/module/onMessage.js";
+import test from "@/test/test.js";
+import { onBotChange } from "@/panel/createPanel.js";
+import createStartScreen from "@/panel/createStartScreen.js";
 
 // { `${username}@${servername}` : Bot }
 const botMap: Record<string, mineflayer.Bot> = {};
-
-const baseConfig = JSON.parse(fs.readFileSync("./config/config.json", 'utf-8')) as UserConfig;
 let currentBot: string | null = null;
 
 function getBotMap() {
@@ -45,7 +42,7 @@ function isBotExsit(identifier: string | null) {
 
 function removeBot(identifier: string) {
   if (!isBotExsit(identifier)) {
-    console.error('Bot is not exist');
+    console.warn(`Bot ${identifier} is not exist.`);
     return;
   }
   const bot = botMap[identifier]!;
@@ -55,62 +52,11 @@ function removeBot(identifier: string) {
   delete botMap[identifier];
 }
 
-function query(message: string, choices: Record<string, string> | string[]) {
-  if (Array.isArray(choices)) {
-    return select({
-      message,
-      choices
-    })
-  }
-  return select({
-    message,
-    choices: Object.keys(choices).map(name => ({
-      name: name,
-      value: name,
-      description: choices[name] || '',
-    })),
-  })
-}
-
 function registCmd(bot: mineflayer.Bot) {
   const CommandManager = bot.getCommandManager();
   bot.registerCmd(CommandManager.command('bot')
     .then(CommandManager.command('create')
-      .execute(async bot => {
-        bot.baseInfo('BOT', '==============================');
-        bot.baseInfo('BOT', '|     Start to create bot    |');
-        bot.baseInfo('BOT', '==============================');
-        bot.emit('hidden');
-
-        const task = await select({
-          message: 'Select your action:',
-          choices: ['Apply task', 'Create bot', 'Cancel'],
-        });
-
-        if (task === 'Cancel') {
-          console.info(`\nCancel create bot. Turn back to ${bot.identifier}\n`);
-          bot.emit('display');
-          return;
-        }
-
-        if (task === 'Apply task') {
-          currentBot = null;
-          createBotAndApplyTask();
-          return;
-        }
-        
-        if (task !== 'Create bot') {
-          throw new Error('Invalid choice');
-        }
-
-        const identifier = await createBotWithConfig();
-        if (identifier === '') {
-          console.info(`\nCancel create bot. Turn back to ${bot.identifier}\n`);
-          bot.emit('display');
-        } else {
-          currentBot = identifier;
-        }
-      }))
+      .execute(() => createStartScreen()))
     .then(CommandManager.command('change')
       .then(CommandManager.value('<identifier>')
         .suggests(() => Object.keys(botMap).filter(name => name !== currentBot))
@@ -119,7 +65,7 @@ function registCmd(bot: mineflayer.Bot) {
 
   bot.registerCmd(CommandManager.command('quit')
     .execute(bot => {
-      bot.baseInfo('BOT', 'Quit');
+      bot.baseInfo('BOT', `Quit bot ${bot.identifier}`);
       bot.removeAllTasks();
       removeBot(bot.identifier);
 
@@ -143,18 +89,18 @@ function registCmd(bot: mineflayer.Bot) {
   bot.registerCmd(CommandManager.command('all')
     .then(CommandManager.value('<command>')
       .execute((bot, command) => {
-        bot.baseInfo('BOT', `Execute command ${command} on all bots.`);
+        bot.baseInfo('BOT', `Execute command "${command}" on all bots.`);
         for (const b of Object.values(botMap)) {
           b?.tryExecute(command);
         }
       }))
   );
 
-  bot.registerCmd(CommandManager.command('restart')
-    .execute(bot => {
-      bot.baseInfo('BOT', `Restart bot ${bot.identifier}`);
-      recreateBot(bot.identifier);
-    }));
+  // bot.registerCmd(CommandManager.command('restart')
+  //   .execute(bot => {
+  //     bot.baseInfo('BOT', `Restart bot ${bot.identifier}`);
+  //     recreateBot(bot.identifier);
+  //   }));
 
   registCommonCmd(bot);
   test(bot);
@@ -162,11 +108,13 @@ function registCmd(bot: mineflayer.Bot) {
 
 function changeBot(identifier: string) {
   if (currentBot === identifier) {
-    console.warn(`\n${identifier} is already current bot.\n`);
+    console.log('');
+    console.warn(`Bot ${identifier} is already current bot.`);
+    console.log('');
     return;
   }
   if (!isBotExsit(identifier)) {
-    console.error(`\n${identifier} is not exist.\n`);
+    console.warn(`\nBot ${identifier} is not exist.\n`);
     return;
   }
 
@@ -175,106 +123,18 @@ function changeBot(identifier: string) {
   }
   const toShowBot = botMap[identifier]!;
 
-  // TODO: 修改成日志输出方式
-  console.log(`\nSwitch to bot ${identifier}\n`);
+  console.log('');
+  console.info(`Switch to bot ${identifier}`);
+  console.log('');
 
   currentBot = identifier;
-  toShowBot.createOnceTimeTask('startDisplay', () => {
-    toShowBot.emit('display');
-  }, 20);
+  toShowBot.emit('display');
   return toShowBot;
 }
 
-async function applyTaskOrCreateBot() {
-  initializeTask();
-  const task = await select({
-    message: 'Select your action:',
-    choices: ['Apply task', 'Create bot'],
-  });
-
-  if (task === 'Apply task') {
-    createBotAndApplyTask();
-  } else if (task === 'Create bot') {
-    createBotWithConfig();
-  }
-}
-
-async function createBotAndApplyTask() {
-  const botNameList = Object.keys(baseConfig.Users);
-
-  const bots = await checkbox({
-    message: 'Select the bots to create',
-    choices: botNameList,
-    validate: (val) => val.length > 0,
-  });
-
-  const server = await select({
-    message: 'Select the server to create',
-    choices: Object.keys(baseConfig.Servers),
-  });
-
-  const task = await select({
-    message: 'Select the task to apply',
-    choices: getTaskList(),
-  });
-
-  for (let i = 0; i < bots.length; i++) {
-    setTimeout(() => {
-      createBotWithTask(bots[i]!, server, task);
-    }, i * 10000);
-  }
-
-  return true;
-}
-
-async function getSelectConfig() {
-  let username: string, servername: string;
-  const accountList = Object.keys(baseConfig.Users).reduce(
-    (prev, username) => {
-        prev[username] = baseConfig.Users[username]!.account;
-        return prev;
-      }, {} as Record<string, string>);
-  accountList['Cancel'] = 'Cancel current operation.';
-  
-  const serverList = Object.keys(baseConfig.Servers).reduce(
-    (prev, cur) => {
-        prev[cur] = `${baseConfig.Servers[cur]!.host}:${baseConfig.Servers[cur]!.port || 25565}`;
-        return prev;
-      }, {} as Record<string, string>);
-  serverList['Cancel'] = 'Cancel current operation.';
-
-  while (true) {
-    username = await query(
-      'Select your account', 
-      accountList
-    );
-
-    if (username === 'Cancel') {
-      return { username: '', servername: '' };
-    }
-
-    servername = await query(
-      'Select the server', 
-      serverList
-    );
-
-    if (servername === 'Cancel') {
-      return { username: '', servername: '' };
-    }
-
-    if (isBotExsit(`${username}@${servername}`)) {
-      console.error('\nBot is already exist.\n');
-      continue;
-    }
-
-    break;
-  }
-  return { username, servername };
-}
-
 function createBot(username: string, servername: string) {
-  const userConfig = baseConfig.Users[username]!;
-  const serverConfig = baseConfig.Servers[servername]!;
+  const userConfig = getAccountInfo(username);
+  const serverConfig = getServerInfo(servername);
 
   const bot = mineflayer.createBot({
     host: serverConfig.host ?? 'localhost',
@@ -299,7 +159,7 @@ function createBot(username: string, servername: string) {
 async function initBot(bot: mineflayer.Bot) {
   await loadPlugins(bot);
 
-  bot.admins = baseConfig.Admin;
+  bot.admins = getAdmins();
   registCmd(bot);
   registEvent(bot);
   onMessage(bot);
@@ -307,22 +167,40 @@ async function initBot(bot: mineflayer.Bot) {
   bot.once('login', () => {
     if (currentBot === null) {
       currentBot = bot.identifier;
+    }
+    if (bot.identifier === currentBot) {
       bot.emit('display');
-    } else if (bot.identifier === currentBot) {
-      bot.emit('display');
+      bot.baseInfo(`--> Login as ${bot.identifier}`);
+      bot.baseInfo('--> Shift + ← 聚焦聊天框，Shift + → 聚焦日志输出');
+      bot.baseInfo('--> (Shift / Ctrl) + (↑ / ↓) 滚动窗口数据，shift一次滚动5行,ctrl一次滚动10行');
     }
   });
+
+  bot.on('display', () => onBotChange(bot));
+}
+
+async function createBotWithInitialize(username: string, servername: string) {
+  const bot = createBot(username, servername);
+  await initBot(bot);
+  return bot;
+}
+
+function createBotWithTask(username: string[], servername: string, taskName: string) {
+  username.forEach((u, idx) => setTimeout(async () => {
+    const bot = await createBotWithInitialize(u, servername);
+    bot.addTask(taskName, true);
+  }, idx * 10000));
 }
 
 async function loadPlugins(bot: mineflayer.Bot) {
   bot.loadPlugins([
-      loggerPlugin, makeConfigPlugin, AutoDropPlugin, CommandPlugin, 
-      helperPlugin, taskPlugin, infomationPlugin, actionPlugin, 
-      fishmanPlugin, menuClickPlugin, controlPlugin, autoRepairPlugin, 
-      autoReplacePlugin, anvilPlugin, tpsPlugin, autoAttackPlugin,
-      tpsCheckerPlugin, initTaskPlugin,
+      LoggerPlugin, MakeConfigPlugin, AutoDropPlugin, CommandPlugin, 
+      TaskPlugin, InfomationPlugin, ActionPlugin, 
+      FishmanPlugin, MenuClickPlugin, ControlPlugin, AutoRepairPlugin, 
+      AutoReplacePlugin, AnvilPlugin, TpsPlugin, AutoAttackPlugin,
+      TpsCheckerPlugin, InitTaskPlugin,
   ]);
-  await waitPluginLoads(bot, ['logger', 'helper', 'task']);
+  await waitPluginLoads(bot, ['logger', 'task']);
 }
 
 
@@ -354,29 +232,12 @@ function recreateBot(identifier: string) {
   }, DELAY);
 }
 
-async function createBotWithConfig() {
-  const { username, servername } = await getSelectConfig();
-  if (username === '' || servername === '') {
-    return '';
-  }
-  const bot = createBot(username, servername);
-  await initBot(bot);
-  return bot.identifier;
-}
-
-async function createBotWithTask(username: string, servername: string, task: string) {
-  const bot = createBot(username, servername);
-  await initBot(bot);
-  bot.addTask(task, true);
-}
-
 export {
   recreateBot,
-  applyTaskOrCreateBot,
+  createBotWithInitialize,
+  createBotWithTask,
   getBotMap,
 };
-
-export type { UserConfig };
 
 declare module 'mineflayer' {
   interface Bot {
@@ -390,21 +251,4 @@ declare module 'mineflayer' {
     hidden(): void;
     display(): void;
   }
-}
-
-
-
-interface UserConfig {
-  Users: Record<string, {
-    account: string;
-  }>,
-
-  Servers: Record<string, {
-    host?: string,
-    port?: number,
-    version: string,
-    auth?: 'microsoft' | 'mojang' | 'offline'
-  }>,
-
-  Admin: string[]
 }

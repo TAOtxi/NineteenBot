@@ -10,7 +10,7 @@ const map = [
   ['plugins/resource_pack.js', './node_modules/mineflayer/lib/plugins/resource_pack.js'],
 
   /**
-   * @desc: 扩展 look2 方法，取消 look 的return
+   * @desc: 扩展 look2 方法，取消 look 的 return
    * @see: https://github.com/PrismarineJS/mineflayer/pull/3901
    */
   ['plugins/physics.js', './node_modules/mineflayer/lib/plugins/physics.js'],
@@ -27,7 +27,8 @@ const map = [
   ['plugins/health.js', './node_modules/mineflayer/lib/plugins/health.js'],
   
   /**
-   * @desc: 适配 component，取消激活方法时的自动转向
+   * @desc: 适配 component，修复背包同步问题
+   * @see: https://github.com/PrismarineJS/mineflayer/pull/3931
    */
   ['plugins/inventory.js', './node_modules/mineflayer/lib/plugins/inventory.js'],
 
@@ -60,7 +61,7 @@ const map = [
   ['./protodef/compiler-structures.js', './node_modules/protodef/src/datatypes/compiler-structures.js'],
 
   /**
-   * fix: 忽略没有签名的信息
+   * fix: 修复没有签名的信息引发的报错
    */
   ['minecraft-protocol/chat.js', 'node_modules/minecraft-protocol/src/client/chat.js'],
 ]

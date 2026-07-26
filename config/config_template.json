@@ -1,0 +1,44 @@
+{
+    "Users": {
+        "Your Bot Name": {
+          "account": "example@example.com"
+        },
+        "Your Bot Name 2": {
+          "account": "example2@example.com"
+        },
+        "Player1": {
+          "account": "player1@example.com"
+        }
+    },
+    "Servers": {
+      "Server 1": {
+        "host": "example.com",
+        "port": 25565,
+        "version": "1.21.11",
+        "auth": "microsoft"
+      },
+      "Server 2": {
+        "host": "example2.com",
+        "version": "1.21.11",
+        "auth": "microsoft"
+      },
+      "Server 3": {
+        "host": "example3.com",
+        "port": 32925,
+        "version": "1.21.11",
+        "auth": "microsoft"
+      },
+      "Server 4": {
+        "host": "localhost",
+        "version": "1.21.11",
+        "auth": "microsoft"
+      }
+    },
+    "Admin": [
+      "Player1",
+      "Player2",
+      "Player3"
+    ],
+    "mainAccount": "Player1",
+    "autoAcceptTpaList": []
+}

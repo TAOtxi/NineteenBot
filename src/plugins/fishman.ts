@@ -109,7 +109,7 @@ function registCmd(bot: mineflayer.Bot) {
     .then(CommandManager.command('on').execute(bot => bot.startFishing()))
     .then(CommandManager.command('off').execute(bot => bot.stopFishing()))
     .then(CommandManager.command('bobber')
-      .execute(bot => bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(bot.bobber))))
+      .execute(bot => bot.baseInfo(JSON.stringify(bot.bobber))))
     .then(CommandManager.command('rotation')
       .then(CommandManager.command('on').execute(bot => bot.setConfig(pluginName, 'enableRotation', true)))
       .then(CommandManager.command('off').execute(bot => bot.setConfig(pluginName, 'enableRotation', false)))

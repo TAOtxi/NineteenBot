@@ -1,7 +1,7 @@
 import mineflayer from 'mineflayer';
 import ChatMessageLoader, { type ChatMessage } from "prismarine-chat";
 import { type Window } from 'prismarine-windows'
-import { recreateBot } from "./botManager.js";
+import { recreateBot } from "@/module/botManager.js";
 
 let ChatMessageClass: ChatMessage;
 

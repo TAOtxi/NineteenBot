@@ -5,7 +5,6 @@ export default function task(bot: mineflayer.Bot) {
   bot.addChatPattern(
     'onReward', 
     /^\[Server -> me\] 24小时在线奖励/, 
-    // /^<TAOtxi> 1/, 
     { parse: false, repeat: true }
   );
 

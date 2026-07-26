@@ -1,14 +1,15 @@
 import mineflayer from 'mineflayer';
-import { getBotMap } from './botManager.js';
-import { getInventoryEmptySlotCount } from '../utils/InventoryUtil.js';
+import { getBotMap } from '@/module/botManager.js';
+import { getMainAccount } from '@/Config/loadConfig.js';
+import { getInventoryEmptySlotCount } from '@/utils/InventoryUtil.js';
 
 export default function registCmd(bot: mineflayer.Bot) {
   const CM = bot.getCommandManager();
 
-  bot.registerCmd(CM.command(['cls', 'clear'])
-    .execute(bot => {
-      console.clear();
-    }));
+  // bot.registerCmd(CM.command(['cls', 'clear'])
+  //   .execute(bot => {
+  //     console.clear();
+  //   }));
 
   // TODO: 完善help命令
   bot.registerCmd(CM.command('help')
@@ -35,7 +36,7 @@ export default function registCmd(bot: mineflayer.Bot) {
           if (typeof bot[property] === 'object' && bot[property] !== null) {
             bot.baseInfo('state', `${property}:`);
             // @ts-ignore
-            console.log(bot[property]);
+            bot.baseInfo(bot[property]);
           } else {
             // @ts-ignore
             bot.baseInfo('state', `${property}: ${bot[property]}`);
@@ -49,10 +50,6 @@ export default function registCmd(bot: mineflayer.Bot) {
           // @ts-ignore
           bot.baseInfo('state', `${property}: ${JSON.stringify(bot[property], null, 2)}`);
         })))
-    .then(CM.command('fix')
-      .then(CM.command('isAlive')
-        // @ts-ignore
-        .execute(bot => bot.isAlive = true)))
   );
 
   bot.registerCmd(CM.command('who')
@@ -78,7 +75,7 @@ export default function registCmd(bot: mineflayer.Bot) {
       }))
     .then(CM.command(['h', 'harvest'])
       .execute(bot => {
-        bot.tryExecute('all "info show matchItems TAOtxi"');
+        bot.tryExecute(`all "info show matchItems ${getMainAccount()}"`);
       }))
     .then(CM.command('1')
       .execute(bot => {
@@ -94,7 +91,7 @@ export default function registCmd(bot: mineflayer.Bot) {
       }))
     .then(CM.command('tp')
       .execute(bot => {
-        bot.chat('/tpa TAOtxi');
+        bot.chat(`/tpa ${getMainAccount()}`);
       }))
     .then(CM.command('fish')
       .execute(bot => {
@@ -128,7 +125,7 @@ export default function registCmd(bot: mineflayer.Bot) {
           const window = bot.currentWindow ?? bot.inventory;
           const totalSlot = window.inventoryEnd - window.inventoryStart;
           const emptySlot = getInventoryEmptySlotCount(window);
-          bot.chat(`/w TAOtxi Usage: ${totalSlot - emptySlot} / ${totalSlot}`);
+          bot.chat(`/w ${getMainAccount()} Usage: ${totalSlot - emptySlot} / ${totalSlot}`);
         }
       }))
     .then(CM.command('next')
@@ -152,8 +149,8 @@ export default function registCmd(bot: mineflayer.Bot) {
 
 function displayOnlinePlayers(bot: mineflayer.Bot) {
   const worlds: Record<string, string[]> = {};
-  bot.withoutLogTitle().baseInfo('CMD', '=======================================');
-  bot.withoutLogTitle().baseInfo('CMD', `Total Players: ${Object.keys(bot.players).length}`);
+  bot.baseInfo('=======================================');
+  bot.baseInfo(`Total Players: ${Object.keys(bot.players).length}`);
   // TODO: 匹配逻辑待优化
   for (const player of Object.values(bot.players)) {
     // toAnsi ==>  \x1B[0m\x1B[90m[\x1B[38;2;225;249;232m\x1B[1m传送大厅\x1B[90m]\x1B[97mTAOtxi\x1B[0m
@@ -167,11 +164,11 @@ function displayOnlinePlayers(bot: mineflayer.Bot) {
   }
   const worldList = Object.keys(worlds).sort();
   if (worldList.length === 1 && worldList[0] === 'unknown') {
-    bot.withoutLogTitle().baseInfo('CMD', `${worlds[worldList[0]]?.join(', ')}`);
+    bot.baseInfo(`${worlds[worldList[0]]?.join(', ')}`);
   } else {
     for (const world of worldList) {
-      bot.withoutLogTitle().baseInfo('CMD', `${world}\x1b[0m ${worlds[world]!.join(', ')}`);
+      bot.baseInfo(`${world}\x1b[0m ${worlds[world]!.join(', ')}`);
     }
   }
-  bot.withoutLogTitle().baseInfo('CMD', '\x1b[0m=======================================');
+  bot.baseInfo('\x1b[0m=======================================');
 }

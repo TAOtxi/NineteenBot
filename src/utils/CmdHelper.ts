@@ -19,7 +19,6 @@ import {
 import { styleText } from 'node:util';
 import figures from '@inquirer/figures';
 import type { PartialDeep } from '@inquirer/type';
-import type { __String } from 'typescript'
 
 type SearchTheme = {
   icon: { cursor: string };

@@ -364,6 +364,7 @@ function registCmd(bot: mineflayer.Bot) {
       .execute(bot => bot.stopAutoRepair()))
     .then(CM.command('state')
       .execute(bot => {
+        bot.baseInfo(pluginName, `isGettingEquipment: ${bot._isGettingEquipment}`);
         bot.baseInfo(pluginName, `isGettingMendingBook: ${bot._isGettingMendingBook}`);
         bot.baseInfo(pluginName, `isRepairing:          ${bot._isRepairing}`);
         bot.baseInfo(pluginName, `isCombining:          ${bot._isCombining}`);

@@ -4,6 +4,8 @@ dist
 
 config/*
 
+!config/config_template.json
+
 log
 
 local

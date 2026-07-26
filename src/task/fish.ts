@@ -1,7 +1,7 @@
 import mineflayer from 'mineflayer';
 
 function fishTask(bot: mineflayer.Bot) {
-  // bot.addTask('autoGet24Reward', true);
+  bot.addTask('autoGet24Reward', true);
   bot.once('spawn', () => {
     bot.chat('/stp survival2');
 
@@ -9,14 +9,14 @@ function fishTask(bot: mineflayer.Bot) {
       bot.chat('/home fish');
       bot.startFishing();
       bot.enableAutoDrop();
-      bot.startAutoReplace();
-      bot.startAutoRepair();
+      // bot.startAutoReplace();
+      // bot.startAutoRepair();
     }, 20 * 10);
   })
 }
 
 function fishTask1(bot: mineflayer.Bot) {
-  // bot.addTask('autoGet24Reward', true);
+  bot.addTask('autoGet24Reward', true);
   bot.once('spawn', () => {
     bot.chat('/stp survival');
 
@@ -24,7 +24,7 @@ function fishTask1(bot: mineflayer.Bot) {
       bot.chat('/home fish');
       bot.startFishing();
       bot.enableAutoDrop();
-      bot.startAutoReplace();
+      // bot.startAutoReplace();
       // bot.startAutoRepair();
     }, 20 * 10);
   })

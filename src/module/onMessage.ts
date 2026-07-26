@@ -1,5 +1,5 @@
 import mineflayer from 'mineflayer';
-import { type ChatMessage } from "prismarine-chat";
+import { getMainAccount } from '@/Config/loadConfig.js';
 
 function setChatPattern(bot: mineflayer.Bot) {
   bot.addChatPattern(
@@ -8,7 +8,7 @@ function setChatPattern(bot: mineflayer.Bot) {
     { parse: true, repeat: true }
   );
 
-  bot.on('chat:onQQMessage', (match: string[][]) => {
+  bot.on('chat:onQQMessage', (match) => {
     const user = match[0]![0]!;
     if (user === bot.username && bot.identifier.includes('拾玖世界')) {
       bot.tryExecute('quit');
@@ -21,10 +21,10 @@ function setChatPattern(bot: mineflayer.Bot) {
     { parse: true, repeat: true }
   );
 
-  bot.on('chat:onTpa', (match: string[][]) => {
+  bot.on('chat:onTpa', (match) => {
     const user = match[0]![0]!;
     if (!bot.admins.includes(user)) {
-      bot.whisper(user, '[自动回复] 挂机中，有事 QQ 联系 TAOtxi~');
+      bot.whisper(user, `[自动回复] 挂机中，有事 QQ 联系 ${getMainAccount()}~`);
       return;
     }
     bot.chat('/tpaccept');
@@ -42,8 +42,8 @@ const ignoreRule: RegExp[] = [
   /^$/,
   /^输入\/show来向大家炫耀你的物品吧喵~/,
   /^\[.\] (?:拾玖型扫地机器人|深渊已|东西被扫走了|垃圾桶清空了)/,
-  // /^\w{1,16} 从 \w+ 切换到 \w+|^\w{1,16} 离开了 \w+/,
-  // /^\w{1,16}(?:退出|加入)了游戏|^\w{1,16} joined \w+|^\w{1,16} was disconnected/,
+  /^\w{1,16} 从 \w+ 切换到 \w+|^\w{1,16} 离开了 \w+/,
+  /^\w{1,16}(?:退出|加入)了游戏$|^\w{1,16} joined \w+|^\w{1,16} was disconnected$|^\w{1,16} left the game$/,
   // /^<\w{1,16}> (?:\d+|all)$/
 ]
 
@@ -60,9 +60,9 @@ function shouldIgnore(msg: string) {
 export default function onMessage(bot: mineflayer.Bot) {
   setChatPattern(bot);
   
-  bot.on('whisper', (username: string, message: string) => {
-    if (!bot.admins.includes(username)) {
-      bot.whisper(username, '[自动回复] 挂机中，有事 QQ 联系 TAOtxi');
+  bot.on('whisper', (username, message) => {
+    if (!bot.admins.includes(username) && username !== 'Server') {
+      bot.whisper(username, `[自动回复] 挂机中，有事 QQ 联系 ${getMainAccount()}~`);
       return;
     }
 
@@ -74,13 +74,11 @@ export default function onMessage(bot: mineflayer.Bot) {
     }
   });
 
-  bot.on("message", (msg: ChatMessage) => {
+  bot.on("message", (msg) => {
     if (shouldIgnore(msg.toString())) {
       return;
     }
-
-    // bot.withoutLogTitle().baseInfo('chat', JSON.stringify(msg, null, 2));
-    bot.baseInfo('chat', msg.toAnsi());
+    bot.chatLog(msg.toAnsi());
   });
 }
 

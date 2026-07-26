@@ -1,3 +1,5 @@
-import { applyTaskOrCreateBot } from './module/botManager.js';
+import createStartScreen from '@/panel/createStartScreen.js';
+import initializeTask from "@/task/main.js"
 
-applyTaskOrCreateBot();
+initializeTask();
+createStartScreen();

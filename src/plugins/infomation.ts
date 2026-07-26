@@ -19,7 +19,7 @@ function getAnsi(bot: mineflayer.Bot, message: string | Object) {
 }
 
 function showRawItemInfo(bot: mineflayer.Bot, item: prisItem.Item) {
-  bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(item, null, 2));
+  bot.baseInfo(JSON.stringify(item, null, 2));
 }
 
 function showItemInfo(bot: mineflayer.Bot, item: prisItem.Item) {
@@ -33,7 +33,7 @@ function showItemInfo(bot: mineflayer.Bot, item: prisItem.Item) {
   maxDurability: ${item.maxDurability}
   enchants: ${JSON.stringify(item.enchants)}
   `
-  bot.withoutLogTitle().baseInfo(pluginName, output);
+  bot.baseInfo(output);
 }
 
 function showHandItem(bot: mineflayer.Bot, raw: boolean = false) {
@@ -78,13 +78,13 @@ function showEntityInfo(bot: mineflayer.Bot, entity: prismEntity.Entity, display
     displayProperties.push('pitch');
     displayProperties.push('velocity');
   }
-  bot.withoutLogTitle().baseInfo(pluginName, getEntityIdentify(entity));
+  bot.baseInfo(getEntityIdentify(entity));
   for (const property of displayProperties) {
     if (!(property in entity)) {
       continue;
     }
     // @ts-ignore
-    bot.withoutLogTitle().baseInfo(pluginName, `  ${property}: ${entity[property]}`);
+    bot.baseInfo(`  ${property}: ${entity[property]}`);
   }
 }
 
@@ -145,17 +145,17 @@ function showEntityAround(bot: mineflayer.Bot, properties: Record<string, string
     bot.baseInfo(pluginName, 'No entity around');
     return;
   }
-  bot.withoutLogTitle().baseInfo(pluginName, '');
+  bot.baseInfo('');
   const displayProperties: Array<string> = properties['--display']?.replaceAll(' ', '')?.split(',') ?? [];
   for (const entity of entities) {
     if (properties['-r'] !== undefined) {
-      bot.withoutLogTitle().baseInfo(pluginName, JSON.stringify(entity, null, 2));
+      bot.baseInfo(JSON.stringify(entity, null, 2));
     } else {
       showEntityInfo(bot, entity, displayProperties);
     }
-    bot.withoutLogTitle().baseInfo(pluginName, '');
+    bot.baseInfo('');
   }
-  bot.withoutLogTitle().baseInfo(pluginName, `Around ${entities.length} entities`);
+  bot.baseInfo(`Around ${entities.length} entities`);
 }
 
 function getItemName(item: prisItem.Item) {
@@ -190,8 +190,7 @@ function showInventory(bot: mineflayer.Bot, start: number, end: number, args: Re
     return;
   }
   
-  bot.withoutLogTitle().baseInfo(
-    pluginName,
+  bot.baseInfo(
     `CurrentWindow: ${getAnsi(bot, currentWindow.title)}. ${totalSlotCount - emptySlotCount} / ${totalSlotCount}`
   );
 
@@ -205,7 +204,7 @@ function showInventory(bot: mineflayer.Bot, start: number, end: number, args: Re
     if (!item) continue;
     
     const info = showItemInfoInline(item, option);
-    bot.withoutLogTitle().baseInfo(pluginName, `[${padZero(i)}] ${info}`);
+    bot.baseInfo(`[${padZero(i)}] ${info}`);
   }
 }
 
@@ -254,7 +253,7 @@ function showMatchItems(bot: mineflayer.Bot, toPlayer: string) {
   }
 
   for (let i = 0; i < showInfoList.length; i++) {
-    bot.withoutLogTitle().baseInfo(pluginName, showInfoList[i]!);
+    bot.baseInfo(showInfoList[i]!);
     bot.createOnceTimeTask(`showMatchItem_${i}`, () => {
       bot.whisper(toPlayer, showInfoList[i]!);
     }, i * 5);
@@ -270,10 +269,10 @@ function showEntityList(bot: mineflayer.Bot) {
   const sortedMap = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
 
   for (const [type, count] of sortedMap) {
-    bot.withoutLogTitle().baseInfo(pluginName, `${TranslateUtil.translate(type)}: ${count}`);
+    bot.baseInfo(`${TranslateUtil.translate(type)}: ${count}`);
   }
-  bot.withoutLogTitle().baseInfo(pluginName, `Total ${Object.values(bot.entities).length} entities`);
-  bot.withoutLogTitle().baseInfo(pluginName, '');
+  bot.baseInfo(`Total ${Object.values(bot.entities).length} entities`);
+  bot.baseInfo('');
 }
 
 function registCmd(bot: mineflayer.Bot) {
@@ -334,7 +333,7 @@ function registCmd(bot: mineflayer.Bot) {
           .suggests(() => Object.keys(bot.players))
           .execute(showMatchItems)))
     )
-    .then(CommandManager.command('entityList')
+    .then(CommandManager.command('stat')
       .execute(showEntityList))
   );
 }
