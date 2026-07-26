@@ -23,7 +23,9 @@ function onCancel() {
   selectBox.destroy();
   selectBox = null;
   screen.render();
-  if (screen.children.length === 0) {
+  
+  // @ts-ignore
+  if (screen.children.length === 0 || screen.children[0]?.hidden) {
     process.exit(0);
   }
 }

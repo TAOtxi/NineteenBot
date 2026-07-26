@@ -1,5 +1,5 @@
 import mineflayer from "mineflayer";
-import { getAccountInfo, getServerInfo, getAdmins } from "@/Config/loadConfig.js";
+import { getAccountInfo, getServerInfo, isAdmin } from "@/Config/loadConfig.js";
 import { waitPluginLoads } from "@/utils/pluginWaiter.js";
 import registCommonCmd from "@/module/command.js";
 import registEvent from "@/module/registerEvent.js";
@@ -159,7 +159,6 @@ function createBot(username: string, servername: string) {
 async function initBot(bot: mineflayer.Bot) {
   await loadPlugins(bot);
 
-  bot.admins = getAdmins();
   registCmd(bot);
   registEvent(bot);
   onMessage(bot);
@@ -243,7 +242,6 @@ declare module 'mineflayer' {
   interface Bot {
     servername: string;
     identifier: string;
-    admins: string[];
   }
 
   interface BotEvents {

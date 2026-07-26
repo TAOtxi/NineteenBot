@@ -43,8 +43,12 @@ function getMainAccount() {
   return baseConfig.mainAccount;
 }
 
-function getAdmins() {
-  return baseConfig.Admin;
+function isAdmin(user: string) {
+  return baseConfig.Admin.includes(user);
+}
+
+function isInAutoAcceptTpaList(user: string) {
+  return baseConfig.autoAcceptTpaList.includes(user);
 }
 
 function reloadConfig() {
@@ -59,6 +63,7 @@ export {
   getServerInfo,
   getAccountNameList,
   getMainAccount,
-  getAdmins,
+  isAdmin,
+  isInAutoAcceptTpaList,
   reloadConfig
 }

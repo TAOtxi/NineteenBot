@@ -2,6 +2,7 @@ import mineflayer from 'mineflayer';
 import prismEntity from 'prismarine-entity';
 import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 import StringUtil from '../utils/StringUtil.js';
+import { getMainAccount } from '@/Config/loadConfig.js';
 
 const pluginName = 'fishman'
 
@@ -145,8 +146,9 @@ function registCmd(bot: mineflayer.Bot) {
         const yaw = bot.entity.yaw;
         const pitch = bot.entity.pitch;
 
-        if (bot.admins && bot.admins.length > 0) {
-          const admin = bot.players[bot.admins[0]!];
+        const mainAccount = getMainAccount();
+        if (mainAccount) {
+          const admin = bot.players[mainAccount];
           if (admin?.entity?.position) {
             bot.lookAt(
               // @ts-ignore

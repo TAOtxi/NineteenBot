@@ -1,5 +1,5 @@
 import mineflayer from 'mineflayer';
-import { getMainAccount } from '@/Config/loadConfig.js';
+import { getMainAccount, isAdmin, isInAutoAcceptTpaList } from '@/Config/loadConfig.js';
 
 function setChatPattern(bot: mineflayer.Bot) {
   bot.addChatPattern(
@@ -23,8 +23,10 @@ function setChatPattern(bot: mineflayer.Bot) {
 
   bot.on('chat:onTpa', (match) => {
     const user = match[0]![0]!;
-    if (!bot.admins.includes(user)) {
+    if (user !== getMainAccount()) {
       bot.whisper(user, `[自动回复] 挂机中，有事 QQ 联系 ${getMainAccount()}~`);
+    }
+    if (!isAdmin(user) && !isInAutoAcceptTpaList(user)) {
       return;
     }
     bot.chat('/tpaccept');
@@ -61,7 +63,7 @@ export default function onMessage(bot: mineflayer.Bot) {
   setChatPattern(bot);
   
   bot.on('whisper', (username, message) => {
-    if (!bot.admins.includes(username) && username !== 'Server') {
+    if (!isAdmin(username) && username !== 'Server') {
       bot.whisper(username, `[自动回复] 挂机中，有事 QQ 联系 ${getMainAccount()}~`);
       return;
     }
