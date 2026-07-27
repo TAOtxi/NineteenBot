@@ -108,9 +108,9 @@ function registCmd(bot: mineflayer.Bot) {
 
 function changeBot(identifier: string) {
   if (currentBot === identifier) {
-    console.log('');
+    console.log('', false);
     console.warn(`Bot ${identifier} is already current bot.`);
-    console.log('');
+    console.log('', false);
     return;
   }
   if (!isBotExsit(identifier)) {
@@ -123,9 +123,9 @@ function changeBot(identifier: string) {
   }
   const toShowBot = botMap[identifier]!;
 
-  console.log('');
+  console.log('', false);
   console.info(`Switch to bot ${identifier}`);
-  console.log('');
+  console.log('', false);
 
   currentBot = identifier;
   toShowBot.emit('display');
@@ -175,7 +175,14 @@ async function initBot(bot: mineflayer.Bot) {
     }
   });
 
-  bot.on('display', () => onBotChange(bot));
+  bot.on('display', () => {
+    bot.isDisplayed = true;
+    onBotChange(bot);
+  });
+
+  bot.on('hidden', () => {
+    bot.isDisplayed = false;
+  });
 }
 
 async function createBotWithInitialize(username: string, servername: string) {
@@ -242,6 +249,7 @@ declare module 'mineflayer' {
   interface Bot {
     servername: string;
     identifier: string;
+    isDisplayed: boolean;
   }
 
   interface BotEvents {

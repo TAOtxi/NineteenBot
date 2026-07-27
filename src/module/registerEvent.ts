@@ -18,11 +18,14 @@ function registEvent(bot: mineflayer.Bot) {
   ChatMessageClass = ChatMessageLoader(bot.registry);
 
   bot.once("login", () => {
+    if (!bot.isDisplayed) {
+      console.log(`Login as ${bot.username}`);
+    }
     bot.baseInfo('login', `Login as ${bot.username}`);
   })
 
   bot.on("resourcePack", (url: string, hash?: string, uuid?: string) => {
-    bot.baseInfo('resourcePack', `Resource pack URL: ${url} UUID: ${uuid} Hash: ${hash}`);
+    bot.baseInfo('resourcePack', `Resource pack URL: ${url}, Hash: ${hash}`);
     bot.acceptResourcePack();
   });
 
