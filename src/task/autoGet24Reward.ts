@@ -12,16 +12,16 @@ export default function task(bot: mineflayer.Bot) {
     if (bot.hasTask('fish')) {
       bot.removeTask('fish');
       bot.addTask('fish1');
-      bot.stopAutoRepair();
+      // bot.stopAutoRepair();
       bot.chat('/stp survival');
     } else if (bot.hasTask('fish1')) {
       bot.removeTask('fish1');
       bot.addTask('fish');
       bot.chat('/stp survival2');
 
-      bot.createOnceTimeTask('openAutoRepair', () => {
-        bot.startAutoRepair();
-      }, 20 * 10);
+      // bot.createOnceTimeTask('openAutoRepair', () => {
+      //   bot.startAutoRepair();
+      // }, 20 * 10);
     }
   })
 }

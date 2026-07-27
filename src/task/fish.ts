@@ -9,8 +9,8 @@ function fishTask(bot: mineflayer.Bot) {
       bot.chat('/home fish');
       bot.startFishing();
       bot.enableAutoDrop();
-      bot.startAutoReplace();
-      bot.startAutoRepair();
+      // bot.startAutoReplace();
+      // bot.startAutoRepair();
     }, 20 * 10);
   })
 }
@@ -24,7 +24,7 @@ function fishTask1(bot: mineflayer.Bot) {
       bot.chat('/home fish');
       bot.startFishing();
       bot.enableAutoDrop();
-      bot.startAutoReplace();
+      // bot.startAutoReplace();
       // bot.startAutoRepair();
     }, 20 * 10);
   })
