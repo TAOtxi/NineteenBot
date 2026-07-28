@@ -1,3 +1,10 @@
 {
-  "editor.tabSize": 2
+  "editor.tabSize": 2,
+  "terminal.integrated.profiles.osx": {
+    "node-24": {
+      "path": "zsh",
+      "args": ["-c", "source ~/.nvm/nvm.sh && nvm use 24 && exec zsh"]
+    }
+  },
+  "terminal.integrated.defaultProfile.osx": "node-24"
 }
