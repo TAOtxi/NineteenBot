@@ -62,6 +62,24 @@ function registEvent(bot: mineflayer.Bot) {
       bot._client.write('close_window', { windowId: packet.windowId })
     }
   })
+
+  bot.hasDeath = false;
+  bot.on('spawn', () => {
+    if (bot.hasDeath) {
+      bot.chat('/back');
+    }
+  });
+
+  bot.once('death', () => {
+    bot.hasDeath = true;
+  });
 }
+
+declare module 'mineflayer' {
+  interface Bot {
+    hasDeath: boolean;
+  }
+}
+
 
 export default registEvent;
