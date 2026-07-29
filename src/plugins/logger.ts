@@ -107,12 +107,12 @@ function makeArrayStr(...arr: string[]) {
 function baseLog(
   bot: mineflayer.Bot, 
   msg: string| number, 
-  option: { title: string, type: string } = { type: 'INFO', title: '' }) {
+  option: { title: string, type: string, forceLog: boolean } = { type: 'INFO', title: '', forceLog: false }) {
   
   const title = option.title ? makeArrayStr(timestamp(), option.type, option.title) : '';
   const data = `${title}${msg}`;
   
-  if (bot.canLog) {
+  if (bot.canLog || option.forceLog) {
     console.log(data, false);
   }
   saveLog(bot, data);
@@ -138,11 +138,13 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.on('hidden', () => bot.canLog = false);
 
   const makeLevelLog = (level: string) =>
-    (titleOrMessage: string | number, msg?: string | number) => {
-      if (msg === undefined) {
-        baseLog(bot, titleOrMessage, { type: level, title: '' });
+    (titleOrMessage: string | number, msgOrForceLog?: string | number | boolean, forceLog?: boolean) => {
+      if (msgOrForceLog === undefined) {
+        baseLog(bot, titleOrMessage, { type: level, title: '', forceLog: forceLog ?? false });
+      } else if (typeof msgOrForceLog === 'boolean') {
+        baseLog(bot, titleOrMessage, { type: level, title: titleOrMessage.toString(), forceLog: msgOrForceLog });
       } else {
-        baseLog(bot, msg, { type: level, title: titleOrMessage.toString() });
+        baseLog(bot, msgOrForceLog, { type: level, title: titleOrMessage.toString(), forceLog: forceLog ?? false });
       }
     };
 
@@ -169,5 +171,11 @@ declare module 'mineflayer' {
     baseWarn(title: string, msg: string | number): void;
     baseError(msg: string | number): void;
     baseError(title: string, msg: string | number): void;
+    baseInfo(msg: string | number, forceLog: boolean): void;
+    baseInfo(title: string, msg: string | number, forceLog: boolean): void;
+    baseWarn(msg: string | number, forceLog: boolean): void;
+    baseWarn(title: string, msg: string | number, forceLog: boolean): void;
+    baseError(msg: string | number, forceLog: boolean): void;
+    baseError(title: string, msg: string | number, forceLog: boolean): void;
   }
 }

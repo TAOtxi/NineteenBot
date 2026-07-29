@@ -169,7 +169,7 @@ async function initBot(bot: mineflayer.Bot) {
     }
     if (bot.identifier === currentBot) {
       bot.emit('display');
-      bot.baseInfo(`--> Login as ${bot.identifier}`);
+      bot.baseInfo(`--> ${bot.identifier} logg`, true);
       bot.baseInfo('--> Shift + ← 聚焦聊天框，Shift + → 聚焦日志输出');
       bot.baseInfo('--> (Shift / Ctrl) + (↑ / ↓) 滚动窗口数据，shift一次滚动5行,ctrl一次滚动10行');
     }
