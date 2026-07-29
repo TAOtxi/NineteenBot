@@ -26,10 +26,9 @@ function setChatPattern(bot: mineflayer.Bot) {
     if (user !== getMainAccount()) {
       bot.whisper(user, `[自动回复] 挂机中，有事 QQ 联系 ${getMainAccount()}~`);
     }
-    if (!isAdmin(user) && !isInAutoAcceptTpaList(user)) {
-      return;
+    if (isAdmin(user) ||isInAutoAcceptTpaList(user)) {
+      bot.chat('/tpaccept');
     }
-    bot.chat('/tpaccept');
   })
 }
 
@@ -46,7 +45,11 @@ const ignoreRule: RegExp[] = [
   /^\[.\] (?:拾玖型扫地机器人|深渊已|东西被扫走了|垃圾桶清空了)/,
   /^\w{1,16} 从 \w+ 切换到 \w+|^\w{1,16} 离开了 \w+/,
   /^\w{1,16}(?:退出|加入)了游戏$|^\w{1,16} joined \w+|^\w{1,16} was disconnected$|^\w{1,16} left the game$/,
-  // /^<\w{1,16}> (?:\d+|all)$/
+  // /^<\w{1,16}> (?:\d+|all)$/,
+  /^\[防沉迷提醒\]/,
+  /^\[拾玖银行\]/,
+  /\[Server -> me\] \d{1,2}小时在线奖励/,
+
 ]
 
 function shouldIgnore(msg: string) {
