@@ -137,16 +137,18 @@ function isMatch(item: prisItem.Item, checkItems: Config['items']) {
     ) {
       continue;
     }
-
-    // durability
-    if (item.maxDurability !== undefined && checker.durability !== undefined) {
+    
+    if (checker.durability !== undefined) {
+      if (item.maxDurability === undefined || item.durabilityUsed === undefined) {
+        continue;
+      }
+      if (item.maxDurability - item.durabilityUsed < checker.durability) {
+        continue;
+      }
       if (checker.durability === -1 && item.durabilityUsed !== 0) {
         continue;
       }
       if (checker.durability === -2 && item.durabilityUsed == 0) {
-        continue;
-      }
-      if (item.maxDurability - item.durabilityUsed < checker.durability) {
         continue;
       }
     }
@@ -159,9 +161,8 @@ function isMatch(item: prisItem.Item, checkItems: Config['items']) {
       return true;
     }
 
-    const minEntCounts = checker.minEntCounts === -1 || checker.minEntCounts === undefined ? 
-        checker.enchants.length : 
-        checker.minEntCounts;
+    const minEntCounts = (checker.minEntCounts === -1 || checker.minEntCounts === undefined) ? 
+        checker.enchants.length : checker.minEntCounts;
 
     if (minEntCounts > checker.enchants.length) {
       continue; // 不可能通过匹配
@@ -468,15 +469,15 @@ declare module 'mineflayer' {
 }
 
 
-interface Config {
+export interface Config {
   ignoreSlots: number[];
   useDropRotation: boolean;
   dropRotation: {
     yaw: number;
     pitch: number;
   };
-  dropDirection: string;
-  triggerInterval: number;
+  dropDirection: string;    // up | down | west | east | south | north | look
+  triggerInterval: number;  // tick
   dropMode: 'whitelist' | 'blacklist';
   triggerMinNotEmptySlots: number;
   triggerByTime: boolean;

@@ -15,9 +15,10 @@ function shouldAtOffhand(bot: mineflayer.Bot, item: prisItem.Item | null | undef
 
 
 function tryToReplaceMendingEquipment(bot: mineflayer.Bot) {
-  if (!bot._autoReplaceEnabled || !bot._autoReplaceThrottle) return;
+  if (!bot._autoReplaceEnabled) return;
   if (bot.currentWindow !== null) return;
   bot._autoReplaceThrottle = false;
+  
   bot.createOnceTimeTask(AUTO_REPLACE_THROTTLE_TASK, () => {
     bot._autoReplaceThrottle = true;
   }, 20);
@@ -76,6 +77,7 @@ export default async function inject(bot: mineflayer.Bot) {
   const experienceOrbId = bot.registry.entitiesByName['experience_orb']?.id;
 
   function onExperienceChange(player: prismEntity.Entity, item: prismEntity.Entity) {
+    if (!bot._autoReplaceThrottle) return;
     if (player.username !== bot.username) return;
     if (item.entityType === experienceOrbId) {
       tryToReplaceMendingEquipment(bot);

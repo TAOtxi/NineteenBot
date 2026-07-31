@@ -59,5 +59,8 @@ export default async function water(bot: mineflayer.Bot) {
   } catch (error) {
     bot.baseError('WaterTask', error as string);
     bot.closeContainer();
+    if (hasFishTask) {
+      bot.enableAutoDrop();
+    }
   }
 }

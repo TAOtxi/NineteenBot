@@ -21,7 +21,7 @@ const defaultConfig: Config = {
 };
 
 const pluginName = 'autorepair';
-const INTERACT_RADIUS = 4.0;
+const INTERACT_RADIUS = 4.5;
 const AUTO_REPAIR_COMBINE = 'autoRepairCombine';
 const AUTO_REPAIR_TICK = 'autoRepairTick';
 const AUTO_REPAIR_TIME_OUT_CHECK = 'autoRepairTimeOutCheck';
@@ -179,12 +179,12 @@ async function tick(bot: mineflayer.Bot) {
   let emptySlotCount = bot.inventory.emptySlotCount();
 
   const canGetEquipmentFromContainer = bot.getConfig(pluginName, 'canGetEquipmentFromContainer') as Config['canGetEquipmentFromContainer'];
-  if (equipmentCount === 0 && canGetEquipmentFromContainer) {
+  if (equipmentCount <= 2 && canGetEquipmentFromContainer) {
     const pos = bot.getConfig(pluginName, 'equipmentContainerPos') as Config['equipmentContainerPos'];
     const vec3 = new Vec3(pos.x, pos.y, pos.z);
 
     bot._isGettingEquipment = true;
-    getItemFromContainer(
+    await getItemFromContainer(
       bot, 
       vec3, 
       shouldEnchantMendingBook, 
@@ -220,7 +220,7 @@ async function tick(bot: mineflayer.Bot) {
     const vec3 = new Vec3(pos.x, pos.y, pos.z);
 
     bot._isGettingMendingBook = true;
-    getItemFromContainer(
+    await getItemFromContainer(
       bot, 
       vec3,
       isMendingBook,

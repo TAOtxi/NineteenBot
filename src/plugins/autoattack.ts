@@ -11,6 +11,7 @@ const defaultConfig: Config = {
 const pluginName = 'autoattack';
 const ATTACK_TASK = `${pluginName}_attack`;
 
+const ignoreEntities = ['item', 'experience_orb']
 
 function attack(bot: mineflayer.Bot) {
   const heldItem = bot.heldItem;
@@ -21,7 +22,7 @@ function attack(bot: mineflayer.Bot) {
   }
 
   const entity = bot.entityAtCursor();  
-  if (!entity?.name || !entity.isValid || entity.name === 'item') return;
+  if (!entity?.name || !entity.isValid || ignoreEntities.includes(entity.name)) return;
   
   const attackList = bot.getConfig(pluginName, 'attackList') as Config['attackList'];
   const attackMode = bot.getConfig(pluginName, 'attackMode') as Config['attackMode'];
