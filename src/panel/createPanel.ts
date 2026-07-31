@@ -6,6 +6,8 @@ import CmdParser from '@/utils/CmdParser.js';
 import screen from '@/panel/createScreen.js';
 import { fileURLToPath } from 'node:url';
 import { hasStartScreen } from '@/panel/createStartScreen.js';
+import { getBotMap } from '@/module/botManager.js';
+
 
 let showTimer: NodeJS.Timeout | null = null;
 let currentScrollBox = 0;   // 0: chatBox, 1: logBox
@@ -115,6 +117,7 @@ function runCommand() {
   const command = data.inputValue;
   if (command === '') return;
 
+  outputToLog('', false);
   outputToLog(`--> Run command: ${command}`);
   if (command.startsWith('/')) {
     currentBot?.chat(command);
@@ -222,6 +225,10 @@ function handleKeyPress(ch: string, key: any) {
   }
 
   else if (name === 'escape') {
+    for (const bot of Object.values(getBotMap())) {
+      bot.emit('cleanup');
+      bot.quit();
+    }
     process.exit(0);
   }
 
@@ -382,11 +389,11 @@ let currentBot: mineflayer.Bot | null = null;
 
 function onBotChange(bot: mineflayer.Bot) {
   currentBot = bot;
-  data.cursor = 0;
-  setInput('');
-  suggestList.setItems(getInput('', bot));
-  refreshSuggestList();
-  screen.render();
+  // data.cursor = 0;
+  // setInput('');
+  // suggestList.setItems(getInput('', bot));
+  // refreshSuggestList();
+  // screen.render();
 }
 
 function timestamp() {
@@ -423,15 +430,20 @@ function onPanelChange(isShow: boolean) {
   screen.render();
 }
 
-console._log = console.log;
-console._info = console.info;
-console._error = console.error;
-console._warn = console.warn;
-console.chat = outputToChat;
-console.log = outputToLog;
-console.info = (msg) => console.log(`[INFO] ${msg}`);
-console.warn = (msg) => console.log(`[WARN] ${msg}`);
-console.error = (msg) => console.log(`[ERROR] ${msg}`);
+if (!process.argv.includes('--noPanel')) {
+  console._log = console.log;
+  console._info = console.info;
+  console._error = console.error;
+  console._warn = console.warn;
+  console.chat = outputToChat;
+  console.log = outputToLog;
+  console.info = (msg) => console.log(`[INFO] ${msg}`);
+  console.warn = (msg) => console.log(`[WARN] ${msg}`);
+  console.error = (msg) => console.log(`[ERROR] ${msg}`);
+} else {
+  console.chat = console.log;
+  screen.destroy();
+}
 
 declare global {
   interface Console {

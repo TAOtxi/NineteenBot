@@ -8,9 +8,10 @@
     "start": "npm run build && node ./dist/main.js lang=zh_cn",
     "dev": "npm run build && node ./dist/main.js lang=zh_cn",
     "panel": "npm run build && node ./dist/panel/createPanel.js",
-    "inspect": "npx tsc && node --inspect=0.0.0.0:9229 ./dist/main.js lang=zh_cn",
+    "inspect": "npm run build && node --inspect=0.0.0.0:9229 ./dist/main.js lang=zh_cn",
     "fix": "node ./src/Fix/main.js",
-    "test:command": "npx tsc && node ./dist/test/testCmdManager.js debug=true"
+    "test": "npm run build && node ./dist/test/createBot.js --noPanel lang=zh_cn",
+    "fast": "npm run build && node ./dist/test/createBot.js lang=zh_cn"
   },
   "author": "TAOtxi",
   "type": "module",

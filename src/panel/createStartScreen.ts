@@ -3,7 +3,7 @@ import { getTaskList } from "@/plugins/initTask.js";
 import { onPanelChange } from '@/panel/createPanel.js';
 import screen from '@/panel/createScreen.js';
 import { getServerNameList, getAccountNameList } from '@/Config/loadConfig.js';
-import { createBotWithInitialize, createBotWithTask } from '@/module/botManager.js';
+import { createBotWithInitialize, createBotWithTask, getBotMap } from '@/module/botManager.js';
 
 let selectBox: blessed.Widgets.ListElement | null = null;
 const SELECT_ICON = '◯';
@@ -22,12 +22,13 @@ function onCancel() {
   
   selectBox.destroy();
   selectBox = null;
-  screen.render();
-  
-  // @ts-ignore
-  if (screen.children.length === 0 || screen.children[0]?.hidden) {
+
+  if (Object.keys(getBotMap()).length === 0) {
     process.exit(0);
   }
+
+  onPanelChange(true);
+  
 }
 
 function createStartScreen() {

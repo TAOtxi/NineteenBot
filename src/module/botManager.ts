@@ -1,5 +1,5 @@
 import mineflayer from "mineflayer";
-import { getAccountInfo, getServerInfo, isAdmin } from "@/Config/loadConfig.js";
+import { getAccountInfo, getServerInfo } from "@/Config/loadConfig.js";
 import { waitPluginLoads } from "@/utils/pluginWaiter.js";
 import registCommonCmd from "@/module/command.js";
 import registEvent from "@/module/registerEvent.js";
@@ -24,6 +24,8 @@ import onMessage from "@/module/onMessage.js";
 import test from "@/test/test.js";
 import { onBotChange } from "@/panel/createPanel.js";
 import createStartScreen from "@/panel/createStartScreen.js";
+
+const noPanel = process.argv.includes('--noPanel');
 
 // { `${username}@${servername}` : Bot }
 const botMap: Record<string, mineflayer.Bot> = {};
@@ -65,7 +67,7 @@ function registCmd(bot: mineflayer.Bot) {
 
   bot.registerCmd(CommandManager.command('quit')
     .execute(bot => {
-      bot.baseInfo('BOT', `Quit bot ${bot.identifier}`);
+      bot.baseInfo('BOT', `Quit bot ${bot.identifier}`, true);
       bot.removeAllTasks();
       removeBot(bot.identifier);
 
@@ -169,7 +171,6 @@ async function initBot(bot: mineflayer.Bot) {
     }
     if (bot.identifier === currentBot) {
       bot.emit('display');
-      bot.baseInfo(`--> ${bot.identifier} logg`, true);
       bot.baseInfo('--> Shift + ← 聚焦聊天框，Shift + → 聚焦日志输出');
       bot.baseInfo('--> (Shift / Ctrl) + (↑ / ↓) 滚动窗口数据，shift一次滚动5行,ctrl一次滚动10行');
     }
@@ -177,7 +178,10 @@ async function initBot(bot: mineflayer.Bot) {
 
   bot.on('display', () => {
     bot.isDisplayed = true;
-    onBotChange(bot);
+
+    if (!noPanel) {
+      onBotChange(bot);
+    }
   });
 
   bot.on('hidden', () => {
