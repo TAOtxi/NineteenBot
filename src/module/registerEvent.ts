@@ -18,24 +18,21 @@ function registEvent(bot: mineflayer.Bot) {
   ChatMessageClass = ChatMessageLoader(bot.registry);
 
   bot.once("login", () => {
-    if (!bot.isDisplayed) {
-      console.log(`Login as ${bot.username}`);
-    }
-    bot.baseInfo('login', `Login as ${bot.username}`);
+    bot.baseInfo(`--> ${bot.identifier} logged in`, true);
   })
 
-  bot.on("resourcePack", (url: string, hash?: string, uuid?: string) => {
-    bot.baseInfo('resourcePack', `Resource pack URL: ${url}, Hash: ${hash}`);
+  bot.on("resourcePack", (url: string, hash?: string) => {
+    bot.baseInfo('resourcePack', `ResourcePack URL: ${url}, Hash: ${hash}`);
     bot.acceptResourcePack();
   });
 
   bot.on("kicked", (reason: string) => {
-    bot.baseError('kicked', `Kicked: ${JSON.stringify(reason, null, 2)}`);
+    bot.baseError('kicked', `Was kicked: ${JSON.stringify(reason, null, 2)}`);
     recreateBot(bot.identifier);
   });
 
   bot.on("error", (err: Error) => {
-    bot.baseError('error event', err.message);
+    bot.baseError('ErrorEvent', err.message);
     // console.trace(err);
     recreateBot(bot.identifier);
   });
@@ -54,11 +51,13 @@ function registEvent(bot: mineflayer.Bot) {
     bot.baseInfo('windowClose', `Close window: ${getAnsi(window.title)}, windowType: ${window.type}, windowId: ${window.id}`);
   });
 
+  // TODO: 用一个变量记录上一次打开的容器id，当新的容器id发来时，
+  //       但上一次容器未主动关闭或未接收到服务器关闭容器的数据包，则自动关闭上一次容器。
   // 修复拾玖世界菜单界面无法正常关闭问题
   bot._client.on('set_slot', (packet) => {
     // 传的 windowId 不为0，但客户端上的 currentWindow 为 null
     if (packet.windowId !== 0 && bot.currentWindow === null) {
-      bot.baseInfo('FIX', `Invalid windowId: ${packet.windowId}, close it.`);
+      // bot.baseInfo('FIX', `Invalid windowId: ${packet.windowId}, close it.`);
       bot._client.write('close_window', { windowId: packet.windowId })
     }
   })
