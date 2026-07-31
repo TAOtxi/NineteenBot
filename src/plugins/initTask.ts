@@ -68,11 +68,12 @@ function registerCmd(bot: mineflayer.Bot) {
   bot.registerCmd(CM.command('task')
     .then(CM.command('list')
       .execute(bot => {
+        bot.baseInfo('')
         bot.baseInfo('task', `Task List: (Current Tick: ${bot.ticker})`);
         for (const task of bot.timeTaskList) {
-          bot.baseInfo('task', `[${task.id}]:\tNext Run Tick: ${task.nextRunTick}.\tInterval: ${task.intervalGetter}.`);
+          bot.baseInfo('task', `[${task.id}]:\nNext Run Tick: ${task.nextRunTick}.\tInterval: ${task.intervalGetter(bot)}.`);
         }
-        bot.baseInfo('task', '');
+        bot.baseInfo('');
       }))
     .then(CM.command('apply')
       .then(CM.value('<task>')

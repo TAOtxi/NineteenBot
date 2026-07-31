@@ -27,7 +27,7 @@ const map = [
   ['plugins/health.js', './node_modules/mineflayer/lib/plugins/health.js'],
   
   /**
-   * @desc: 适配 component，修复背包同步问题
+   * @desc: 适配 component，修复背包同步问题；打开容器时不自动看向容器
    * @see: https://github.com/PrismarineJS/mineflayer/pull/3931
    */
   ['plugins/inventory.js', './node_modules/mineflayer/lib/plugins/inventory.js'],

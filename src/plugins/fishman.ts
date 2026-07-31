@@ -177,7 +177,7 @@ function registCmd(bot: mineflayer.Bot) {
             }
           }
           bot.look(yaw, pitch, true);
-        }, 10)
+        }, 20)
       }))
     .then(CommandManager.command('throwDelay')
       .then(CommandManager.value('<delay>')
