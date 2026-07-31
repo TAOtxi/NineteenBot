@@ -1,11 +1,5 @@
-import mineflayer from "mineflayer";
+import { createBotWithTask } from "@/module/botManager.js";
+import initialize from "@/task/main.js";
 
-export default function createBot() {
-  return mineflayer.createBot({
-    host: 'play.simpfun.cn',
-    port: 18393,
-    username: 'TAOtxi',
-    version: "1.21.11",
-    auth: 'microsoft'
-  })
-}
+initialize();
+createBotWithTask(['Mar1mo_'], '拾玖世界', 'fixEquipment');
