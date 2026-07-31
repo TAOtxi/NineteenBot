@@ -35,6 +35,7 @@ function saveLog(bot: mineflayer.Bot, msg: string) {
   bot._logTimer = setTimeout(() => flushLog(bot), 100);
 }
 
+// 缓存解决面板日志输出乱序问题
 function flushLog(bot: mineflayer.Bot) {
   _saveLog(bot, bot._logCache.join('\n'));
   bot._logCache = [];
@@ -52,13 +53,13 @@ function _saveLog(bot: mineflayer.Bot, msg: string) {
     date.year !== currentDate.getFullYear()) {
     bot.logFile = `${getTimeStr('-', '-')}.log`;
     fs.writeFile(`${bot.logDir}/${bot.logFile}`, msg + '\n', (err) => {
-      err && console.error('Write log error:' + err + `[${bot.logDir}/${bot.logFile}]`);
+      err && bot.baseError('Write log error:' + err + `[${bot.logDir}/${bot.logFile}]`);
     });
     return;
   }
   
   fs.appendFile(`${bot.logDir}/${bot.logFile}`, msg + '\n', (err) => {
-    err && console.error('Write log error:' + err + `[${bot.logDir}/${bot.logFile}]`);
+    err && bot.baseError('Write log error:' + err + `[${bot.logDir}/${bot.logFile}]`);
   });
 }
 
@@ -136,21 +137,35 @@ export default async function inject(bot: mineflayer.Bot) {
   bot.chatLog = (msg) => chatLog(bot, msg);
   bot.on('display', () => bot.canLog = true);
   bot.on('hidden', () => bot.canLog = false);
+  bot.flushLog = () => flushLog(bot);
 
   const makeLevelLog = (level: string) =>
     (titleOrMessage: string | number, msgOrForceLog?: string | number | boolean, forceLog?: boolean) => {
-      if (msgOrForceLog === undefined) {
-        baseLog(bot, titleOrMessage, { type: level, title: '', forceLog: forceLog ?? false });
-      } else if (typeof msgOrForceLog === 'boolean') {
-        baseLog(bot, titleOrMessage, { type: level, title: titleOrMessage.toString(), forceLog: msgOrForceLog });
-      } else {
+      if (msgOrForceLog === undefined) {  // (title)
+        baseLog(bot, titleOrMessage, { type: level, title: '', forceLog: false });
+      } else if (typeof msgOrForceLog === 'boolean') {  // (title, true / false)
+        baseLog(bot, titleOrMessage, { type: level, title: '', forceLog: msgOrForceLog });
+      } else {    // (title, msg, forceLog)
         baseLog(bot, msgOrForceLog, { type: level, title: titleOrMessage.toString(), forceLog: forceLog ?? false });
       }
     };
 
   bot.baseInfo = makeLevelLog('INFO');
   bot.baseWarn = makeLevelLog('WARN');
-  bot.baseError = makeLevelLog('ERROR');
+
+  // Error 级别必须强制显示，即使该 bot 不在前台
+  bot.baseError = (titleOrMessage: string | number, msg?: string | number) => {
+    if (msg === undefined) {
+      baseLog(bot, `[${bot.identifier}] ${titleOrMessage}`, { type: 'ERROR', title: '', forceLog: true });
+    } else {
+      baseLog(bot, `[${bot.identifier}] ${msg}`, { type: 'ERROR', title: titleOrMessage.toString(), forceLog: true });
+    }
+  }
+
+  bot.once('error', () => flushLog(bot));
+  // bot.once('cleanup', () => flushLog(bot));
+  bot.once('kicked', () => flushLog(bot));
+  bot.once('end', () => flushLog(bot));
 
   pluginReady(bot, 'logger');
 }
@@ -164,6 +179,7 @@ declare module 'mineflayer' {
     maxLogSize: number;
     _logCache: string[];
     _logTimer: NodeJS.Timeout | null;
+    flushLog(): void;
     chatLog(msg: string | number): void;
     baseInfo(msg: string | number): void;
     baseInfo(title: string, msg: string | number): void;
@@ -175,7 +191,5 @@ declare module 'mineflayer' {
     baseInfo(title: string, msg: string | number, forceLog: boolean): void;
     baseWarn(msg: string | number, forceLog: boolean): void;
     baseWarn(title: string, msg: string | number, forceLog: boolean): void;
-    baseError(msg: string | number, forceLog: boolean): void;
-    baseError(title: string, msg: string | number, forceLog: boolean): void;
   }
 }
