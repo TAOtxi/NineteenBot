@@ -18,7 +18,6 @@ const autoDropConfig: AutoDropConfig = {
   triggerItemId: "*",
   items: [
     {
-      id: "/_sword$/",
       enchants: [
         {
           name: "unbreaking",
@@ -29,9 +28,6 @@ const autoDropConfig: AutoDropConfig = {
     {
       id: "/^netherite_/",
       durability: -2
-    },
-    {
-      id: "fishing_rod"
     },
     {
       id: "enchanted_book",
