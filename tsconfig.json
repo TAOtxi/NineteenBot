@@ -13,6 +13,8 @@
     "lib": ["esnext"],
     "types": ["node"],
 
+    "jsx": "react-jsx",
+
     "sourceMap": false,
     "declaration": true,
     "declarationMap": true,
