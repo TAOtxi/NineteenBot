@@ -4,7 +4,7 @@ import mineflayer from 'mineflayer'
 export default function task(bot: mineflayer.Bot) {
   bot.addChatPattern(
     'onReward', 
-    /^\[Server -> me\] 24小时在线奖励/, 
+    /^\[ItemsAdder\] 获得物品 拾玖点卷$/, 
     { parse: false, repeat: true }
   );
 

@@ -13,7 +13,7 @@ function setChatPattern(bot: mineflayer.Bot) {
     if (user === bot.username && bot.identifier.includes('拾玖世界')) {
       bot.tryExecute('quit');
     }
-  })
+  });
 
   bot.addChatPattern(
     'onTpa', 
@@ -26,10 +26,20 @@ function setChatPattern(bot: mineflayer.Bot) {
     if (user !== getMainAccount()) {
       bot.whisper(user, `[自动回复] 挂机中，有事 QQ 联系 ${getMainAccount()}~`);
     }
-    if (isAdmin(user) ||isInAutoAcceptTpaList(user)) {
+    if (isAdmin(user) || isInAutoAcceptTpaList(user)) {
       bot.chat('/tpaccept');
     }
-  })
+  });
+
+  bot.addChatPattern(
+    'onPaperReward', 
+    /^\[ItemsAdder\] 获得物品 拾玖点卷$/, 
+    { parse: false, repeat: true }
+  );
+
+  bot.on('chat:onPaperReward', () => {
+    bot.baseInfo('Reward', `${bot.username} 获得物品 拾玖点卷`, true);
+  });
 }
 
 const ignoreRule: RegExp[] = [
@@ -47,10 +57,10 @@ const ignoreRule: RegExp[] = [
   /^\w{1,16}(?:退出|加入)了游戏$|^\w{1,16} joined \w+|^\w{1,16} was disconnected$|^\w{1,16} left the game$/,
   // /^<\w{1,16}> (?:\d+|all)$/,
   /^\[防沉迷提醒\]/,
-  /^\[拾玖银行\]/,
+  /^\[拾玖银行\]拾玖喵给予你/,
+  /^\[拾玖银行\]管理员给予你/,
   /\[Server -> me\] \d{1,2}小时在线奖励/,
-
-]
+];
 
 function shouldIgnore(msg: string) {
   for (const rule of ignoreRule) {
@@ -94,5 +104,6 @@ declare module 'mineflayer' {
   interface BotEvents {
     'chat:onQQMessage': MatcherCallback,
     'chat:onTpa': MatcherCallback,
+    'chat:onPaperReward': MatcherCallback,
   }
 }
