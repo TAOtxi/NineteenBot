@@ -72,6 +72,14 @@ function registEvent(bot: mineflayer.Bot) {
   bot.once('death', () => {
     bot.hasDeath = true;
   });
+
+  bot.on('playerJoin', (playerName) => {
+    bot.baseInfo(`\x1b[32m+ ${playerName}\x1b[0m`);
+  });
+
+  bot.on('playerLeave', (playerName) => {
+    bot.baseInfo(`\x1b[31m- ${playerName}\x1b[0m`);
+  });
 }
 
 declare module 'mineflayer' {
