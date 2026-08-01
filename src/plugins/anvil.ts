@@ -2,7 +2,6 @@ import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import { type Window } from 'prismarine-windows'
 import { waitPluginLoads } from '../utils/pluginWaiter.js';
-import assert from 'assert';
 import { moveSlot, putDownCarryItem, waitForSlotUpdate } from '../utils/InventoryUtil.js';
 import type { Block } from 'prismarine-block';
 
@@ -55,8 +54,17 @@ async function combine(bot: mineflayer.Bot, item1: prisItem.Item, item2: prisIte
   const Item = prisItem(bot.registry);
   const combineCost = Item.anvil(item1, item2, bot.game.gameMode === 'creative');
 
-  assert.ok(combineCost !== 0, 'Not a valid item pair.');
-  assert.ok(combineCost.xpCost <= bot.experience.level, 'Not enough experience.');
+  if (combineCost === 0) {
+    bot.baseError(pluginName, `${item1.name} and ${item2.name} is not a valid item pair.`);
+    bot.closeWindow(bot.currentWindow);
+    return;
+  }
+
+  if (combineCost.xpCost > bot.experience.level) {
+    bot.baseError(pluginName, `Not enough experience. Need ${combineCost.xpCost} xp, but only have ${bot.experience.level} xp.`);
+    bot.closeWindow(bot.currentWindow);
+    return;
+  }
   
   await moveSlot(bot, item1.slot, 0);
   // sendItemName(bot, '')

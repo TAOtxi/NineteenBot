@@ -43,12 +43,12 @@ function registEvent(bot: mineflayer.Bot) {
   });
 
   bot.on('windowOpen', (window: Window) => {
-    bot.baseInfo('windowOpen', `Open window: ${getAnsi(window.title)}, windowType: ${window.type}, windowId: ${window.id}`);
+    // bot.baseInfo('windowOpen', `Open window: ${getAnsi(window.title)}, windowType: ${window.type}, windowId: ${window.id}`);
   });
 
   bot.on('windowClose', (window: Window) => {
     if (!window) return;
-    bot.baseInfo('windowClose', `Close window: ${getAnsi(window.title)}, windowType: ${window.type}, windowId: ${window.id}`);
+    // bot.baseInfo('windowClose', `Close window: ${getAnsi(window.title)}, windowType: ${window.type}, windowId: ${window.id}`);
   });
 
   // TODO: 用一个变量记录上一次打开的容器id，当新的容器id发来时，

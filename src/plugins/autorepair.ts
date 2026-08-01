@@ -6,7 +6,7 @@ import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
 import { moveSlot, putDownCarryItem } from '../utils/InventoryUtil.js';
 
 const defaultConfig: Config = {
-  minExpRequired: 5,
+  minExpRequired: 10,
   mendingBookContainerPos: {
     x: 0,
     y: 0,
@@ -21,7 +21,7 @@ const defaultConfig: Config = {
 };
 
 const pluginName = 'autorepair';
-const INTERACT_RADIUS = 4.5;
+const INTERACT_RADIUS = 4.0;
 const AUTO_REPAIR_COMBINE = 'autoRepairCombine';
 const AUTO_REPAIR_TICK = 'autoRepairTick';
 const AUTO_REPAIR_TIME_OUT_CHECK = 'autoRepairTimeOutCheck';
