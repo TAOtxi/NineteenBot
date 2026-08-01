@@ -1,10 +1,11 @@
-import { registerTask } from '../plugins/initTask.js';
+import { registerTask } from '@/plugins/initTask.js';
 import { fishTask, fishTask1 } from './fish.js';
-import water from '../task/waterTree.js';
+import water from './waterTree.js';
 import signIn from './signIn.js';
 import autoGet24Reward from './autoGet24Reward.js';
 import { killTask, afkTask, WITHER_SKULL_AFK_TASK, WITHER_SKULL_KILL_TASK } from './witherSkull.js';
 import fixEquipment from './fixEquipment.js';
+import showDailyTask from './showDailyTask.js';
 
 export default function initialize() {
   registerTask('fish', fishTask);
@@ -12,6 +13,7 @@ export default function initialize() {
   registerTask('signIn', signIn);
   registerTask('water', water);
   registerTask('fixEquipment', fixEquipment);
+  registerTask('showDailyTask', showDailyTask);
   registerTask('autoGet24Reward', autoGet24Reward);
   registerTask(WITHER_SKULL_AFK_TASK, afkTask);
   registerTask(WITHER_SKULL_KILL_TASK, killTask);

@@ -26,8 +26,8 @@ public static void registerCommand(CommandDispatcher<FabricClientCommandSource> 
 `
 
 import mineflayer from "mineflayer";
-import CmdParser from "../utils/CmdParser.js";
-import { pluginReady } from "../utils/pluginWaiter.js";
+import CmdParser from "@/utils/CmdParser.js";
+import { pluginReady } from "@/utils/pluginWaiter.js";
 
 export enum CommandType {
   CMD = 'cmd',

@@ -1,10 +1,10 @@
 import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import prismEntity from 'prismarine-entity';
-import StringUtil from '../utils/StringUtil.js';
-import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
-import CmdParser from '../utils/CmdParser.js';
-import { putDownCarryItem } from '../utils/InventoryUtil.js';
+import StringUtil from '@/utils/StringUtil.js';
+import { pluginReady, waitPluginLoads } from '@/utils/pluginWaiter.js';
+import CmdParser from '@/utils/CmdParser.js';
+import { putDownCarryItem } from '@/utils/InventoryUtil.js';
 
 
 const pluginName = 'autodrop';

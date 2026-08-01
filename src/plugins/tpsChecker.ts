@@ -1,5 +1,5 @@
 import mineflayer from 'mineflayer'
-import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js'
+import { pluginReady, waitPluginLoads } from '@/utils/pluginWaiter.js'
 
 
 const defaultConfig = {

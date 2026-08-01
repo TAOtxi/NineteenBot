@@ -1,6 +1,6 @@
 import mineflayer from 'mineflayer';
 import prismEntity from 'prismarine-entity';
-import TaskQueue from '../utils/TaskQueue.js';
+import TaskQueue from '@/utils/TaskQueue.js';
 
 
 export default async function water(bot: mineflayer.Bot) {

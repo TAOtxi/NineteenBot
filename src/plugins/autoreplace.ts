@@ -1,7 +1,7 @@
 import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import prismEntity from 'prismarine-entity';
-import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
+import { pluginReady, waitPluginLoads } from '@/utils/pluginWaiter.js';
 
 
 function shouldAtOffhand(bot: mineflayer.Bot, item: prisItem.Item | null | undefined) {

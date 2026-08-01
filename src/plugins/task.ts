@@ -1,5 +1,5 @@
 import mineflayer from 'mineflayer';
-import { pluginReady } from '../utils/pluginWaiter.js';
+import { pluginReady } from '@/utils/pluginWaiter.js';
 
 
 function throttle(bot: mineflayer.Bot, id: string, interval: number, task: RunableTask) {

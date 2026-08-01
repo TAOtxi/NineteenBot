@@ -1,7 +1,7 @@
 import mineflayer from 'mineflayer';
 import prismEntity from 'prismarine-entity';
-import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
-import StringUtil from '../utils/StringUtil.js';
+import { pluginReady, waitPluginLoads } from '@/utils/pluginWaiter.js';
+import StringUtil from '@/utils/StringUtil.js';
 import { getMainAccount } from '@/Config/loadConfig.js';
 
 const pluginName = 'fishman'

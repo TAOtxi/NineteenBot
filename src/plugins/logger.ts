@@ -1,6 +1,6 @@
 import fs from 'fs';
 import mineflayer from 'mineflayer';
-import { pluginReady } from '../utils/pluginWaiter.js';
+import { pluginReady } from '@/utils/pluginWaiter.js';
 
 
 function parseTimeStr(time: string) {

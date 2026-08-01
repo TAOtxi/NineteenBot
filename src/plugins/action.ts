@@ -1,9 +1,9 @@
 import mineflayer, { type Player } from 'mineflayer';
 import prismEntity from 'prismarine-entity';
 import { Vec3 } from 'vec3';
-import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
-import StringUtil from '../utils/StringUtil.js';
-import { toRadians } from '../utils/MathUtil.js';
+import { pluginReady, waitPluginLoads } from '@/utils/pluginWaiter.js';
+import StringUtil from '@/utils/StringUtil.js';
+import { toRadians } from '@/utils/MathUtil.js';
 
 const pluginName = 'action';
 

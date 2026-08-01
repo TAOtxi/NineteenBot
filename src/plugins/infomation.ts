@@ -1,22 +1,13 @@
 import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import prismEntity from 'prismarine-entity';
-import ChatMessageLoader from "prismarine-chat";
-import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
-import TranslateUtil from '../utils/TranslateUtil.js';
-import { getEmptySlotCountInRange } from '../utils/InventoryUtil.js';
+import { getAnsi } from '@/utils/game/itemUtil.js';
+import { pluginReady, waitPluginLoads } from '@/utils/pluginWaiter.js';
+import TranslateUtil from '@/utils/TranslateUtil.js';
+import { getEmptySlotCountInRange } from '@/utils/InventoryUtil.js';
 
 const pluginName = 'infomation';
 
-function getAnsi(bot: mineflayer.Bot, message: string | Object) {
-  if (typeof message === 'string') {
-    return message;
-  }
-  // @ts-ignore
-  const ChatMessageClass = ChatMessageLoader(bot.registry)
-  // @ts-ignore
-  return ChatMessageClass.fromNotch(message).toAnsi();
-}
 
 function showRawItemInfo(bot: mineflayer.Bot, item: prisItem.Item) {
   bot.baseInfo(JSON.stringify(item, null, 2));
@@ -26,7 +17,7 @@ function showItemInfo(bot: mineflayer.Bot, item: prisItem.Item) {
   const output = `
   displayName: ${item.displayName}
   name: ${item.name}
-  customName: ${item.customName}
+  customName: ${getAnsi(item.customName)}
   count: ${item.count}
   slot: ${item.slot}
   durabilityUsed: ${item.durabilityUsed}
@@ -191,7 +182,7 @@ function showInventory(bot: mineflayer.Bot, start: number, end: number, args: Re
   }
   
   bot.baseInfo(
-    `CurrentWindow: ${getAnsi(bot, currentWindow.title)}. ${totalSlotCount - emptySlotCount} / ${totalSlotCount}`
+    `CurrentWindow: ${getAnsi(currentWindow.title)}. ${totalSlotCount - emptySlotCount} / ${totalSlotCount}`
   );
 
   const option = {

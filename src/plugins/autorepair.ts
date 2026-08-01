@@ -2,8 +2,8 @@ import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import { Vec3 } from 'vec3';
 import { type Window } from 'prismarine-windows'
-import { pluginReady, waitPluginLoads } from '../utils/pluginWaiter.js';
-import { moveSlot, putDownCarryItem } from '../utils/InventoryUtil.js';
+import { pluginReady, waitPluginLoads } from '@/utils/pluginWaiter.js';
+import { moveSlot, putDownCarryItem } from '@/utils/InventoryUtil.js';
 
 const defaultConfig: Config = {
   minExpRequired: 10,
@@ -44,14 +44,14 @@ function shouldEnchantMendingBook(item: prisItem.Item) {
 
   if (item.enchants.some(enchant => enchant.name === 'mending')) return false;
 
-  return /^netherite_/.test(item.name);
+  return item.name.startsWith('netherite_');
 }
 
 function isNetheriteEquipment(item: prisItem.Item) {
   if (item.maxDurability === undefined) return false;
   if (item.stackSize !== 1) return false;
 
-  return /^netherite_/.test(item.name);
+  return item.name.startsWith('netherite_');
 }
 
 function isContainerBlock(bot: mineflayer.Bot, pos: Vec3) {
@@ -187,7 +187,7 @@ async function tick(bot: mineflayer.Bot) {
     await getItemFromContainer(
       bot, 
       vec3, 
-      shouldEnchantMendingBook, 
+      isNetheriteEquipment, 
       Math.min(25, emptySlotCount)
     ).catch(e => {
       bot.baseError(pluginName, `Get equipment failed: ${e.message}`);
@@ -235,7 +235,7 @@ async function tick(bot: mineflayer.Bot) {
 
   function isAnvilBlock(pos: Vec3) {
     const block = bot.blockAt(pos);
-    return block && /anvil$/.test(block.name);
+    return block && block.name.endsWith('anvil');
   }
 
   if (bot._anvilBlockPos === null || !isAnvilBlock(bot._anvilBlockPos)) {
@@ -303,7 +303,15 @@ async function tryRepair(bot: mineflayer.Bot) {
       throw new Error('Current window is not anvil window.');
     }
   }
-  bot.restartTimeTask(AUTO_REPAIR_TIME_OUT_CHECK);
+
+  if (bot.hasTimeTask(AUTO_REPAIR_TIME_OUT_CHECK)) {
+    bot.restartTimeTask(AUTO_REPAIR_TIME_OUT_CHECK);
+  } else {
+    bot.createOnceTimeTask(AUTO_REPAIR_TIME_OUT_CHECK, () => {
+      bot.baseInfo(pluginName, 'Repair timeout. Reset state.');
+      resetState(bot);
+    }, AUTO_REPAIR_TIME_OUT);
+  }
   bot.createTimeTask(AUTO_REPAIR_COMBINE, combineTask, 1, true);
 }
 

@@ -1,6 +1,6 @@
 import mineflayer from 'mineflayer';
 import fs from 'fs';
-import { pluginReady } from '../utils/pluginWaiter.js';
+import { pluginReady } from '@/utils/pluginWaiter.js';
 
 function saveConfig(bot: mineflayer.Bot, namespace: string, data: Record<string, any>, isPrivate?: boolean) {
   if (!fs.existsSync(bot.configDir)) {

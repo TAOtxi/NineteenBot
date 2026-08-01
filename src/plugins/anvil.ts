@@ -1,8 +1,8 @@
 import mineflayer from 'mineflayer';
 import prisItem from 'prismarine-item';
 import { type Window } from 'prismarine-windows'
-import { waitPluginLoads } from '../utils/pluginWaiter.js';
-import { moveSlot, putDownCarryItem, waitForSlotUpdate } from '../utils/InventoryUtil.js';
+import { waitPluginLoads } from '@/utils/pluginWaiter.js';
+import { moveSlot, putDownCarryItem, waitForSlotUpdate } from '@/utils/InventoryUtil.js';
 import type { Block } from 'prismarine-block';
 
 async function openNearstAnvil(bot: mineflayer.Bot) {

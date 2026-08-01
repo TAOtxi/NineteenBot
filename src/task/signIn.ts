@@ -3,7 +3,7 @@ import { awaitEvent } from '../utils/PromiseUtil.js';
 import TaskQueue from '../utils/TaskQueue.js';
 
 
-export default async function signIn(bot: mineflayer.Bot) {
+export default async function signIn(bot: mineflayer.Bot, isFirstSignIn: boolean = true) {
   const taskQueue = TaskQueue.createTaskQueue(bot, 'signIn');
   taskQueue
     .addTask(() => bot.chat('/19'))
@@ -24,6 +24,11 @@ export default async function signIn(bot: mineflayer.Bot) {
         bot.closeWindow(bot.currentWindow);
       }
     })
+    .addTask(() => {
+      if (isFirstSignIn) {
+        signIn(bot, false)
+      }
+    }); // 重复签到一次，避免无法记录bug
 
   try {
     await taskQueue.buid();
