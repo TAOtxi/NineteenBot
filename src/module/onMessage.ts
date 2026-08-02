@@ -33,12 +33,12 @@ function setChatPattern(bot: mineflayer.Bot) {
 
   bot.addChatPattern(
     'onPaperReward', 
-    /^\[ItemsAdder\] 获得物品 拾玖点卷$/, 
+    /^\[ItemsAdder\] 获得物品 拾玖点券$/, 
     { parse: false, repeat: true }
   );
 
   bot.on('chat:onPaperReward', () => {
-    bot.baseInfo('Reward', `${bot.username} 获得物品 拾玖点卷`, true);
+    bot.baseInfo('Reward', `${bot.username} 获得物品 拾玖点券`, true);
   });
 }
 
