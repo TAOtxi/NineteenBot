@@ -33,30 +33,15 @@ export default function registCmd(bot: mineflayer.Bot) {
         .suggests(() => Object.keys(bot).filter(key => !key.startsWith('_') && typeof bot[key] !== 'function'))
         .execute((bot, property) => {
           // @ts-ignore
-          if (typeof bot[property] === 'object' && bot[property] !== null) {
-            bot.baseInfo('state', `${property}:`);
-            // @ts-ignore
-            bot.baseInfo(bot[property]);
-          } else {
-            // @ts-ignore
-            bot.baseInfo('state', `${property}: ${bot[property]}`);
-          }
-        })))
-    .then(CM.command('getStr')
-      .then(CM.value('<property>')
-        // @ts-ignore
-        .suggests(() => Object.keys(bot).filter(key => !key.startsWith('_') && typeof bot[key] !== 'function'))
-        .execute((bot, property) => {
-          // @ts-ignore
           bot.baseInfo('state', `${property}: ${JSON.stringify(bot[property], null, 2)}`);
         })))
   );
 
-  bot.registerCmd(CM.command('who')
+  bot.registerCmd(CM.command(['who', 'w'])
     .execute(bot => bot.baseInfo('BOT', bot.identifier))
   );
 
-  bot.registerCmd(CM.command('list')
+  bot.registerCmd(CM.command(['list', 'ls'])
     .execute(displayOnlinePlayers)
   );
 
