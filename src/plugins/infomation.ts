@@ -150,10 +150,11 @@ function showEntityAround(bot: mineflayer.Bot, properties: Record<string, string
 }
 
 function getItemName(item: prisItem.Item) {
-  return item.customName ?? 
-        TranslateUtil.translate(item.name) ?? 
-        item.displayName ?? 
-        item.name;
+  if (item.customName) {
+    return getAnsi(item.customName);
+  }
+
+  return item.displayName ?? item.name;
 }
 
 function getEnchantList(item: prisItem.Item) {

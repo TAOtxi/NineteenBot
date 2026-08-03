@@ -43,13 +43,13 @@ function registEvent(bot: mineflayer.Bot) {
   // TODO: 用一个变量记录上一次打开的容器id，当新的容器id发来时，
   //       但上一次容器未主动关闭或未接收到服务器关闭容器的数据包，则自动关闭上一次容器。
   // 修复拾玖世界菜单界面无法正常关闭问题
-  // bot._client.on('set_slot', (packet) => {
-  //   // 传的 windowId 不为0，但客户端上的 currentWindow 为 null
-  //   if (packet.windowId !== 0 && bot.currentWindow === null) {
-  //     // bot.baseInfo('FIX', `Invalid windowId: ${packet.windowId}, close it.`);
-  //     bot._client.write('close_window', { windowId: packet.windowId })
-  //   }
-  // });
+  bot._client.on('set_slot', (packet) => {
+    // 传的 windowId 不为0，但客户端上的 currentWindow 为 null
+    if (packet.windowId !== 0 && bot.currentWindow === null) {
+      // bot.baseInfo('FIX', `Invalid windowId: ${packet.windowId}, close it.`);
+      bot._client.write('close_window', { windowId: packet.windowId })
+    }
+  });
 
   bot.hasDeath = false;
   bot.on('spawn', () => {

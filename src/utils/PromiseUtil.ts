@@ -14,21 +14,29 @@ function sleep(ms: number) {
 function awaitEvent(bot: mineflayer.Bot, event: string, timeout: number = 20000): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
+      bot.off('cleanup', oncleanup);
+      // @ts-ignore
+      bot.off(event, onEvent);
       reject(new Error(`Event ${event} timeout ${timeout}ms`));
     }, timeout);
 
     function oncleanup() {
       clearTimeout(timer);
+      // @ts-ignore
+      bot.off(event, onEvent);
+      bot.closeContainer();
     }
 
-    bot.once('cleanup', oncleanup);
-
-    // @ts-ignore
-    bot.once(event, () => {
+    function onEvent() {
       clearTimeout(timer);
       bot.off('cleanup', oncleanup);
       resolve();
-    });
+    }
+
+    bot.once('cleanup', oncleanup);
+    
+    // @ts-ignore
+    bot.once(event, onEvent);
   })
 }
 

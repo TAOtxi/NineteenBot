@@ -23,7 +23,7 @@ export default async function signIn(bot: mineflayer.Bot, isFirstSignIn: boolean
       if (bot.currentWindow !== null) {
         bot.closeWindow(bot.currentWindow);
       }
-    })
+    }, 20)
     .addTask(() => {
       if (isFirstSignIn) {
         signIn(bot, false)
