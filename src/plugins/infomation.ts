@@ -154,7 +154,7 @@ function getItemName(item: prisItem.Item) {
     return getAnsi(item.customName);
   }
 
-  return item.displayName ?? item.name;
+  return TranslateUtil.item(item.name) ?? item.name;
 }
 
 function getEnchantList(item: prisItem.Item) {

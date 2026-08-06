@@ -42,6 +42,12 @@ const map = [
    * @see: https://github.com/PrismarineJS/mineflayer/pull/3937
    */
   ['plugins/entities.js', './node_modules/mineflayer/lib/plugins/entities.js'],
+
+  /**
+   * @desc: 修复服务器未给玩家信息加签问题
+   * @see: 
+   */
+  ['plugins/chat.js', './node_modules/mineflayer/lib/plugins/chat.js'],
   
   /**
    * @desc: enchant for 1.20.5+，适配 component
